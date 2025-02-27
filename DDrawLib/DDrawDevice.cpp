@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include "../Common/typedef.h"
 #include "DDrawDevice.h"
+#include "../ImageData/Graphic.h"
+#include "../ImageData/Palette.h"
 
 DDrawDevice::DDrawDevice()
 {
@@ -326,6 +328,280 @@ void DDrawDevice::DrawRect(int32 screenX, int32 screenY, int32 width, int32 heig
 			*pPixel = color;
 		}
 	}
+}
+
+void DDrawDevice::DrawBound(int left, int top, int right, int bottom, uint32 color)
+{
+#ifdef _DEBUG
+	if (mLockedBackBuffer == nullptr)
+	{
+		__debugbreak();
+	}
+#endif
+
+	bool bResult = false;
+
+	left = max(left, 0);
+	top = max(top, 0);
+	right = min(right, (int32)mWidth - 1);
+	bottom = min(bottom, (int32)mHeight - 1);
+
+	int width = right - left;
+	int height = bottom - top;
+
+	if (width <= 0 || height <= 0)
+	{
+		return;
+	}
+
+	int y = top;
+
+	for (int x = left; x < right; x++)
+	{
+		uint32* pPixel = (uint32*)(mLockedBackBuffer + y * mLockedBackBufferPitch + x * 4);
+		*pPixel = color;
+	}
+
+	y = bottom;
+
+	for (int x = left; x < right; x++)
+	{
+		uint32* pPixel = (uint32*)(mLockedBackBuffer + y * mLockedBackBufferPitch + x * 4);
+		*pPixel = color;
+	}
+
+	int x = left;
+
+	for (int y = top; y < bottom; y++)
+	{
+		uint32* pPixel = (uint32*)(mLockedBackBuffer + y * mLockedBackBufferPitch + x * 4);
+		*pPixel = color;
+	}
+
+	x = right;
+
+	for (int y = top; y < bottom; y++)
+	{
+		uint32* pPixel = (uint32*)(mLockedBackBuffer + y * mLockedBackBufferPitch + x * 4);
+		*pPixel = color;
+	}
+}
+
+bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GraphicFrame* frame, const uint8* compressedImage, const Palette* palette, bool bFlipped, bool bDrawingBound)
+{
+#ifdef _DEBUG
+	if (mLockedBackBuffer == nullptr)
+	{
+		__debugbreak();
+	}
+
+	if (compressedImage == nullptr)
+	{
+		__debugbreak();
+	}
+
+	if (frame == nullptr)
+	{
+		__debugbreak();
+	}
+
+	if (palette == nullptr)
+	{
+		__debugbreak();
+	}
+#endif // _DEBUG
+
+	bool bResult = false;
+
+	IntVector2 srcStart = { 0, };
+	IntVector2 destStart = { 0, };
+	IntVector2 destSize = { 0, };
+
+	IntVector2 imageSize = { frame->Width, frame->Height };
+	IntVector2 screenPos = { screenX - frame->Width / 2, screenY - frame->Height / 2};
+
+	if (!CalculateClipArea(&srcStart, &destStart, &destSize, screenPos, imageSize))
+	{
+		goto LB_RETURN;
+	}
+
+	if (bDrawingBound)
+	{
+		IntRect bound = { 0, };
+		bound.Left = destStart.X;
+		bound.Top = destStart.Y;
+		bound.Right = destStart.X + destSize.X;
+		bound.Bottom = destStart.Y + destSize.Y;
+		DrawBound(bound.Left, bound.Top, bound.Right, bound.Bottom, 0xffff0000);
+	}
+
+	uint8* pDestPerLine = mLockedBackBuffer + destStart.Y * mLockedBackBufferPitch;
+
+	const uint16* offsets = (const uint16*)compressedImage;
+	const uint16* pOffset = offsets + srcStart.Y;
+
+	if (bFlipped)
+	{
+		for (int32 y = 0; y < destSize.Y; y++)
+		{
+			const uint8* pStream = compressedImage + (uint64)*pOffset++;
+
+			const uint8* pDest = pDestPerLine;
+			int32 destX = screenPos.X + imageSize.X - 1;
+
+			while (destX >= destStart.X)
+			{
+				uint8 opcode = *pStream++;
+
+				if (opcode >= 0x80)
+				{
+					// 1. byte >= 0x80: 0을 출력
+					int32 count = opcode - 0x80;
+					destX -= count;
+				}
+				else if (opcode >= 0x40)
+				{
+					// 2. 0x40 <= byte < 0x80 : 다음 바이트를 (byte - 0x40)만큼 반복해서 출력
+					int32 count = opcode - 0x40;
+					uint32 pixel = palette->GetColor(*pStream++);
+					int32 pixelCount = count;
+
+					if (destX >= (int32)mWidth)
+					{
+						pixelCount += (mWidth - destX - 1);
+						destX -= count - pixelCount;
+					}
+					if (destX < pixelCount - 1)
+					{
+						pixelCount = destX + 1;
+					}
+
+					pDest = pDestPerLine + (uint64)(destX * 4);
+
+					for (int i = 0; i < pixelCount; i++)
+					{
+						*(uint32*)pDest = pixel;
+						pDest -= 4;
+					}
+
+					destX -= pixelCount;
+				}
+				else
+				{
+					// 3. byte < 0x40 : 그대로 출력
+					int32 count = opcode;
+					int32 pixelCount = count;
+
+					if (destX >= (int32)mWidth)
+					{
+						pixelCount += (mWidth - destX - 1);
+						destX -= count - pixelCount;
+						pStream += count - max(pixelCount, 0);
+					}
+					if (destX < pixelCount - 1)
+					{
+						pixelCount = destX + 1;
+					}
+
+					pDest = pDestPerLine + (uint64)(destX * 4);
+
+					for (int i = 0; i < pixelCount; i++)
+					{
+						uint32 pixel = palette->GetColor(*pStream++);
+						*(uint32*)pDest = pixel;
+						pDest -= 4;
+					}
+
+					destX -= pixelCount;
+				}
+			}
+
+			pDestPerLine += mLockedBackBufferPitch;
+		}
+	}
+	else
+	{
+		for (int32 y = 0; y < destSize.Y; y++)
+		{
+			const uint8* pStream = (uint8*)compressedImage + (uint64)*pOffset++;
+
+			const uint8* pDest = pDestPerLine;
+			int32 destX = screenPos.X;
+
+			while (destX < destStart.X + destSize.X)
+			{
+				uint8 opcode = *pStream++;
+
+				if (opcode >= 0x80)
+				{
+					// 1. byte >= 0x80: 0을 출력
+					int32 count = opcode - 0x80;
+					destX += count;
+				}
+				else if (opcode >= 0x40)
+				{
+					// 2. 0x40 <= byte < 0x80 : 다음 바이트를 (byte - 0x40)만큼 반복해서 출력
+					int32 count = opcode - 0x40;
+					uint32 pixel = palette->GetColor(*pStream++);
+					int32 pixelCount = count;
+
+					if (destX < 0)
+					{
+						pixelCount += destX;
+						destX += count - pixelCount;
+					}
+					if (destX + pixelCount > (int32)mWidth)
+					{
+						pixelCount = (int32)mWidth - destX;
+					}
+
+					pDest = pDestPerLine + (uint64)(destX * 4);
+
+					for (int i = 0; i < pixelCount; i++)
+					{
+						*(uint32*)pDest = pixel;
+						pDest += 4;
+					}
+
+					destX += pixelCount;
+				}
+				else
+				{
+					// 3. byte < 0x40 : 그대로 출력
+					int32 count = opcode;
+					int32 pixelCount = count;
+
+					if (destX < 0)
+					{
+						pixelCount += destX;
+						destX += count - pixelCount;
+						pStream += count - max(pixelCount, 0);
+					}
+					if (destX + pixelCount > (int32)mWidth)
+					{
+						pixelCount = (int32)mWidth - destX;
+					}
+
+					pDest = pDestPerLine + (uint64)(destX * 4);
+
+					for (int i = 0; i < pixelCount; i++)
+					{
+						uint32 pixel = palette->GetColor(*pStream++);
+						*(uint32*)pDest = pixel;
+						pDest += 4;
+					}
+
+					destX += pixelCount;
+				}
+			}
+
+			pDestPerLine += mLockedBackBufferPitch;
+		}
+	}
+
+	bResult = true;
+LB_RETURN:
+	return bResult;
 }
 
 bool DDrawDevice::CalculateClipArea(IntVector2* outSrcStart, IntVector2* outDestStart, IntVector2* outDestSize, IntVector2 pos, IntVector2 size)  const

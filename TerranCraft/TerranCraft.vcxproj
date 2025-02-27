@@ -137,11 +137,27 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\BWLib\ImageNumber.h" />
+    <ClInclude Include="..\BWLib\IScriptAnimation.h" />
+    <ClInclude Include="..\BWLib\IScriptEntryNumber.h" />
+    <ClInclude Include="..\BWLib\OrderType.h" />
+    <ClInclude Include="..\BWLib\ResourceType.h" />
+    <ClInclude Include="..\BWLib\RLEType.h" />
+    <ClInclude Include="..\BWLib\SpriteNumber.h" />
+    <ClInclude Include="..\BWLib\TechType.h" />
+    <ClInclude Include="..\BWLib\UnitType.h" />
+    <ClInclude Include="..\BWLib\UpgradeType.h" />
+    <ClInclude Include="..\BWLib\WeaponType.h" />
     <ClInclude Include="..\Common\typedef.h" />
     <ClInclude Include="..\DDrawLib\DDrawDevice.h" />
     <ClInclude Include="..\DDrawLib\pch.h" />
+    <ClInclude Include="..\ImageData\Graphic.h" />
+    <ClInclude Include="..\ImageData\ImageResource.h" />
+    <ClInclude Include="..\ImageData\Palette.h" />
+    <ClInclude Include="..\ImageData\pch.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Game.h" />
+    <ClInclude Include="Image.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
@@ -149,7 +165,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\DDrawLib\DDrawDevice.cpp" />
+    <ClCompile Include="..\ImageData\ImageResource.cpp" />
+    <ClCompile Include="..\ImageData\Palette.cpp" />
     <ClCompile Include="Game.cpp" />
+    <ClCompile Include="Image.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

@@ -1,8 +1,9 @@
 #pragma once
 
 class DDrawDevice;
+class Image;
 
-class Game
+class Game final
 {
 public:
 	Game();
@@ -35,7 +36,7 @@ private:
 	LARGE_INTEGER mFrequency;
 	LARGE_INTEGER mPrevCounter;
 
-#pragma endregion
+	Image* mImage;
 };
 
 extern Game* gGame;

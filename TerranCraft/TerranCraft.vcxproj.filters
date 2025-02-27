@@ -19,6 +19,12 @@
     <Filter Include="Game">
       <UniqueIdentifier>{c46e77cb-1cea-4761-b09f-139af532bb11}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ImageData">
+      <UniqueIdentifier>{251313d4-dd93-4ef6-af93-fccf7e8c00f1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="BWLib">
+      <UniqueIdentifier>{14b5681a-6b87-4d4e-a3ed-64cf1e56f39a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -48,6 +54,54 @@
     <ClInclude Include="..\DDrawLib\pch.h">
       <Filter>DDrawLib</Filter>
     </ClInclude>
+    <ClInclude Include="..\ImageData\Graphic.h">
+      <Filter>ImageData</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ImageData\Palette.h">
+      <Filter>ImageData</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ImageData\pch.h">
+      <Filter>ImageData</Filter>
+    </ClInclude>
+    <ClInclude Include="Image.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BWLib\ImageNumber.h">
+      <Filter>BWLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BWLib\IScriptAnimation.h">
+      <Filter>BWLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BWLib\IScriptEntryNumber.h">
+      <Filter>BWLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BWLib\OrderType.h">
+      <Filter>BWLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BWLib\ResourceType.h">
+      <Filter>BWLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BWLib\RLEType.h">
+      <Filter>BWLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BWLib\SpriteNumber.h">
+      <Filter>BWLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BWLib\TechType.h">
+      <Filter>BWLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BWLib\UnitType.h">
+      <Filter>BWLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BWLib\UpgradeType.h">
+      <Filter>BWLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BWLib\WeaponType.h">
+      <Filter>BWLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ImageData\ImageResource.h">
+      <Filter>ImageData</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TerranCraft.cpp">
@@ -61,6 +115,15 @@
     </ClCompile>
     <ClCompile Include="Game.cpp">
       <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ImageData\Palette.cpp">
+      <Filter>ImageData</Filter>
+    </ClCompile>
+    <ClCompile Include="Image.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ImageData\ImageResource.cpp">
+      <Filter>ImageData</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

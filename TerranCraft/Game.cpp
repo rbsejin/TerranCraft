@@ -4,7 +4,10 @@
 #include <stdio.h>
 #include <time.h>
 #include "../DDrawLib/DDrawDevice.h"
+#include "../ImageData/ImageResource.h"
+#include "../ImageData/Graphic.h"
 #include "Game.h"
+#include "Image.h"
 
 Game* gGame = nullptr;
 
@@ -34,6 +37,10 @@ bool Game::Initalize(HWND hWnd)
 	{
 		goto LB_RETURN;
 	}
+	
+	ImageResource::Instance.Load("../data/grplist.txt", "../data/palettelist.txt");
+
+	mImage = new Image(BW::ImageNumber::Marine);
 
 	srand((unsigned int)time(nullptr));
 
@@ -45,6 +52,11 @@ LB_RETURN:
 
 void Game::Cleanup()
 {
+	delete mImage;
+	mImage = nullptr;
+
+	ImageResource::Instance.Destroy();
+
 	delete mDDrawDevice;
 	mDDrawDevice = nullptr;
 
@@ -128,7 +140,13 @@ void Game::drawScene()
 		mDDrawDevice->Clear();
 
 		mDDrawDevice->DrawGrid(32, 16, 16, 0xff000000);
-		mDDrawDevice->DrawRect(8, 8, 16, 16, 0xffff0000);
+		//mDDrawDevice->DrawRect(8, 8, 16, 16, 0xffff0000);
+		
+		const GraphicFrame* frame = mImage->GetFrame();
+		const uint8* compressedImage = mImage->GetCompressedImage();
+		const Palette* palette = mImage->GetPalette();
+
+		mDDrawDevice->DrawGRP(16, 16, frame, compressedImage, palette, false, true);
 
 		mDDrawDevice->EndDraw();
 	}
