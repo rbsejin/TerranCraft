@@ -21,8 +21,8 @@ public:
 	void EndGDI(HDC hdc);
 	void DrawInfo(HDC hdc) const;
 
-	void DrawGrid(int32 gridSize, int32 rowCount, int32 colCount, Color color);
-	void DrawRect(int32 screenX, int32 screenY, int32 width, int32 height, Color color);
+	void DrawGrid(int32 gridSize, int32 rowCount, int32 colCount, uint32 color);
+	void DrawRect(int32 screenX, int32 screenY, int32 width, int32 height, uint32 color);
 	bool CalculateClipArea(IntVector2* outSrcStart, IntVector2* outDestStart, IntVector2* outDestSize, IntVector2 pos, IntVector2 imageSize) const;
 
 	void Clear();
@@ -38,7 +38,7 @@ private:
 	void cleanupBackSurface();
 
 	void updateInfoText();
-	void writeText(HDC hdc, int32 x, int32 y, Color color, const wchar_t* text, int32 length) const;
+	void writeText(HDC hdc, int32 x, int32 y, uint32 color, const wchar_t* text, int32 length) const;
 
 private:
 	IDirectDraw* mDirectDraw;

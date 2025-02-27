@@ -260,7 +260,7 @@ void DDrawDevice::DrawInfo(HDC hdc) const
 	writeText(hdc, 0, 0, 0xffff0000, mInfoText, mInfoTextLength);
 }
 
-void DDrawDevice::DrawGrid(int32 gridSize, int32 rowCount, int32 colCount, Color color)
+void DDrawDevice::DrawGrid(int32 gridSize, int32 rowCount, int32 colCount, uint32 color)
 {
 #ifdef _DEBUG
 	if (mLockedBackBuffer == nullptr)
@@ -285,7 +285,7 @@ void DDrawDevice::DrawGrid(int32 gridSize, int32 rowCount, int32 colCount, Color
 	{
 		for (int32 x = 0; x < colCount * gridSize; x++)
 		{
-			*(Color*)(pDest + x * 4) = color;
+			*(uint32*)(pDest + x * 4) = color;
 		}
 
 		pDest += mLockedBackBufferPitch * gridSize;
@@ -297,14 +297,14 @@ void DDrawDevice::DrawGrid(int32 gridSize, int32 rowCount, int32 colCount, Color
 	{
 		for (int32 y = 0; y < rowCount * gridSize; y++)
 		{
-			*(Color*)(pDest + y * mLockedBackBufferPitch) = color;
+			*(uint32*)(pDest + y * mLockedBackBufferPitch) = color;
 		}
 
 		pDest += gridSize * 4;
 	}
 }
 
-void DDrawDevice::DrawRect(int32 screenX, int32 screenY, int32 width, int32 height, Color color)
+void DDrawDevice::DrawRect(int32 screenX, int32 screenY, int32 width, int32 height, uint32 color)
 {
 #ifdef _DEBUG
 	if (mLockedBackBuffer == nullptr)
@@ -322,7 +322,7 @@ void DDrawDevice::DrawRect(int32 screenX, int32 screenY, int32 width, int32 heig
 	{
 		for (int32 x = left; x < right; x++)
 		{
-			Color* pPixel = (Color*)(mLockedBackBuffer + y * mLockedBackBufferPitch + x * 4);
+			uint32* pPixel = (uint32*)(mLockedBackBuffer + y * mLockedBackBufferPitch + x * 4);
 			*pPixel = color;
 		}
 	}
@@ -480,7 +480,7 @@ void DDrawDevice::updateInfoText()
 	mInfoTextLength = (uint32)wcslen(mInfoText);
 }
 
-void DDrawDevice::writeText(HDC hdc, int32 x, int32 y, Color color, const wchar_t* text, int32 length) const
+void DDrawDevice::writeText(HDC hdc, int32 x, int32 y, uint32 color, const wchar_t* text, int32 length) const
 {
 	SetBkMode(hdc, TRANSPARENT);
 

@@ -29,6 +29,3 @@ struct IntVector2
 };
 
 static_assert(sizeof(IntVector2) == 8, "IntVector2 size is invalid");
-
-// 0xXXRRGGBB
-typedef uint32 Color;
