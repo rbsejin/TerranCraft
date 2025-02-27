@@ -2,8 +2,10 @@
 //
 
 #include "pch.h"
+
 #include "framework.h"
 #include "TerranCraft.h"
+#include "Game.h"
 
 #define MAX_LOADSTRING 100
 
@@ -12,6 +14,8 @@ HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 
+HWND ghMainWindow = nullptr;
+
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
@@ -19,41 +23,71 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
-                     _In_opt_ HINSTANCE hPrevInstance,
-                     _In_ LPWSTR    lpCmdLine,
-                     _In_ int       nCmdShow)
+	_In_opt_ HINSTANCE hPrevInstance,
+	_In_ LPWSTR    lpCmdLine,
+	_In_ int       nCmdShow)
 {
-    UNREFERENCED_PARAMETER(hPrevInstance);
-    UNREFERENCED_PARAMETER(lpCmdLine);
+#ifdef _DEBUG
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
 
-    // TODO: Place code here.
+	UNREFERENCED_PARAMETER(hPrevInstance);
+	UNREFERENCED_PARAMETER(lpCmdLine);
 
-    // Initialize global strings
-    LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-    LoadStringW(hInstance, IDC_TERRANCRAFT, szWindowClass, MAX_LOADSTRING);
-    MyRegisterClass(hInstance);
+	// TODO: Place code here.
 
-    // Perform application initialization:
-    if (!InitInstance (hInstance, nCmdShow))
-    {
-        return FALSE;
-    }
+	// Initialize global strings
+	LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
+	LoadStringW(hInstance, IDC_TERRANCRAFT, szWindowClass, MAX_LOADSTRING);
+	MyRegisterClass(hInstance);
 
-    HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_TERRANCRAFT));
+	// Perform application initialization:
+	if (!InitInstance(hInstance, nCmdShow))
+	{
+		return FALSE;
+	}
 
-    MSG msg;
+	HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_TERRANCRAFT));
 
-    // Main message loop:
-    while (GetMessage(&msg, nullptr, 0, 0))
-    {
-        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
-        {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
-    }
+	MSG msg;
 
-    return (int) msg.wParam;
+	gGame = new Game();
+	gGame->Initalize(ghMainWindow);
+
+	// Main message loop:
+	while (true)
+	{
+		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+		{
+			if (msg.message == WM_QUIT)
+			{
+				break;
+			}
+
+			if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+			{
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+		else
+		{
+			gGame->Process();
+		}
+	}
+
+	if (gGame != nullptr)
+	{
+		delete gGame;
+		gGame = nullptr;
+	}
+
+#ifdef _DEBUG
+	_ASSERT(_CrtCheckMemory());
+#endif // _DEBUG
+
+
+	return (int)msg.wParam;
 }
 
 
@@ -65,23 +99,23 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 //
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
-    WNDCLASSEXW wcex;
+	WNDCLASSEXW wcex;
 
-    wcex.cbSize = sizeof(WNDCLASSEX);
+	wcex.cbSize = sizeof(WNDCLASSEX);
 
-    wcex.style          = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc    = WndProc;
-    wcex.cbClsExtra     = 0;
-    wcex.cbWndExtra     = 0;
-    wcex.hInstance      = hInstance;
-    wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_TERRANCRAFT));
-    wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
-    wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_TERRANCRAFT);
-    wcex.lpszClassName  = szWindowClass;
-    wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+	wcex.style = CS_HREDRAW | CS_VREDRAW;
+	wcex.lpfnWndProc = WndProc;
+	wcex.cbClsExtra = 0;
+	wcex.cbWndExtra = 0;
+	wcex.hInstance = hInstance;
+	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_TERRANCRAFT));
+	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
+	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+	wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_TERRANCRAFT);
+	wcex.lpszClassName = szWindowClass;
+	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
-    return RegisterClassExW(&wcex);
+	return RegisterClassExW(&wcex);
 }
 
 //
@@ -96,20 +130,34 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
-   hInst = hInstance; // Store instance handle in our global variable
+	hInst = hInstance; // Store instance handle in our global variable
 
-   HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+	constexpr int WINDOW_POS_X = 0;
+	constexpr int WINDOW_POS_Y = 0;
 
-   if (!hWnd)
-   {
-      return FALSE;
-   }
+	constexpr int CLIENT_WIDTH = 600;
+	constexpr int CLIENT_HEIGHT = 700;
 
-   ShowWindow(hWnd, nCmdShow);
-   UpdateWindow(hWnd);
+	RECT rect = { 0, 0, CLIENT_WIDTH, CLIENT_HEIGHT };
+	AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, TRUE);
 
-   return TRUE;
+	const int windowWidth = rect.right - rect.left;
+	const int windowHeight = rect.bottom - rect.top;
+
+	HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+		WINDOW_POS_X, WINDOW_POS_Y, windowWidth, windowHeight, nullptr, nullptr, hInstance, nullptr);
+
+	if (!hWnd)
+	{
+		return FALSE;
+	}
+
+	ghMainWindow = hWnd;
+
+	ShowWindow(hWnd, nCmdShow);
+	UpdateWindow(hWnd);
+
+	return TRUE;
 }
 
 //
@@ -124,58 +172,122 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    switch (message)
-    {
-    case WM_COMMAND:
-        {
-            int wmId = LOWORD(wParam);
-            // Parse the menu selections:
-            switch (wmId)
-            {
-            case IDM_ABOUT:
-                DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-                break;
-            case IDM_EXIT:
-                DestroyWindow(hWnd);
-                break;
-            default:
-                return DefWindowProc(hWnd, message, wParam, lParam);
-            }
-        }
-        break;
-    case WM_PAINT:
-        {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
-            // TODO: Add any drawing code that uses hdc here...
-            EndPaint(hWnd, &ps);
-        }
-        break;
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        break;
-    default:
-        return DefWindowProc(hWnd, message, wParam, lParam);
-    }
-    return 0;
+	switch (message)
+	{
+	case WM_COMMAND:
+	{
+		int wmId = LOWORD(wParam);
+		// Parse the menu selections:
+		switch (wmId)
+		{
+		case IDM_ABOUT:
+			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+			break;
+		case IDM_EXIT:
+			DestroyWindow(hWnd);
+			break;
+		default:
+			return DefWindowProc(hWnd, message, wParam, lParam);
+		}
+	}
+	break;
+	case WM_SIZE:
+		if (gGame != nullptr)
+		{
+			gGame->OnUpdateWindowSize();
+		}
+		break;
+	case WM_MOVE:
+		if (gGame != nullptr)
+		{
+			gGame->OnUpdateWindowPos();
+		}
+		break;
+	case WM_KEYDOWN:
+	{
+		unsigned int scanCode = (0x00ff0000 & lParam) >> 16;
+		unsigned int vkCode = MapVirtualKey(scanCode, MAPVK_VSC_TO_VK);
+
+		if (!(lParam & 0x40000000))
+		{
+			if (gGame != nullptr)
+			{
+				gGame->OnKeyDown(vkCode, scanCode);
+			}
+		}
+	}
+	break;
+	case WM_KEYUP:
+	{
+		unsigned int scanCode = (0x00ff0000 & lParam) >> 16;
+		unsigned int vkCode = MapVirtualKey(scanCode, MAPVK_VSC_TO_VK);
+
+		if (gGame != nullptr)
+		{
+			gGame->OnKeyUp(vkCode, scanCode);
+		}
+	}
+	break;
+	case WM_RBUTTONUP:
+		if (gGame != nullptr)
+		{
+			gGame->OnRButtonUp((uint32)wParam, LOWORD(lParam), HIWORD(lParam));
+		}
+		break;
+	case WM_RBUTTONDOWN:
+		if (gGame != nullptr)
+		{
+			gGame->OnRButtonDown((uint32)wParam, LOWORD(lParam), HIWORD(lParam));
+		}
+		break;
+	case WM_SYSKEYDOWN:
+	{
+		unsigned int scanCode = (0x00ff0000 & lParam) >> 16;
+		unsigned int vkCode = MapVirtualKey(scanCode, MAPVK_VSC_TO_VK);
+		bool bAltKeyDown = false;
+		if (HIWORD(lParam) & KF_ALTDOWN)
+		{
+			bAltKeyDown = TRUE;
+		}
+		if (!gGame->OnSysKeyDown(vkCode, scanCode, bAltKeyDown))
+		{
+			DefWindowProc(hWnd, message, wParam, lParam);
+		}
+	}
+	break;
+	case WM_PAINT:
+	{
+		PAINTSTRUCT ps;
+		HDC hdc = BeginPaint(hWnd, &ps);
+		// TODO: Add any drawing code that uses hdc here...
+		EndPaint(hWnd, &ps);
+	}
+	break;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
+	default:
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
+	return 0;
 }
 
 // Message handler for about box.
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    UNREFERENCED_PARAMETER(lParam);
-    switch (message)
-    {
-    case WM_INITDIALOG:
-        return (INT_PTR)TRUE;
+	UNREFERENCED_PARAMETER(lParam);
+	switch (message)
+	{
+	case WM_INITDIALOG:
+		return (INT_PTR)TRUE;
 
-    case WM_COMMAND:
-        if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
-        {
-            EndDialog(hDlg, LOWORD(wParam));
-            return (INT_PTR)TRUE;
-        }
-        break;
-    }
-    return (INT_PTR)FALSE;
+	case WM_COMMAND:
+		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
+		{
+			EndDialog(hDlg, LOWORD(wParam));
+			return (INT_PTR)TRUE;
+		}
+		break;
+	}
+	return (INT_PTR)FALSE;
 }
