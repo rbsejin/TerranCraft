@@ -7,6 +7,8 @@
 #include "TerranCraft.h"
 #include "Game.h"
 
+#include "PathFinder.h"
+
 #define MAX_LOADSTRING 100
 
 // Global Variables:
@@ -85,7 +87,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 #ifdef _DEBUG
 	_ASSERT(_CrtCheckMemory());
 #endif // _DEBUG
-
 
 	return (int)msg.wParam;
 }
@@ -183,6 +184,65 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case IDM_ABOUT:
 			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
 			break;
+		case ID_FILE_OPEN:
+		{
+			// open file
+			OPENFILENAME ofn = { 0, };
+			WCHAR szFile[MAX_PATH] = { 0, };
+			ofn.lStructSize = sizeof(ofn);
+			ofn.hwndOwner = hWnd;
+			ofn.lpstrFile = szFile;
+			ofn.lpstrFile[0] = '\0';
+			ofn.nMaxFile = sizeof(szFile);
+			ofn.lpstrFilter = L"Map File(*.dat)\0*.dat\0";
+			ofn.nFilterIndex = 1;
+			ofn.lpstrFileTitle = nullptr;
+			ofn.nMaxFileTitle = 0;
+			ofn.lpstrInitialDir = nullptr;
+			ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+			if (GetOpenFileName(&ofn))
+			{
+				FILE* fp = nullptr;
+				_wfopen_s(&fp, ofn.lpstrFile, L"rb");
+				if (fp != nullptr)
+				{
+					fread(gMap, sizeof(gMap), 1, fp);
+					fclose(fp);
+				}
+			}
+		}
+		break;
+		case ID_FILE_SAVE:
+		{
+			// save file
+			OPENFILENAME ofn = { 0, };
+			WCHAR szFile[MAX_PATH] = { 0, };
+			ofn.lStructSize = sizeof(ofn);
+			ofn.hwndOwner = hWnd;
+			ofn.lpstrFile = szFile;
+			ofn.lpstrFile[0] = '\0';
+			ofn.nMaxFile = sizeof(szFile);
+			ofn.lpstrFilter = L"Map File(*.dat)\0*.dat\0";
+			ofn.nFilterIndex = 1;
+			ofn.lpstrFileTitle = nullptr;
+			ofn.nMaxFileTitle = 0;
+			ofn.lpstrInitialDir = nullptr;
+			ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+			
+
+			if (GetSaveFileName(&ofn))
+			{
+				FILE* fp = nullptr;
+				_wfopen_s(&fp, ofn.lpstrFile, L"wb");
+				if (fp != nullptr)
+				{
+					fwrite(gMap, sizeof(gMap), 1, fp);
+					fclose(fp);
+				}
+			}
+		}
+		break;
 		case IDM_EXIT:
 			DestroyWindow(hWnd);
 			break;
@@ -228,6 +288,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 	}
 	break;
+	// mouse move
+	case WM_MOUSEMOVE:
+		if (gGame != nullptr)
+		{
+			gGame->OnMouseMove((uint32)wParam, LOWORD(lParam), HIWORD(lParam));
+		}
+		break;
+	case WM_LBUTTONUP:
+		if (gGame != nullptr)
+		{
+			gGame->OnLButtonUp((uint32)wParam, LOWORD(lParam), HIWORD(lParam));
+		}
+		break;
+	case WM_LBUTTONDOWN:
+		if (gGame != nullptr)
+		{
+			gGame->OnLButtonDown((uint32)wParam, LOWORD(lParam), HIWORD(lParam));
+		}
+		break;
 	case WM_RBUTTONUP:
 		if (gGame != nullptr)
 		{

@@ -262,6 +262,42 @@ void DDrawDevice::DrawInfo(HDC hdc) const
 	writeText(hdc, 0, 0, 0xffff0000, mInfoText, mInfoTextLength);
 }
 
+void DDrawDevice::DrawMap(int32 cellSize, int32 rowCount, int32 colCount, const void* map, uint32 color)
+{
+#ifdef _DEBUG
+	if (mLockedBackBuffer == nullptr)
+	{
+		__debugbreak();
+	}
+#endif
+
+	if (rowCount * cellSize >= (int32)mHeight)
+	{
+		return;
+	}
+	if (colCount * cellSize >= (int32)mWidth)
+	{
+		return;
+	}
+	uint8* pDest = mLockedBackBuffer;
+	for (int32 y = 0; y < rowCount; y++)
+	{
+		for (int32 x = 0; x < colCount; x++)
+		{
+			if (((uint8*)map)[y * colCount + x] == 1)
+			{
+				for (int32 i = 0; i < cellSize; i++)
+				{
+					for (int32 j = 0; j < cellSize; j++)
+					{
+						*(uint32*)(pDest + (y * cellSize + i) * mLockedBackBufferPitch + (x * cellSize + j) * 4) = color;
+					}
+				}
+			}
+		}
+	}
+}
+
 void DDrawDevice::DrawGrid(int32 gridSize, int32 rowCount, int32 colCount, uint32 color)
 {
 #ifdef _DEBUG
@@ -356,7 +392,7 @@ void DDrawDevice::DrawBound(int left, int top, int right, int bottom, uint32 col
 
 	int y = top;
 
-	for (int x = left; x < right; x++)
+	for (int x = left; x <= right; x++)
 	{
 		uint32* pPixel = (uint32*)(mLockedBackBuffer + y * mLockedBackBufferPitch + x * 4);
 		*pPixel = color;
@@ -364,7 +400,7 @@ void DDrawDevice::DrawBound(int left, int top, int right, int bottom, uint32 col
 
 	y = bottom;
 
-	for (int x = left; x < right; x++)
+	for (int x = left; x <= right; x++)
 	{
 		uint32* pPixel = (uint32*)(mLockedBackBuffer + y * mLockedBackBufferPitch + x * 4);
 		*pPixel = color;
@@ -372,7 +408,7 @@ void DDrawDevice::DrawBound(int left, int top, int right, int bottom, uint32 col
 
 	int x = left;
 
-	for (int y = top; y < bottom; y++)
+	for (int y = top; y <= bottom; y++)
 	{
 		uint32* pPixel = (uint32*)(mLockedBackBuffer + y * mLockedBackBufferPitch + x * 4);
 		*pPixel = color;
@@ -380,7 +416,7 @@ void DDrawDevice::DrawBound(int left, int top, int right, int bottom, uint32 col
 
 	x = right;
 
-	for (int y = top; y < bottom; y++)
+	for (int y = top; y <= bottom; y++)
 	{
 		uint32* pPixel = (uint32*)(mLockedBackBuffer + y * mLockedBackBufferPitch + x * 4);
 		*pPixel = color;

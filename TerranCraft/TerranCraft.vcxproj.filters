@@ -102,6 +102,12 @@
     <ClInclude Include="..\ImageData\ImageResource.h">
       <Filter>ImageData</Filter>
     </ClInclude>
+    <ClInclude Include="Map.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PathFinder.h">
+      <Filter>Game</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TerranCraft.cpp">
@@ -124,6 +130,12 @@
     </ClCompile>
     <ClCompile Include="..\ImageData\ImageResource.cpp">
       <Filter>ImageData</Filter>
+    </ClCompile>
+    <ClCompile Include="Map.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PathFinder.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

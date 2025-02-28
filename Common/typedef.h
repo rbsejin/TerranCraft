@@ -28,4 +28,10 @@ struct IntVector2
 	int32 Y;
 };
 
+struct FloatVector2
+{
+	float X;
+	float Y;
+};
+
 static_assert(sizeof(IntVector2) == 8, "IntVector2 size is invalid");

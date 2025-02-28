@@ -24,6 +24,7 @@ public:
 	void EndGDI(HDC hdc);
 	void DrawInfo(HDC hdc) const;
 
+	void DrawMap(int32 cellSize, int32 rowCount, int32 colCount, const void* map, uint32 color);
 	void DrawGrid(int32 gridSize, int32 rowCount, int32 colCount, uint32 color);
 	void DrawRect(int32 screenX, int32 screenY, int32 width, int32 height, uint32 color);
 	void DrawBound(int left, int top, int right, int bottom, uint32 color);
