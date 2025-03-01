@@ -155,6 +155,8 @@
     <ClInclude Include="..\ImageData\ImageResource.h" />
     <ClInclude Include="..\ImageData\Palette.h" />
     <ClInclude Include="..\ImageData\pch.h" />
+    <ClInclude Include="..\Util\pch.h" />
+    <ClInclude Include="..\Util\Util.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="Image.h" />
@@ -169,6 +171,7 @@
     <ClCompile Include="..\DDrawLib\DDrawDevice.cpp" />
     <ClCompile Include="..\ImageData\ImageResource.cpp" />
     <ClCompile Include="..\ImageData\Palette.cpp" />
+    <ClCompile Include="..\Util\Util.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Image.cpp" />
     <ClCompile Include="Map.cpp" />

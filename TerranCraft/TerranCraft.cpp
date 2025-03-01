@@ -56,6 +56,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	gGame = new Game();
 	gGame->Initalize(ghMainWindow);
 
+	FILE* fp = nullptr;
+	_wfopen_s(&fp, L"../map/map.dat", L"rb");
+	if (fp != nullptr)
+	{
+		fread(gMap, sizeof(gMap), 1, fp);
+		fclose(fp);
+	}
+
 	// Main message loop:
 	while (true)
 	{
@@ -230,7 +238,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			ofn.lpstrInitialDir = nullptr;
 			ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 			
-
 			if (GetSaveFileName(&ofn))
 			{
 				FILE* fp = nullptr;

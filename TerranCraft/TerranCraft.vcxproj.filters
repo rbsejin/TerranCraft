@@ -25,6 +25,9 @@
     <Filter Include="BWLib">
       <UniqueIdentifier>{14b5681a-6b87-4d4e-a3ed-64cf1e56f39a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Util">
+      <UniqueIdentifier>{3c7dcfd7-922e-456b-b503-3cd94b37e11a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -108,6 +111,12 @@
     <ClInclude Include="PathFinder.h">
       <Filter>Game</Filter>
     </ClInclude>
+    <ClInclude Include="..\Util\pch.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Util\Util.h">
+      <Filter>Util</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TerranCraft.cpp">
@@ -136,6 +145,9 @@
     </ClCompile>
     <ClCompile Include="PathFinder.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Util\Util.cpp">
+      <Filter>Util</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

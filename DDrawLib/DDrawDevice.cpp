@@ -298,6 +298,52 @@ void DDrawDevice::DrawMap(int32 cellSize, int32 rowCount, int32 colCount, const 
 	}
 }
 
+void DDrawDevice::DrawPath(const std::list<IntVector2>& path, int32 cellSize, uint32 color)
+{
+#ifdef _DEBUG
+	if (mLockedBackBuffer == nullptr)
+	{
+		__debugbreak();
+	}
+
+	if (cellSize <= 0)
+	{
+		__debugbreak();
+	}
+#endif
+
+	for (const IntVector2& pos : path)
+	{
+		IntVector2 RectPos = { pos.X * cellSize + 1, pos.Y * cellSize + 1};
+		IntVector2 RectSize = { cellSize - 1, cellSize - 1 };
+
+		DrawRect(RectPos.X, RectPos.Y, RectSize.X, RectSize.Y, color);
+	}
+}
+
+void DDrawDevice::DrawPathWithUnitSize(const std::list<IntVector2>& path, int32 cellSize, IntRect unitSize, uint32 color)
+{
+#ifdef _DEBUG
+	if (mLockedBackBuffer == nullptr)
+	{
+		__debugbreak();
+	}
+
+	if (cellSize <= 0)
+	{
+		__debugbreak();
+	}
+#endif
+
+	for (const IntVector2& pos : path)
+	{
+
+		IntVector2 unitPos = { pos.X * cellSize + cellSize / 2, pos.Y * cellSize + cellSize / 2 };
+		IntRect unitBound = { unitPos.X - unitSize.Left, unitPos.Y - unitSize.Top, unitPos.X + unitSize.Right, unitPos.Y + unitSize.Bottom };
+		DrawBound(unitBound, color);
+	}
+}
+
 void DDrawDevice::DrawGrid(int32 gridSize, int32 rowCount, int32 colCount, uint32 color)
 {
 #ifdef _DEBUG
@@ -366,7 +412,7 @@ void DDrawDevice::DrawRect(int32 screenX, int32 screenY, int32 width, int32 heig
 	}
 }
 
-void DDrawDevice::DrawBound(int left, int top, int right, int bottom, uint32 color)
+void DDrawDevice::DrawBound(IntRect bound, uint32 color)
 {
 #ifdef _DEBUG
 	if (mLockedBackBuffer == nullptr)
@@ -377,10 +423,10 @@ void DDrawDevice::DrawBound(int left, int top, int right, int bottom, uint32 col
 
 	bool bResult = false;
 
-	left = max(left, 0);
-	top = max(top, 0);
-	right = min(right, (int32)mWidth - 1);
-	bottom = min(bottom, (int32)mHeight - 1);
+	int left = max(bound.Left, 0);
+	int top = max(bound.Top, 0);
+	int right = min(bound.Right, (int32)mWidth - 1);
+	int bottom = min(bound.Bottom, (int32)mHeight - 1);
 
 	int width = right - left;
 	int height = bottom - top;
@@ -468,7 +514,7 @@ bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GraphicFrame* fram
 		bound.Top = destStart.Y;
 		bound.Right = destStart.X + destSize.X;
 		bound.Bottom = destStart.Y + destSize.Y;
-		DrawBound(bound.Left, bound.Top, bound.Right, bound.Bottom, 0xffff0000);
+		DrawBound(bound, 0xffff0000);
 	}
 
 	uint8* pDestPerLine = mLockedBackBuffer + destStart.Y * mLockedBackBufferPitch;

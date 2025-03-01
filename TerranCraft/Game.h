@@ -48,6 +48,7 @@ private:
 	FloatVector2 mImagePos = { 16, 16 };
 	FloatVector2 mMousePos = { 0, 0 };
 
+	std::list<IntVector2> cellPath;
 	std::list<FloatVector2> mPath;
 	FloatVector2 mNextPos = { 0, 0 };
 
