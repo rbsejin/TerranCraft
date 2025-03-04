@@ -9,7 +9,7 @@
 
 #include "PathFinder.h"
 
-#define MAX_LOADSTRING 100
+constexpr int MAX_LOADSTRING = 100;
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
@@ -108,7 +108,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 //
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
-	WNDCLASSEXW wcex;
+	WNDCLASSEXW wcex = { 0, };
 
 	wcex.cbSize = sizeof(WNDCLASSEX);
 

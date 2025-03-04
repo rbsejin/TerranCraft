@@ -3,7 +3,7 @@
 #include "../BWLib/ImageNumber.h"
 #include "Palette.h"
 
-struct GraphicHeader;
+struct GRPHeader;
 
 class ImageResource
 {
@@ -11,19 +11,19 @@ public:
 	bool Load(const char* grpListFilename, const char* paletteListFilename);
 	void Destroy();
 
-	Palette* GetPalette(int index) const;
-	const GraphicHeader* GetGRPFile(BW::ImageNumber imageNumber) const;
+	const Palette* GetPalette(int index) const;
+	const GRPHeader* GetGRPFile(BW::ImageNumber imageNumber) const;
 
 private:
-	ImageResource();
+	ImageResource() = default;
 	~ImageResource() = default;
 
 public:
 	static ImageResource Instance;
 private:
 	enum { IMAGE_COUNT = BW::ImageNumber::None };
-	GraphicHeader* mGRPFiles[IMAGE_COUNT];
+	GRPHeader* mGRPFiles[IMAGE_COUNT] = { 0, };
 
 	enum { PALETTE_COUNT = 7 };
-	Palette* mPalettes[PALETTE_COUNT];
+	Palette* mPalettes[PALETTE_COUNT] = { 0, };
 };

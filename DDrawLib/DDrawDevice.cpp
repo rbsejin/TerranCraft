@@ -321,7 +321,7 @@ void DDrawDevice::DrawPath(const std::list<IntVector2>& path, int32 cellSize, ui
 	}
 }
 
-void DDrawDevice::DrawPathWithUnitSize(const std::list<IntVector2>& path, int32 cellSize, IntRect unitSize, uint32 color)
+void DDrawDevice::DrawPath(const std::list<IntVector2>& path, int32 cellSize, IntRect countourBounds, uint32 color)
 {
 #ifdef _DEBUG
 	if (mLockedBackBuffer == nullptr)
@@ -335,11 +335,11 @@ void DDrawDevice::DrawPathWithUnitSize(const std::list<IntVector2>& path, int32 
 	}
 #endif
 
-	for (const IntVector2& pos : path)
+	for (IntVector2 pos : path)
 	{
 
 		IntVector2 unitPos = { pos.X * cellSize + cellSize / 2, pos.Y * cellSize + cellSize / 2 };
-		IntRect unitBound = { unitPos.X - unitSize.Left, unitPos.Y - unitSize.Top, unitPos.X + unitSize.Right, unitPos.Y + unitSize.Bottom };
+		IntRect unitBound = { unitPos.X - countourBounds.Left, unitPos.Y - countourBounds.Top, unitPos.X + countourBounds.Right, unitPos.Y + countourBounds.Bottom };
 		DrawBound(unitBound, color);
 	}
 }
@@ -469,7 +469,7 @@ void DDrawDevice::DrawBound(IntRect bound, uint32 color)
 	}
 }
 
-bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GraphicFrame* frame, const uint8* compressedImage, const Palette* palette, bool bFlipped, bool bDrawingBound)
+bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GRPFrame* frame, const uint8* compressedImage, const Palette* palette)
 {
 #ifdef _DEBUG
 	if (mLockedBackBuffer == nullptr)
@@ -500,21 +500,12 @@ bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GraphicFrame* fram
 	IntVector2 destSize = { 0, };
 
 	IntVector2 imageSize = { frame->Width, frame->Height };
-	IntVector2 screenPos = { screenX - frame->Width / 2, screenY - frame->Height / 2};
+	//IntVector2 screenPos = { screenX - frame->Width / 2, screenY - frame->Height / 2};
+	IntVector2 screenPos = { screenX, screenY};
 
 	if (!CalculateClipArea(&srcStart, &destStart, &destSize, screenPos, imageSize))
 	{
 		goto LB_RETURN;
-	}
-
-	if (bDrawingBound)
-	{
-		IntRect bound = { 0, };
-		bound.Left = destStart.X;
-		bound.Top = destStart.Y;
-		bound.Right = destStart.X + destSize.X;
-		bound.Bottom = destStart.Y + destSize.Y;
-		DrawBound(bound, 0xffff0000);
 	}
 
 	uint8* pDestPerLine = mLockedBackBuffer + destStart.Y * mLockedBackBufferPitch;
@@ -522,7 +513,7 @@ bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GraphicFrame* fram
 	const uint16* offsets = (const uint16*)compressedImage;
 	const uint16* pOffset = offsets + srcStart.Y;
 
-	if (bFlipped)
+	if (false)
 	{
 		for (int32 y = 0; y < destSize.Y; y++)
 		{

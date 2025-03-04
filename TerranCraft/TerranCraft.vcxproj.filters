@@ -28,6 +28,9 @@
     <Filter Include="Util">
       <UniqueIdentifier>{3c7dcfd7-922e-456b-b503-3cd94b37e11a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Common">
+      <UniqueIdentifier>{55e33284-a5c0-43e9-848f-969080cdc23c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -50,9 +53,6 @@
     </ClInclude>
     <ClInclude Include="Game.h">
       <Filter>Game</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Common\typedef.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\DDrawLib\pch.h">
       <Filter>DDrawLib</Filter>
@@ -117,6 +117,15 @@
     <ClInclude Include="..\Util\Util.h">
       <Filter>Util</Filter>
     </ClInclude>
+    <ClInclude Include="Unit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\typedef.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Sprite.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TerranCraft.cpp">
@@ -148,6 +157,12 @@
     </ClCompile>
     <ClCompile Include="..\Util\Util.cpp">
       <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="Unit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Sprite.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

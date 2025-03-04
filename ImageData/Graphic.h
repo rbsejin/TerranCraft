@@ -2,7 +2,7 @@
 
 #include "../Common/typedef.h"
 
-struct GraphicFrame
+struct GRPFrame
 {
 	int8 X;
 	int8 Y;
@@ -11,19 +11,19 @@ struct GraphicFrame
 	uint32 DataOffset;
 };
 
-static_assert(sizeof(GraphicFrame) == 8, "GraphicFrame size is invalid");
+static_assert(sizeof(GRPFrame) == 8, "GRPFrame size is invalid");
 
 #pragma pack(push, 1)
-struct GraphicHeader
+struct GRPHeader
 {
 	uint16 FrameCount;
 	int16 Width;
 	int16 Height;
-	GraphicFrame Frames[1];
+	GRPFrame Frames[1];
 };
 #pragma pack(pop)
 
-static_assert(sizeof(GraphicHeader) == 14, "GraphicHeader size is invalid");
+static_assert(sizeof(GRPHeader) == 14, "GRPHeader size is invalid");
 
 union RGBColor
 {

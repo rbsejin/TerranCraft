@@ -3,12 +3,6 @@
 
 ImageResource ImageResource::Instance;
 
-ImageResource::ImageResource()
-{
-	memset(mGRPFiles, 0, sizeof(mGRPFiles));
-	memset(mPalettes, 0, sizeof(mPalettes));
-}
-
 bool ImageResource::Load(const char* grpListFilename, const char* paletteListFilename)
 {
 	bool bResult = false;
@@ -69,8 +63,8 @@ bool ImageResource::Load(const char* grpListFilename, const char* paletteListFil
 				}
 #endif // _DEBUG
 
-				GraphicHeader* grpFile = (GraphicHeader*)malloc(fileSize);
-				(GraphicHeader*)fread(grpFile, fileSize, 1, fp);
+				GRPHeader* grpFile = (GRPHeader*)malloc(fileSize);
+				fread(grpFile, fileSize, 1, fp);
 				mGRPFiles[index] = grpFile;
 
 				fclose(fp);
@@ -150,12 +144,12 @@ void ImageResource::Destroy()
 	}
 }
 
-Palette* ImageResource::GetPalette(int index) const
+const Palette* ImageResource::GetPalette(int index) const
 {
 	return mPalettes[index];
 }
 
-const GraphicHeader* ImageResource::GetGRPFile(BW::ImageNumber imageNumber) const
+const GRPHeader* ImageResource::GetGRPFile(BW::ImageNumber imageNumber) const
 {
 	return mGRPFiles[(int)imageNumber];
 }

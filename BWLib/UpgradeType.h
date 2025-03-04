@@ -1,5 +1,5 @@
 #pragma once
-#include "../Types.h"
+#include "../Common/typedef.h"
 
 namespace BW
 {

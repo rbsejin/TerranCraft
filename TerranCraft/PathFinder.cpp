@@ -48,7 +48,7 @@ int32 FindPath(std::list<IntVector2>* outPath, const uint8* map, IntVector2 star
 
 		if (next.X == end.X && next.Y == end.Y)
 		{
-			int32 distance = 0;
+			int32 length = 0;
 			int32 prev = next.Y * MAP_WIDTH + next.X;
 			int32 n = prev;
 
@@ -56,11 +56,11 @@ int32 FindPath(std::list<IntVector2>* outPath, const uint8* map, IntVector2 star
 			{
 				IntVector2 temp = { n % MAP_WIDTH, n / MAP_WIDTH };
 				outPath->push_front(temp);
-				distance++;
+				length++;
 				n = prevs[n];
 			}
 
-			return distance;
+			return length;
 		}
 
 		IntVector2 arr[8] =
@@ -105,7 +105,7 @@ int32 FindPath(std::list<IntVector2>* outPath, const uint8* map, IntVector2 star
 	return -1;
 }
 
-int32 FindPathWithUnitSize(std::list<IntVector2>* outPath, const uint8* map, IntVector2 start, IntVector2 end, IntRect unitSize)
+int32 FindPathWithUnitSize(std::list<IntVector2>* outPath, const uint8* map, IntVector2 start, IntVector2 end, IntRect countourBounds)
 {
 #ifdef _DEBUG
 	if (outPath == nullptr)
@@ -147,7 +147,7 @@ int32 FindPathWithUnitSize(std::list<IntVector2>* outPath, const uint8* map, Int
 
 		if (next.X == end.X && next.Y == end.Y)
 		{
-			int32 distance = 0;
+			int32 length = 0;
 			int32 prev = next.Y * MAP_WIDTH + next.X;
 			int32 n = prev;
 
@@ -155,11 +155,11 @@ int32 FindPathWithUnitSize(std::list<IntVector2>* outPath, const uint8* map, Int
 			{
 				IntVector2 temp = { n % MAP_WIDTH, n / MAP_WIDTH };
 				outPath->push_front(temp);
-				distance++;
+				length++;
 				n = prevs[n];
 			}
 
-			return distance;
+			return length;
 		}
 
 		IntVector2 arr[8] =
@@ -196,7 +196,7 @@ int32 FindPathWithUnitSize(std::list<IntVector2>* outPath, const uint8* map, Int
 				continue;
 			}
 
-			if (CanMoveTo(map, neighbor, unitSize))
+			if (CanMoveTo(map, neighbor, countourBounds))
 			{
 				queue.push(neighbor);
 				prevs[neighbor.Y * MAP_WIDTH + neighbor.X] = next.Y * MAP_WIDTH + next.X;

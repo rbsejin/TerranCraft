@@ -6,6 +6,7 @@
 
 class DDrawDevice;
 class Image;
+class Unit;
 
 class Game final
 {
@@ -33,28 +34,19 @@ private:
 	void drawScene();
 
 private:
-	DDrawDevice* mDDrawDevice;
-	HWND mhWnd;
+	DDrawDevice* mDDrawDevice = nullptr;
+	HWND mhWnd = nullptr;
 
 	enum { DEFAULT_GAME_FPS = 24 };
-	uint32 mGameFPS;
-	float mTicksPerFrame;
+	uint32 mGameFPS = DEFAULT_GAME_FPS;
+	float mTicksPerFrame = 1000.0f / mGameFPS;
 
 	LARGE_INTEGER mFrequency;
 	LARGE_INTEGER mPrevCounter;
 
-	Image* mImage;
+	Unit* mUnit = nullptr;
 
-	FloatVector2 mImagePos = { 16, 16 };
-	FloatVector2 mMousePos = { 0, 0 };
-
-	std::list<IntVector2> cellPath;
-	std::list<FloatVector2> mPath;
-	FloatVector2 mNextPos = { 0, 0 };
-
-	FloatVector2 mDirectionVector = { 0, 0 };
-
-	IntRect mUnitSize = { 8, 8, 9, 10 };
+	std::list<IntVector2> mCellPath;
 };
 
 extern Game* gGame;

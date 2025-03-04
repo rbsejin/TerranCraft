@@ -2,49 +2,61 @@
 
 #include "../ImageData/ImageResource.h"
 #include "../ImageData/Graphic.h"
+#include "Sprite.h"
 #include "Image.h"
 
-Image::Image(BW::ImageNumber imageNumber)
-	: mImageNumber(imageNumber)
-	, mGRPFile(nullptr)
-	, mFrameIndex(0)
+bool Image::Initialize(BW::ImageNumber imageID, const Sprite* parent)
 {
-	mGRPFile = ImageResource::Instance.GetGRPFile(imageNumber);
+	bool bResult = false;
 
-#ifdef _DEBUG
-	if (mGRPFile == nullptr)
+	mImageID = imageID;
+	mParent = parent;
+	mGRPFile = ImageResource::Instance.GetGRPFile(imageID);
+
+	switch (imageID)
 	{
-		__debugbreak();
+	case BW::ImageNumber::Marine:
+		mPaletteIndex = ImageResource::Instance.GetPalette(6);
+		break;
+	case BW::ImageNumber::Marine_Shadow:
+		mPaletteIndex = ImageResource::Instance.GetPalette(6);
+		break;
+	default:
+		break;
 	}
-#endif // _DEBUG
 
-	// TODO: Set Palette by ImageNumber
-	mPalette = ImageResource::Instance.GetPalette(6);
+	bResult = true;
 
-#ifdef _DEBUG
-	if (mPalette == nullptr)
-	{
-		__debugbreak();
-	}
-#endif // _DEBUG
+LB_RETURN:
+	return bResult;
 }
 
-Image::~Image()
+void Image::Update()
 {
+	IntVector2 position = GetPosition();
+	const GRPFrame* frame = GetCurrentFrame();
+	mMapPosition.X = position.X - mGRPFile->Width / 2 + frame->X;
+	mMapPosition.Y = position.Y - mGRPFile->Height / 2 + frame->Y;
+
+	// TODO: Implement screen position calculation
+	mScreenPosition = mMapPosition;
 }
 
-const GraphicFrame* Image::GetFrame() const
+const GRPFrame* Image::GetCurrentFrame() const
 {
 	return mGRPFile->Frames + mFrameIndex;
 }
 
 const uint8* Image::GetCompressedImage() const
 {
-	const GraphicFrame* frame = GetFrame();
+	const GRPFrame* frame = GetCurrentFrame();
 	return (uint8*)mGRPFile + frame->DataOffset;
 }
 
-const Palette* Image::GetPalette() const
+IntVector2 Image::GetPosition() const
 {
-	return mPalette;
+	IntVector2 position = mParent->GetPosition();
+	position.X += mOffset.X;
+	position.Y += mOffset.Y;
+	return position;
 }

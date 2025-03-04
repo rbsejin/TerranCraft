@@ -4,7 +4,7 @@
 #include <list>
 #include "../Common/typedef.h"
 
-class GraphicFrame;
+struct GRPFrame;
 class Palette;
 
 class DDrawDevice final
@@ -27,11 +27,11 @@ public:
 
 	void DrawMap(int32 cellSize, int32 rowCount, int32 colCount, const void* map, uint32 color);
 	void DrawPath(const std::list<IntVector2>& path, int32 cellSize, uint32 color);
-	void DrawPathWithUnitSize(const std::list<IntVector2>& path, int32 cellSize, IntRect unitSize, uint32 color);
+	void DrawPath(const std::list<IntVector2>& path, int32 cellSize, IntRect countourBounds, uint32 color);
 	void DrawGrid(int32 gridSize, int32 rowCount, int32 colCount, uint32 color);
 	void DrawRect(int32 screenX, int32 screenY, int32 width, int32 height, uint32 color);
 	void DrawBound(IntRect bound, uint32 color);
-	bool DrawGRP(int32 screenX, int32 screenY, const GraphicFrame* frame, const uint8* compressedImage, const Palette* palette, bool bFlipped, bool bDrawingBound);
+	bool DrawGRP(int32 screenX, int32 screenY, const GRPFrame* frame, const uint8* compressedImage, const Palette* palette);
 	bool CalculateClipArea(IntVector2* outSrcStart, IntVector2* outDestStart, IntVector2* outDestSize, IntVector2 pos, IntVector2 imageSize) const;
 
 	void Clear();
