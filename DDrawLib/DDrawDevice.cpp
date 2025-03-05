@@ -5,10 +5,20 @@
 #include "DDrawDevice.h"
 #include "../ImageData/Graphic.h"
 #include "../ImageData/Palette.h"
+#include "../TerranCraft/PathFinder.h"
+#include "../TerranCraft/Camera.h"
+#include "../TerranCraft/Map.h"
 
 DDrawDevice::DDrawDevice()
 {
 	memset(this, 0, sizeof(DDrawDevice));
+
+#ifdef _DEBUG
+	IsVF4On = false;
+	IsGridOn = false;
+	IsPathOn = true;
+#endif // _DEBUG
+
 }
 
 DDrawDevice::~DDrawDevice()
@@ -73,6 +83,8 @@ bool DDrawDevice::Initialize(HWND hWnd)
 
 	uint32 width = mWindowRect.right - mWindowRect.left;
 	uint32 height = mWindowRect.bottom - mWindowRect.top;
+
+	Camera::Instance.SetSize({ (int32)width, (int32)height });
 
 	if (!createBackSurface(width, height))
 	{
@@ -262,7 +274,7 @@ void DDrawDevice::DrawInfo(HDC hdc) const
 	writeText(hdc, 0, 0, 0xffff0000, mInfoText, mInfoTextLength);
 }
 
-void DDrawDevice::DrawMap(int32 cellSize, int32 rowCount, int32 colCount, const void* map, uint32 color)
+void DDrawDevice::DrawMap(int32 gridSize, int32 rowCount, int32 colCount, const void* map, const uint32* mapImage, int32 mapImageWidth)
 {
 #ifdef _DEBUG
 	if (mLockedBackBuffer == nullptr)
@@ -271,31 +283,112 @@ void DDrawDevice::DrawMap(int32 cellSize, int32 rowCount, int32 colCount, const 
 	}
 #endif
 
-	if (rowCount * cellSize >= (int32)mHeight)
-	{
-		return;
-	}
-	if (colCount * cellSize >= (int32)mWidth)
-	{
-		return;
-	}
+	IntVector2 cameraPosition = Camera::Instance.GetPosition();
+	IntVector2 cameraSize = Camera::Instance.GetSize();
+
+	int32 cameraX = cameraPosition.X;
+	int32 cameraY = cameraPosition.Y;
+	int32 cameraWidth = cameraSize.X;
+	int32 cameraHeight = cameraSize.Y;
+
+	int32 minX = (int32)ceilf((float)cameraX / gridSize);
+	int32 minY = (int32)ceilf((float)cameraY / gridSize);
+	int32 maxX = (int32)((cameraX + cameraWidth) / gridSize);
+	int32 maxY = (int32)((cameraY + cameraHeight) / gridSize);
+
 	uint8* pDest = mLockedBackBuffer;
-	for (int32 y = 0; y < rowCount; y++)
+
+	for (int32 y = 0; y < cameraHeight; y++)
 	{
-		for (int32 x = 0; x < colCount; x++)
+		for (int32 x = 0; x < cameraWidth; x++)
 		{
-			if (((uint8*)map)[y * colCount + x] == 1)
+			*(uint32*)(pDest + y * mLockedBackBufferPitch + x * 4)
+				= mapImage[(cameraPosition.Y + y) * mapImageWidth + (cameraPosition.X + x)];
+		}
+	}
+
+#ifdef _DEBUG
+	if (IsVF4On)
+	{
+		for (int32 y = minY; y < maxY; y++)
+		{
+			for (int32 x = minX; x < maxX; x++)
 			{
-				for (int32 i = 0; i < cellSize; i++)
+				uint32 color = 0xff000000;
+
+				if (((uint8*)map)[y * colCount + x] & 0x01)
 				{
-					for (int32 j = 0; j < cellSize; j++)
+					color = 0xff220000;
+
+					if (((uint8*)map)[y * colCount + x] & 0x02)
 					{
-						*(uint32*)(pDest + (y * cellSize + i) * mLockedBackBufferPitch + (x * cellSize + j) * 4) = color;
+						color = 0xff880000;
+
+
+					}
+
+					if (((uint8*)map)[y * colCount + x] & 0x04)
+					{
+						color = 0xffbb0000;
+
+					}
+
+					if (((uint8*)map)[y * colCount + x] & 0x08)
+					{
+						color = 0xffffff00;
+					}
+
+					if (((uint8*)map)[y * colCount + x] & 0x10)
+					{
+						color = 0xff550000;
+
+					}
+				}
+				else
+				{
+					color = 0xff000022;
+
+					if (((uint8*)map)[y * colCount + x] & 0x02)
+					{
+						color = 0xff000088;
+						
+					}
+
+					if (((uint8*)map)[y * colCount + x] & 0x04)
+					{
+						color = 0xff0000bb;
+
+					}
+
+					if (((uint8*)map)[y * colCount + x] & 0x08)
+					{
+						
+						color = 0xff00ffff;
+
+
+					}
+
+					if (((uint8*)map)[y * colCount + x] & 0x10)
+					{
+						color = 0xff000055;
+
+					}
+				}
+
+				int32 left = x * gridSize - cameraX;
+				int32 top = y * gridSize - cameraY;
+
+				for (int32 i = 0; i < gridSize; i++)
+				{
+					for (int32 j = 0; j < gridSize; j++)
+					{
+						*(uint32*)(pDest + (top + i) * mLockedBackBufferPitch + (left + j) * 4) = color;
 					}
 				}
 			}
 		}
 	}
+#endif // _DEBUG
 }
 
 void DDrawDevice::DrawPath(const std::list<IntVector2>& path, int32 cellSize, uint32 color)
@@ -314,7 +407,7 @@ void DDrawDevice::DrawPath(const std::list<IntVector2>& path, int32 cellSize, ui
 
 	for (const IntVector2& pos : path)
 	{
-		IntVector2 RectPos = { pos.X * cellSize + 1, pos.Y * cellSize + 1};
+		IntVector2 RectPos = { pos.X * cellSize + 1, pos.Y * cellSize + 1 };
 		IntVector2 RectSize = { cellSize - 1, cellSize - 1 };
 
 		DrawRect(RectPos.X, RectPos.Y, RectSize.X, RectSize.Y, color);
@@ -337,8 +430,9 @@ void DDrawDevice::DrawPath(const std::list<IntVector2>& path, int32 cellSize, In
 
 	for (IntVector2 pos : path)
 	{
-
 		IntVector2 unitPos = { pos.X * cellSize + cellSize / 2, pos.Y * cellSize + cellSize / 2 };
+		unitPos.X -= Camera::Instance.GetPosition().X;
+		unitPos.Y -= Camera::Instance.GetPosition().Y;
 		IntRect unitBound = { unitPos.X - countourBounds.Left, unitPos.Y - countourBounds.Top, unitPos.X + countourBounds.Right, unitPos.Y + countourBounds.Bottom };
 		DrawBound(unitBound, color);
 	}
@@ -353,21 +447,24 @@ void DDrawDevice::DrawGrid(int32 gridSize, int32 rowCount, int32 colCount, uint3
 	}
 #endif
 
-	if (rowCount * gridSize >= (int32)mHeight)
-	{
-		return;
-	}
+	IntVector2 cameraPosition = Camera::Instance.GetPosition();
+	IntVector2 cameraSize = Camera::Instance.GetSize();
 
-	if (colCount * gridSize >= (int32)mWidth)
-	{
-		return;
-	}
+	int32 cameraX = cameraPosition.X;
+	int32 cameraY = cameraPosition.Y;
+	int32 cameraWidth = cameraSize.X;
+	int32 cameraHeight = cameraSize.Y;
+
+	int32 minGridX = (int32)ceilf((float)cameraX / gridSize);
+	int32 minGridY = (int32)ceilf((float)cameraY / gridSize);
+
+	IntVector2 startGridPos = { minGridX * gridSize - cameraX, minGridY * gridSize - cameraY };
 
 	uint8* pDest = mLockedBackBuffer;
 
-	for (int32 y = 0; y <= rowCount; y++)
+	for (int32 y = startGridPos.Y; y < cameraHeight; y += gridSize)
 	{
-		for (int32 x = 0; x < colCount * gridSize; x++)
+		for (int32 x = startGridPos.X; x < cameraWidth; x++)
 		{
 			*(uint32*)(pDest + x * 4) = color;
 		}
@@ -377,9 +474,9 @@ void DDrawDevice::DrawGrid(int32 gridSize, int32 rowCount, int32 colCount, uint3
 
 	pDest = mLockedBackBuffer;
 
-	for (int32 x = 0; x <= colCount; x++)
+	for (int32 x = startGridPos.X; x < cameraWidth; x += gridSize)
 	{
-		for (int32 y = 0; y < rowCount * gridSize; y++)
+		for (int32 y = startGridPos.Y; y < cameraHeight; y++)
 		{
 			*(uint32*)(pDest + y * mLockedBackBufferPitch) = color;
 		}
@@ -469,6 +566,44 @@ void DDrawDevice::DrawBound(IntRect bound, uint32 color)
 	}
 }
 
+bool DDrawDevice::DrawBitmap(int32 screenX, int32 screenY, int32 width, int32 height, const uint8* buffer)
+{
+	bool bResult = false;
+
+#ifdef _DEBUG
+	if (mLockedBackBuffer == nullptr)
+	{
+		__debugbreak();
+	}
+#endif
+
+	screenX -= width / 2;
+	screenY -= height / 2;
+
+	int32 left = max(0, screenX);
+	int32 top = max(0, screenY);
+	int32 right = min(screenX + width, (int32)mWidth);
+	int32 bottom = min(screenY + height, (int32)mHeight);
+
+	uint8* pSrc = (uint8*)buffer;
+	uint8* pDst = (uint8*)(mLockedBackBuffer + top * mLockedBackBufferPitch);
+
+	for (int32 y = top; y < bottom; y++)
+	{
+		for (int32 x = left; x < right; x++)
+		{
+			*(uint32*)(pDst + x * 4) = *(uint32*)pSrc;
+			pSrc += 4;
+		}
+
+		pDst += mLockedBackBufferPitch;
+	}
+
+	bResult = true;
+
+	return bResult;
+}
+
 bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GRPFrame* frame, const uint8* compressedImage, const Palette* palette)
 {
 #ifdef _DEBUG
@@ -500,8 +635,7 @@ bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GRPFrame* frame, c
 	IntVector2 destSize = { 0, };
 
 	IntVector2 imageSize = { frame->Width, frame->Height };
-	//IntVector2 screenPos = { screenX - frame->Width / 2, screenY - frame->Height / 2};
-	IntVector2 screenPos = { screenX, screenY};
+	IntVector2 screenPos = { screenX, screenY };
 
 	if (!CalculateClipArea(&srcStart, &destStart, &destSize, screenPos, imageSize))
 	{

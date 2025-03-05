@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include "PathFinder.h"
 
-uint8 gMap[MAP_HEIGHT][MAP_WIDTH] = { 0, };
+uint8 gMiniTiles[MAP_HEIGHT][MAP_WIDTH] = { 0, };
 
 int32 FindPath(std::list<IntVector2>* outPath, const uint8* map, IntVector2 start, IntVector2 end)
 {
@@ -185,8 +185,8 @@ int32 FindPathWithUnitSize(std::list<IntVector2>* outPath, const uint8* map, Int
 			{
 				continue;
 			}
-
-			if (map[neighbor.Y * MAP_WIDTH + neighbor.X] == 1)
+;
+			if ((map[neighbor.Y * MAP_WIDTH + neighbor.X] & 0x01) == 0)
 			{
 				continue;
 			}
@@ -217,7 +217,7 @@ bool CanMoveTo(const uint8* map, IntVector2 pos, IntRect unitSize)
 	{
 		for (int x = uintCellBound.Left; x <= uintCellBound.Right; x++)
 		{
-			if (map[y * MAP_WIDTH + x] != 0)
+			if (map[y * MAP_WIDTH + x] == 0)
 			{
 				return false;
 			}

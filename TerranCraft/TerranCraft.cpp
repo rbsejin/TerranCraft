@@ -56,13 +56,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	gGame = new Game();
 	gGame->Initalize(ghMainWindow);
 
-	FILE* fp = nullptr;
-	_wfopen_s(&fp, L"../map/map.dat", L"rb");
-	if (fp != nullptr)
-	{
-		fread(gMap, sizeof(gMap), 1, fp);
-		fclose(fp);
-	}
+	//FILE* fp = nullptr;
+	//_wfopen_s(&fp, L"../map/map.dat", L"rb");
+	//if (fp != nullptr)
+	//{
+	//	fread(gMap, sizeof(gMap), 1, fp);
+	//	fclose(fp);
+	//}
 
 	// Main message loop:
 	while (true)
@@ -144,8 +144,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	constexpr int WINDOW_POS_X = 0;
 	constexpr int WINDOW_POS_Y = 0;
 
-	constexpr int CLIENT_WIDTH = 600;
-	constexpr int CLIENT_HEIGHT = 700;
+	constexpr int CLIENT_WIDTH = 1920;
+	constexpr int CLIENT_HEIGHT = 1080;
 
 	RECT rect = { 0, 0, CLIENT_WIDTH, CLIENT_HEIGHT };
 	AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, TRUE);
@@ -215,7 +215,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				_wfopen_s(&fp, ofn.lpstrFile, L"rb");
 				if (fp != nullptr)
 				{
-					fread(gMap, sizeof(gMap), 1, fp);
+					fread(gMiniTiles, sizeof(gMiniTiles), 1, fp);
 					fclose(fp);
 				}
 			}
@@ -244,7 +244,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				_wfopen_s(&fp, ofn.lpstrFile, L"wb");
 				if (fp != nullptr)
 				{
-					fwrite(gMap, sizeof(gMap), 1, fp);
+					fwrite(gMiniTiles, sizeof(gMiniTiles), 1, fp);
 					fclose(fp);
 				}
 			}

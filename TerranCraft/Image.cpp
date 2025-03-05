@@ -4,6 +4,7 @@
 #include "../ImageData/Graphic.h"
 #include "Sprite.h"
 #include "Image.h"
+#include "Camera.h"
 
 bool Image::Initialize(BW::ImageNumber imageID, const Sprite* parent)
 {
@@ -39,7 +40,9 @@ void Image::Update()
 	mMapPosition.Y = position.Y - mGRPFile->Height / 2 + frame->Y;
 
 	// TODO: Implement screen position calculation
-	mScreenPosition = mMapPosition;
+	IntVector2 cameraPosition = Camera::Instance.GetPosition();
+	mScreenPosition.X = mMapPosition.X - cameraPosition.X;
+	mScreenPosition.Y = mMapPosition.Y - cameraPosition.Y;
 }
 
 const GRPFrame* Image::GetCurrentFrame() const

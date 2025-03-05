@@ -33,6 +33,8 @@ private:
 	void onGameFrame(ULONGLONG currentTick);
 	void drawScene();
 
+	void readMap();
+
 private:
 	DDrawDevice* mDDrawDevice = nullptr;
 	HWND mhWnd = nullptr;
@@ -47,6 +49,17 @@ private:
 	Unit* mUnit = nullptr;
 
 	std::list<IntVector2> mCellPath;
+
+	// Keyboard
+	bool mbPressedLeft = false;
+	bool mbPressedRight = false;
+	bool mbPressedUp = false;
+	bool mbPressedDown = false;
+
+	// Map
+	uint32* mMapImage = nullptr;
+	uint32 mMapImageWidth = 0;
+	uint32 mMapImageHeight = 0;
 };
 
 extern Game* gGame;
