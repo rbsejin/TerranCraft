@@ -2,6 +2,26 @@
 #include "Sprite.h"
 #include "Image.h"
 
+BW::SpriteNumber Sprite::GetSpriteNumber(BW::UnitType unitType)
+{
+	BW::SpriteNumber spriteNumber = BW::SpriteNumber::None;
+	switch (unitType)
+	{
+	case BW::UnitType::Terran_Marine:
+		spriteNumber = BW::SpriteNumber::Marine;
+		break;
+	case BW::UnitType::Terran_SCV:
+		spriteNumber = BW::SpriteNumber::SCV;
+		break;
+	case BW::UnitType::Terran_Command_Center:
+		spriteNumber = BW::SpriteNumber::Command_Center;
+		break;
+	default:
+		break;
+	}
+	return spriteNumber;
+}
+
 Sprite::~Sprite()
 {
 	Cleanup();
@@ -14,7 +34,8 @@ bool Sprite::Initalize(BW::SpriteNumber spriteID)
 	mSpriteID = spriteID;
 
 	mImagePrimary = new Image();
-	if (!mImagePrimary->Initialize(BW::ImageNumber::Marine, this))
+	BW::ImageNumber imageNumber = Image::GetImagePrimaryID(spriteID);
+	if (!mImagePrimary->Initialize(imageNumber, this))
 	{
 		delete mImagePrimary;
 		mImagePrimary = nullptr;
@@ -22,6 +43,17 @@ bool Sprite::Initalize(BW::SpriteNumber spriteID)
 	}
 
 	mImages.push_back(mImagePrimary);
+
+	BW::ImageNumber selectionCircle = BW::ImageNumber::IMG_SELECT_022;
+	Image* selectionCircleImage = new Image();
+	if (!selectionCircleImage->Initialize(selectionCircle, this))
+	{
+		delete selectionCircleImage;
+		goto LB_RETURN;
+	}
+
+	selectionCircleImage->SetOffsets({ 0, 11 });
+	mImages.push_front(selectionCircleImage);
 
 	bResult = true;
 

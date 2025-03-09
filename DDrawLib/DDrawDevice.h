@@ -6,6 +6,8 @@
 
 struct GRPFrame;
 class Palette;
+struct Chunk;
+union RGBColor;
 
 class DDrawDevice final
 {
@@ -32,7 +34,9 @@ public:
 	void DrawRect(int32 screenX, int32 screenY, int32 width, int32 height, uint32 color);
 	void DrawBound(IntRect bound, uint32 color);
 	bool DrawBitmap(int32 screenX, int32 screenY, int32 width, int32 height, const uint8* buffer);
+	bool DrawPCX(int32 screenX, int32 screenY, const Chunk* chunk, int32 width, int32 height, const RGBColor* palette);
 	bool DrawGRP(int32 screenX, int32 screenY, const GRPFrame* frame, const uint8* compressedImage, const Palette* palette);
+	bool DrawGRPWithBlending(int32 screenX, int32 screenY, const GRPFrame* frame, const uint8* compressedImage, const Palette* palette);
 	bool CalculateClipArea(IntVector2* outSrcStart, IntVector2* outDestStart, IntVector2* outDestSize, IntVector2 pos, IntVector2 imageSize) const;
 
 	void Clear();
@@ -76,5 +80,6 @@ public:
 	bool IsVF4On;
 	bool IsGridOn;
 	bool IsPathOn;
+	bool IsBoundOn;
 #endif
 };

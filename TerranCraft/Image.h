@@ -13,6 +13,8 @@ class Sprite;
 class Image final
 {
 public:
+	static BW::ImageNumber GetImagePrimaryID(BW::SpriteNumber spriteID);
+
 	Image() = default;
 	~Image() = default;
 
@@ -27,6 +29,7 @@ public:
 	IntVector2 GetScreenPosition() const { return mScreenPosition; }
 
 	BW::ImageNumber GetImageID() const { return mImageID; }
+	void SetOffsets(IntVector2 offset) { mOffset = offset; }
 	IntVector2 GetOffsets() const { return mOffset; }
 	uint32 GetFrameIndex() const { return mFrameIndex; }
 	const GRPHeader* GetGRPFile() const { return mGRPFile; }
@@ -49,5 +52,5 @@ private:
 	//IntRect mGRPBounds = { 0, };
 	const GRPHeader* mGRPFile = nullptr;
 	const Palette* mPaletteIndex = nullptr;
-	const Sprite* mParent;
+	const Sprite* mParent = nullptr;
 };

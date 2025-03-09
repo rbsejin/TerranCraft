@@ -129,6 +129,12 @@
     <ClInclude Include="Map.h">
       <Filter>Game</Filter>
     </ClInclude>
+    <ClInclude Include="CommandIcon.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Button.h">
+      <Filter>Game</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TerranCraft.cpp">

@@ -56,14 +56,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	gGame = new Game();
 	gGame->Initalize(ghMainWindow);
 
-	//FILE* fp = nullptr;
-	//_wfopen_s(&fp, L"../map/map.dat", L"rb");
-	//if (fp != nullptr)
-	//{
-	//	fread(gMap, sizeof(gMap), 1, fp);
-	//	fclose(fp);
-	//}
-
 	// Main message loop:
 	while (true)
 	{
@@ -144,8 +136,11 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	constexpr int WINDOW_POS_X = 0;
 	constexpr int WINDOW_POS_Y = 0;
 
-	constexpr int CLIENT_WIDTH = 1920;
-	constexpr int CLIENT_HEIGHT = 1080;
+	//constexpr int CLIENT_WIDTH = 1920;
+	//constexpr int CLIENT_HEIGHT = 1080;
+
+	constexpr int CLIENT_WIDTH = 640;
+	constexpr int CLIENT_HEIGHT = 480;
 
 	RECT rect = { 0, 0, CLIENT_WIDTH, CLIENT_HEIGHT };
 	AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, TRUE);
@@ -295,7 +290,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 	}
 	break;
-	// mouse move
+	case WM_SETCURSOR:
+		if (LOWORD(lParam) == HTCLIENT) {
+			SetCursor(NULL);
+		}
+		else
+		{
+			SetCursor(LoadCursor(NULL, IDC_ARROW));
+		}
+		break;
 	case WM_MOUSEMOVE:
 		if (gGame != nullptr)
 		{

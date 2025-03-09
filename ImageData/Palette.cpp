@@ -44,7 +44,7 @@ bool Palette::Load(const char* filename)
 
 	mData = (PaletteRGB*)malloc(fileSize);
 
-#ifdef _DEUBG
+#ifdef _DEBUG
 	if (fileSize % sizeof(Palette) != 0)
 	{
 		__debugbreak();

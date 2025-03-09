@@ -3,10 +3,14 @@
 #include <list>
 
 #include "../Common/typedef.h"
+#include "../ImageData/Graphic.h"
+#include "CommandIcon.h"
+#include <vector>
 
 class DDrawDevice;
 class Image;
 class Unit;
+struct Chunk;
 
 class Game final
 {
@@ -33,7 +37,8 @@ private:
 	void onGameFrame(ULONGLONG currentTick);
 	void drawScene();
 
-	void readMap();
+	void loadMap();
+	bool loadPCX(const char* filepath);
 
 private:
 	DDrawDevice* mDDrawDevice = nullptr;
@@ -46,7 +51,10 @@ private:
 	LARGE_INTEGER mFrequency;
 	LARGE_INTEGER mPrevCounter;
 
-	Unit* mUnit = nullptr;
+	std::list<Unit*> mUnits;
+	enum { MAX_SELECTED_UNIT_COUNT = 12 };
+	std::vector<Unit*> mSelectedUnits;
+	Unit* mHoveredUnit = nullptr;
 
 	std::list<IntVector2> mCellPath;
 
@@ -56,10 +64,34 @@ private:
 	bool mbPressedUp = false;
 	bool mbPressedDown = false;
 
+	bool mbPressedShift = false;
+
 	// Map
 	uint32* mMapImage = nullptr;
 	uint32 mMapImageWidth = 0;
 	uint32 mMapImageHeight = 0;
+
+	// PCX
+	Chunk* mChunk = nullptr;
+	RGBColor mPalette[256] = { 0, };
+	int32 mImageWidth = 0;
+	int32 mImageHeight = 0;
+
+	// UI
+	GRPHeader* mButtonsGRP;
+	enum { BUTTON_COUNT = 9 };
+	enum { BUTTONSET_COUNT = 250 };
+	Buttonset mButtonsets[BUTTONSET_COUNT] = { 0, };
+	eButtonset mCurrentButtonset = eButtonset::Marine;
+
+	// Cursor
+	enum { CURSOR_IMAGE_COUNT = 19 };
+	GRPHeader* mCursorGRPs[CURSOR_IMAGE_COUNT] = { 0, };
+	int32 mCursorIndex = 0;
+	IntVector2 mCursorScreenPos = { 0, };
+	IntRect mCursorBounds = { 0, };
+	
+	Image* mBuildingPreview = nullptr;
 };
 
 extern Game* gGame;

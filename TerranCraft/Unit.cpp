@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Unit.h"
 #include "Sprite.h"
+#include "CommandIcon.h"
 
 Unit::~Unit()
 {
@@ -14,10 +15,14 @@ bool Unit::Initialize(BW::UnitType unitType)
 	mUnitType = unitType;
 
 	mSprite = new Sprite();
-	if (!mSprite->Initalize(BW::SpriteNumber::Marine))
+
+	BW::SpriteNumber spriteNumber = Sprite::GetSpriteNumber(unitType);
+	if (!mSprite->Initalize(spriteNumber))
 	{
 		goto LB_RETURN;
 	}
+
+	mCurrentButtonset = (eButtonset)unitType;
 
 	bResult = true;
 

@@ -2,6 +2,7 @@
 
 #include "../Common/typedef.h"
 #include "../BWLib/UnitType.h"
+#include "CommandIcon.h"
 #include <list>
 
 class Sprite;
@@ -32,6 +33,7 @@ public:
 	FloatVector2 GetPosition() const { return mPosition; }
 	void SetPosition(FloatVector2 position) { mPosition = position; }
 	IntRect GetCountourBounds() const { return mCountourBounds; }
+	eButtonset GetCurrentButtonset() const { return mCurrentButtonset; }
 
 	std::list<IntVector2>* GetPath() { return &mPath; }
 
@@ -51,6 +53,7 @@ private:
 	BW::UnitType mUnitType = BW::UnitType::None;
 	FloatVector2 mPosition = { 16, 16 };
 	IntRect mCountourBounds = { 8, 8, 9, 10 };
+	eButtonset mCurrentButtonset = eButtonset::Marine;
 
 	std::list<IntVector2> mPath;
 };

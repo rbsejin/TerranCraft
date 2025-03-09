@@ -18,5 +18,21 @@ bool IsCollisonRectVsRect(const IntRect& rect1, const IntRect& rect2)
 
 bool IsCollisonRectVsPoint(const IntRect& rect, const IntVector2& point)
 {
-	return (rect.Left <= point.X && point.X <= rect.Right && rect.Top <= point.Y && point.Y <= rect.Bottom);
+	IntRect tempRect = rect;
+
+	if (rect.Left > rect.Right)
+	{
+		int32 temp = rect.Left;
+		tempRect.Left = rect.Right;
+		tempRect.Right = temp;
+	}
+
+	if (rect.Top > rect.Bottom)
+	{
+		int32 temp = rect.Top;
+		tempRect.Top = rect.Bottom;
+		tempRect.Bottom = temp;
+	}
+
+	return point.X >= tempRect.Left && point.X <= tempRect.Right && point.Y >= tempRect.Top && point.Y <= tempRect.Bottom;
 }

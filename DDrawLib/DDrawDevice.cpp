@@ -16,7 +16,8 @@ DDrawDevice::DDrawDevice()
 #ifdef _DEBUG
 	IsVF4On = false;
 	IsGridOn = false;
-	IsPathOn = true;
+	IsPathOn = false;
+	IsBoundOn = false;
 #endif // _DEBUG
 
 }
@@ -351,7 +352,7 @@ void DDrawDevice::DrawMap(int32 gridSize, int32 rowCount, int32 colCount, const 
 					if (((uint8*)map)[y * colCount + x] & 0x02)
 					{
 						color = 0xff000088;
-						
+
 					}
 
 					if (((uint8*)map)[y * colCount + x] & 0x04)
@@ -362,7 +363,7 @@ void DDrawDevice::DrawMap(int32 gridSize, int32 rowCount, int32 colCount, const 
 
 					if (((uint8*)map)[y * colCount + x] & 0x08)
 					{
-						
+
 						color = 0xff00ffff;
 
 
@@ -520,6 +521,20 @@ void DDrawDevice::DrawBound(IntRect bound, uint32 color)
 
 	bool bResult = false;
 
+	if (bound.Left > bound.Right)
+	{
+		int32 temp = bound.Left;
+		bound.Left = bound.Right;
+		bound.Right = temp;
+	}
+
+	if (bound.Top > bound.Bottom)
+	{
+		int32 temp = bound.Top;
+		bound.Top = bound.Bottom;
+		bound.Bottom = temp;
+	}
+
 	int left = max(bound.Left, 0);
 	int top = max(bound.Top, 0);
 	int right = min(bound.Right, (int32)mWidth - 1);
@@ -601,6 +616,53 @@ bool DDrawDevice::DrawBitmap(int32 screenX, int32 screenY, int32 width, int32 he
 
 	bResult = true;
 
+	return bResult;
+}
+
+bool DDrawDevice::DrawPCX(int32 screenX, int32 screenY, const Chunk* chunk, int32 width, int32 height, const RGBColor* palette)
+{
+	bool bResult = false;
+
+	const uint8* dataCurrent = chunk->Data + 128;
+	const uint8* dataEnd = chunk->Data + chunk->Length - 767;
+
+	uint8* pDest = mLockedBackBuffer + screenY * mLockedBackBufferPitch + screenX * 4;
+
+	for (int32 y = 0; y < height; y++)
+	{
+		int32 x = 0;
+
+		while (x < width)
+		{
+			uint8 byte = *dataCurrent++;
+			if ((byte & 0xc0) == 0xc0)
+			{
+				int32 count = byte & 0x3f;
+				uint8 color = *dataCurrent++;
+
+				if (palette[color].Value != 0x00000000)
+				{
+					for (int32 i = 0; i < count; i++)
+					{
+						*(uint32*)(pDest + (x + i) * 4) = palette[color].Value;
+					}
+				}
+
+				x += count;
+			}
+			else
+			{
+				*(uint32*)(pDest + x * 4) = palette[byte].Value;
+				x++;
+			}
+		}
+
+		pDest += mLockedBackBufferPitch;
+	}
+
+	bResult = true;
+
+LB_RETURN:
 	return bResult;
 }
 
@@ -804,6 +866,197 @@ bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GRPFrame* frame, c
 
 			pDestPerLine += mLockedBackBufferPitch;
 		}
+	}
+
+	bResult = true;
+LB_RETURN:
+	return bResult;
+}
+
+bool DDrawDevice::DrawGRPWithBlending(int32 screenX, int32 screenY, const GRPFrame* frame, const uint8* compressedImage, const Palette* palette)
+{
+#ifdef _DEBUG
+	if (mLockedBackBuffer == nullptr)
+	{
+		__debugbreak();
+	}
+
+	if (compressedImage == nullptr)
+	{
+		__debugbreak();
+	}
+
+	if (frame == nullptr)
+	{
+		__debugbreak();
+	}
+
+	if (palette == nullptr)
+	{
+		__debugbreak();
+	}
+#endif // _DEBUG
+
+	bool bResult = false;
+
+	float alpha = 0.2f;
+
+	IntVector2 srcStart = { 0, };
+	IntVector2 destStart = { 0, };
+	IntVector2 destSize = { 0, };
+
+	IntVector2 imageSize = { frame->Width, frame->Height };
+	IntVector2 screenPos = { screenX, screenY };
+
+	if (!CalculateClipArea(&srcStart, &destStart, &destSize, screenPos, imageSize))
+	{
+		goto LB_RETURN;
+	}
+
+	uint8* pDestPerLine = mLockedBackBuffer + destStart.Y * mLockedBackBufferPitch;
+
+	const uint16* offsets = (const uint16*)compressedImage;
+	const uint16* pOffset = offsets + srcStart.Y;
+
+	for (int32 y = 0; y < destSize.Y; y++)
+	{
+		const uint8* pStream = (uint8*)compressedImage + (uint64)*pOffset++;
+
+		const uint8* pDest = pDestPerLine;
+		int32 destX = screenPos.X;
+
+		while (destX < destStart.X + destSize.X)
+		{
+			uint8 opcode = *pStream++;
+
+			if (opcode >= 0x80)
+			{
+				// 1. byte >= 0x80: 0을 출력
+				int32 count = opcode - 0x80;
+
+				int32 pixelCount = count;
+
+				if (destX < 0)
+				{
+					pixelCount += destX;
+					destX += count - pixelCount;
+					pStream += count - max(pixelCount, 0);
+				}
+				if (destX + pixelCount > (int32)mWidth)
+				{
+					pixelCount = (int32)mWidth - destX;
+				}
+
+				pDest = pDestPerLine + (uint64)(destX * 4);
+
+				for (int i = 0; i < pixelCount; i++)
+				{
+					uint32 pixel = *(uint32*)pDest;
+					{
+						uint32 destR = (pixel & 0x00ff0000) >> 16;
+						uint32 destG = (pixel & 0x0000ff00) >> 8;
+						uint32 destB = (pixel & 0x000000ff);
+
+						uint32 blendedR = (uint32)(destR * (1 - alpha));
+						uint32 blendedG = (uint32)(destG * (1 - alpha) + alpha * 255);
+						uint32 blendedB = (uint32)(destB * (1 - alpha));
+
+						pixel = (blendedR << 16) | (blendedG << 8) | blendedB;
+					}
+					*(uint32*)pDest = pixel;
+					pDest += 4;
+				}
+
+				destX += count;
+			}
+			else if (opcode >= 0x40)
+			{
+				// 2. 0x40 <= byte < 0x80 : 다음 바이트를 (byte - 0x40)만큼 반복해서 출력
+				int32 count = opcode - 0x40;
+				uint32 pixel = palette->GetColor(*pStream++);
+				int32 pixelCount = count;
+
+				if (destX < 0)
+				{
+					pixelCount += destX;
+					destX += count - pixelCount;
+				}
+				if (destX + pixelCount > (int32)mWidth)
+				{
+					pixelCount = (int32)mWidth - destX;
+				}
+
+				pDest = pDestPerLine + (uint64)(destX * 4);
+
+				for (int i = 0; i < pixelCount; i++)
+				{
+					{
+						uint32 srcR = (*(uint32*)pDest & 0x00ff0000 >> 16);
+						uint32 srcG = (*(uint32*)pDest & 0x0000ff00 >> 8);
+						uint32 srcB = (*(uint32*)pDest & 0x000000ff);
+
+						uint32 destR = (pixel & 0x00ff0000) >> 16;
+						uint32 destG = (pixel & 0x0000ff00) >> 8;
+						uint32 destB = (pixel & 0x000000ff);
+
+						uint32 blendedR = (uint32)(srcR * 0.5f + destR * 0.5f);
+						uint32 blendedG = (uint32)(srcG * 0.5f * (1 - alpha) + destG * 0.5f * (1 - alpha) + 255 * alpha);
+						uint32 blendedB = (uint32)(srcB * 0.5f + destB * 0.5f);
+
+						pixel = (blendedR << 16) | (blendedG << 8) | blendedB;
+					}
+					*(uint32*)pDest = pixel;
+					pDest += 4;
+				}
+
+				destX += pixelCount;
+			}
+			else
+			{
+				// 3. byte < 0x40 : 그대로 출력
+				int32 count = opcode;
+				int32 pixelCount = count;
+
+				if (destX < 0)
+				{
+					pixelCount += destX;
+					destX += count - pixelCount;
+					pStream += count - max(pixelCount, 0);
+				}
+				if (destX + pixelCount > (int32)mWidth)
+				{
+					pixelCount = (int32)mWidth - destX;
+				}
+
+				pDest = pDestPerLine + (uint64)(destX * 4);
+
+				for (int i = 0; i < pixelCount; i++)
+				{
+					uint32 pixel = palette->GetColor(*pStream++);
+					{
+						uint32 srcR = (*(uint32*)pDest & 0x00ff0000 >> 16);
+						uint32 srcG = (*(uint32*)pDest & 0x0000ff00 >> 8);
+						uint32 srcB = (*(uint32*)pDest & 0x000000ff);
+
+						uint32 destR = (pixel & 0x00ff0000) >> 16;
+						uint32 destG = (pixel & 0x0000ff00) >> 8;
+						uint32 destB = (pixel & 0x000000ff);
+
+						uint32 blendedR = (uint32)(srcR * 0.5f + destR * 0.5f);
+						uint32 blendedG = (uint32)(srcG * 0.5f * (1 - alpha) + destG * 0.5f * (1 - alpha) + 255 * alpha);
+						uint32 blendedB = (uint32)(srcB * 0.5f + destB * 0.5f);
+
+						pixel = (blendedR << 16) | (blendedG << 8) | blendedB;
+					}
+					*(uint32*)pDest = pixel;
+					pDest += 4;
+				}
+
+				destX += pixelCount;
+			}
+		}
+
+		pDestPerLine += mLockedBackBufferPitch;
 	}
 
 	bResult = true;
