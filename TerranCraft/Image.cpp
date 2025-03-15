@@ -71,7 +71,6 @@ void Image::Update()
 	mMapPosition.X = position.X - mGRPFile->Width / 2 + frame->X;
 	mMapPosition.Y = position.Y - mGRPFile->Height / 2 + frame->Y;
 
-	// TODO: Implement screen position calculation
 	IntVector2 cameraPosition = Camera::Instance.GetPosition();
 	mScreenPosition.X = mMapPosition.X - cameraPosition.X;
 	mScreenPosition.Y = mMapPosition.Y - cameraPosition.Y;

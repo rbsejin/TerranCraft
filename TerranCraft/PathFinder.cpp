@@ -185,7 +185,7 @@ int32 FindPathWithUnitSize(std::list<IntVector2>* outPath, const uint8* map, Int
 			{
 				continue;
 			}
-;
+
 			if ((map[neighbor.Y * MAP_WIDTH + neighbor.X] & 0x01) == 0)
 			{
 				continue;
@@ -211,11 +211,11 @@ bool CanMoveTo(const uint8* map, IntVector2 pos, IntRect unitSize)
 {
 	IntVector2 unitPos = { pos.X * CELL_SIZE + CELL_SIZE / 2, pos.Y * CELL_SIZE + CELL_SIZE / 2 };
 	IntRect unitBound = { unitPos.X - unitSize.Left, unitPos.Y - unitSize.Top, unitPos.X + unitSize.Right, unitPos.Y + unitSize.Bottom };
-	IntRect uintCellBound = { unitBound.Left / CELL_SIZE, unitBound.Top / CELL_SIZE, unitBound.Right / CELL_SIZE, unitBound.Bottom / CELL_SIZE };
+	IntRect unitCellBound = { unitBound.Left / CELL_SIZE, unitBound.Top / CELL_SIZE, unitBound.Right / CELL_SIZE, unitBound.Bottom / CELL_SIZE };
 
-	for (int y = uintCellBound.Top; y <= uintCellBound.Bottom; y++)
+	for (int y = unitCellBound.Top; y <= unitCellBound.Bottom; y++)
 	{
-		for (int x = uintCellBound.Left; x <= uintCellBound.Right; x++)
+		for (int x = unitCellBound.Left; x <= unitCellBound.Right; x++)
 		{
 			if (map[y * MAP_WIDTH + x] == 0)
 			{

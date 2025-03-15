@@ -157,7 +157,6 @@
     <ClInclude Include="..\ImageData\pch.h" />
     <ClInclude Include="..\Util\pch.h" />
     <ClInclude Include="..\Util\Util.h" />
-    <ClInclude Include="Button.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="CommandIcon.h" />
     <ClInclude Include="framework.h" />

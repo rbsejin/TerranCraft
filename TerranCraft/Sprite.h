@@ -4,8 +4,6 @@
 #include "../BWLib/SpriteNumber.h"
 #include "../BWLib/UnitType.h"
 
-
-
 class Image;
 
 class Sprite

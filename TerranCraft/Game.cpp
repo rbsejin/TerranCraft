@@ -567,7 +567,7 @@ void Game::OnKeyDown(unsigned int vkCode, unsigned int scanCode)
 		break;
 	case 'S':
 	{
-		IntRect countourBounds = mSelectedUnits[0]->GetCountourBounds();
+		IntRect countourBounds = mSelectedUnits[0]->GetContourBounds();
 		FloatVector2 position = mSelectedUnits[0]->GetPosition();
 
 		IntVector2 scvPosition = { (int32)position.X - countourBounds.Left, (int32)position.Y + countourBounds.Bottom };
@@ -664,10 +664,10 @@ void Game::OnMouseMove(unsigned int nFlags, int x, int y)
 	for (Unit* unit : mUnits)
 	{
 		IntRect unitBound;
-		unitBound.Left = (int32)unit->GetPosition().X - unit->GetCountourBounds().Left;
-		unitBound.Top = (int32)unit->GetPosition().Y - unit->GetCountourBounds().Top;
-		unitBound.Right = (int32)unit->GetPosition().X + unit->GetCountourBounds().Right;
-		unitBound.Bottom = (int32)unit->GetPosition().Y + unit->GetCountourBounds().Bottom;
+		unitBound.Left = (int32)unit->GetPosition().X - unit->GetContourBounds().Left;
+		unitBound.Top = (int32)unit->GetPosition().Y - unit->GetContourBounds().Top;
+		unitBound.Right = (int32)unit->GetPosition().X + unit->GetContourBounds().Right;
+		unitBound.Bottom = (int32)unit->GetPosition().Y + unit->GetContourBounds().Bottom;
 
 		IntVector2 cursorMapPosition = { x, y };
 		cursorMapPosition.X += Camera::Instance.GetPosition().X;
@@ -798,7 +798,7 @@ void Game::OnRButtonDown(unsigned int nFlags, int x, int y)
 		IntVector2 targetCell = { x / CELL_SIZE, y / CELL_SIZE };
 
 		mCellPath.clear();
-		IntRect countourBounds = unit->GetCountourBounds();
+		IntRect countourBounds = unit->GetContourBounds();
 		int32 length = FindPathWithUnitSize(&mCellPath, (const uint8*)gMiniTiles, currentCell, targetCell, countourBounds);
 
 		if (length <= 0)
@@ -870,6 +870,7 @@ void Game::onGameFrame(ULONGLONG currentTick)
 		Camera::Instance.MoveViewPort(0, CELL_SIZE / 2);
 	}
 
+	// Unit Position Update
 	for (Unit* unit : mUnits)
 	{
 		IntVector2 nextMovementWaypoint = unit->GetNextMovementWaypoint();
@@ -879,7 +880,7 @@ void Game::onGameFrame(ULONGLONG currentTick)
 		float distanceY = nextMovementWaypoint.Y - position.Y;
 		float distanceSquare = distanceX * distanceX + distanceY * distanceY;
 
-		int32 speed = unit->GetCurrentSpeed();
+		int32 speed = unit->GetSpeed();
 		FloatVector2 newPosition = position;
 
 		if (distanceSquare > speed * speed)
@@ -923,6 +924,7 @@ void Game::onGameFrame(ULONGLONG currentTick)
 		}
 	}
 
+	// Building Preview Update
 	if (mBuildingPreview != nullptr)
 	{
 		mBuildingPreview->Update();
@@ -948,7 +950,7 @@ void Game::drawScene()
 			for (uint32 i = 0; i < mSelectedUnits.size(); i++)
 			{
 				Unit* unit = mSelectedUnits[i];
-				IntRect countourBounds = unit->GetCountourBounds();
+				IntRect countourBounds = unit->GetContourBounds();
 				mDDrawDevice->DrawPath(mCellPath, CELL_SIZE, countourBounds, 0xff00ff00);
 			}
 		}
@@ -1000,7 +1002,7 @@ void Game::drawScene()
 					if (mDDrawDevice->IsBoundOn)
 					{
 						FloatVector2 unitPosition = unit->GetPosition();
-						IntRect countourBounds = unit->GetCountourBounds();
+						IntRect countourBounds = unit->GetContourBounds();
 						IntRect unitBound = { (int32)unitPosition.X - countourBounds.Left, (int32)unitPosition.Y - countourBounds.Top, (int32)unitPosition.X + countourBounds.Right, (int32)unitPosition.Y + countourBounds.Bottom };
 						unitBound.Left -= Camera::Instance.GetPosition().X;
 						unitBound.Right -= Camera::Instance.GetPosition().X;

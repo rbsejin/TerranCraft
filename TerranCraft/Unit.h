@@ -24,7 +24,7 @@ public:
 	void SetMoveTarget(IntVector2 moveTarget) { mMoveTarget = moveTarget; }
 	IntVector2 GetNextMovementWaypoint() const { return mNextMovementWaypoint; }
 	void SetNextMovementWaypoint(IntVector2 nextMovementWaypoint) { mNextMovementWaypoint = nextMovementWaypoint; }
-	int32 GetCurrentSpeed() const { return mCurrentSpeed; }
+	int32 GetSpeed() const { return mSpeed; }
 	uint8 GetDirection() const { return mDirection; }
 	FloatVector2 GetCurrentVelocity() const { return mCurrentVelocity; }
 	void SetCurrentVelocity(FloatVector2 currentVelocity) { mCurrentVelocity = currentVelocity; }
@@ -32,7 +32,7 @@ public:
 	BW::UnitType GetUnitType() const { return mUnitType; }
 	FloatVector2 GetPosition() const { return mPosition; }
 	void SetPosition(FloatVector2 position) { mPosition = position; }
-	IntRect GetCountourBounds() const { return mCountourBounds; }
+	IntRect GetContourBounds() const { return mContourBounds; }
 	eButtonset GetCurrentButtonset() const { return mCurrentButtonset; }
 
 	std::list<IntVector2>* GetPath() { return &mPath; }
@@ -45,16 +45,15 @@ private:
 	// Flingy
 	IntVector2 mMoveTarget = { 0, };
 	IntVector2 mNextMovementWaypoint = { 0, };
-	int32 mCurrentSpeed = 4;
+	int32 mSpeed = 4;
 	uint8 mDirection = 0;
 	FloatVector2 mCurrentVelocity = { 0, };
+	FloatVector2 mPosition = { 16, 16 };
 
 	// Unit
 	BW::UnitType mUnitType = BW::UnitType::None;
-	FloatVector2 mPosition = { 16, 16 };
-	IntRect mCountourBounds = { 8, 8, 9, 10 };
+	IntRect mContourBounds = { 8, 8, 9, 10 };
 	eButtonset mCurrentButtonset = eButtonset::Marine;
 
 	std::list<IntVector2> mPath;
 };
-
