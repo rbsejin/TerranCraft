@@ -14,6 +14,9 @@
 #include "../Util/Util.h"
 #include "Camera.h"
 #include "Map.h"
+#include "AnimationController.h"
+#include "BWFile.h"
+#include "Arrangement.h"
 
 Game* gGame = nullptr;
 
@@ -44,22 +47,33 @@ bool Game::Initalize(HWND hWnd)
 
 	loadPCX(consolePath);
 
-	ImageResource::Instance.Load("../data/grplist.txt", "../data/palettelist.txt");
+	Arrangement::Instance.Load();
+	ImageResource::Instance.Load("../data/palettelist.txt");
+
+	AnimationController::Instance.Load("../data/STARDAT/scripts/iscript.bin");
 
 	Unit* unit = new Unit();
+
 	if (!unit->Initialize(BW::UnitType::Terran_Marine))
 	{
 		goto LB_RETURN;
 	}
+	unit->SetPosition({ 128, 128 });
 	mUnits.push_back(unit);
 
+	// Test
+	mTestUnit = unit;
+	mTestSprite = unit->GetSprite();
+	mTestImage = mTestSprite->GetPrimaryImage();
+
+#if 0
 	Unit* unit2 = new Unit();
 	if (!unit2->Initialize(BW::UnitType::Terran_SCV))
 	{
 		goto LB_RETURN;
 	}
 	mUnits.push_back(unit2);
-
+#endif
 	loadMap();
 
 #pragma region cmdicon
@@ -451,6 +465,8 @@ LB_RETURN:
 
 void Game::Cleanup()
 {
+	AnimationController::Instance.Destroy();
+
 	for (int i = 0; i < CURSOR_IMAGE_COUNT; i++)
 	{
 		if (mCursorGRPs[i] != nullptr)
@@ -557,6 +573,28 @@ void Game::OnKeyDown(unsigned int vkCode, unsigned int scanCode)
 		//	bEnableDrawing = !bEnableDrawing;
 		//	break;
 #endif // _DEBUG
+	case 'Q':
+	{
+		uint8 direction = mTestImage->GetDirection();
+		direction++;
+		if (direction >= 0x20)
+		{
+			direction -= 0x20;
+		}
+		mTestImage->SetDirection(direction);
+	}
+	break;
+	case 'W':
+	{
+		uint8 direction = mTestImage->GetDirection();
+		direction--;
+		if ((int8)direction < 0)
+		{
+			direction += 0x20;
+		}
+		mTestImage->SetDirection(direction);
+	}
+	break;
 	case 'B':
 		mCurrentButtonset = eButtonset::TerranStructureConstruction;
 		break;
@@ -647,17 +685,12 @@ void Game::OnMouseMove(unsigned int nFlags, int x, int y)
 
 	if (nFlags & MK_LBUTTON)
 	{
-		if (!IsCollisonRectVsPoint(mCursorBounds, mCursorScreenPos))
-		{
-			mCursorIndex = 0;
-			mHoveredUnit = nullptr;
-
-			mCursorBounds.Left = x;
-			mCursorBounds.Top = y;
-		}
-
 		mCursorIndex = 1;
 		mHoveredUnit = nullptr;
+
+		mCursorBounds.Left = x;
+		mCursorBounds.Top = y;
+
 		return;
 	}
 
@@ -852,24 +885,34 @@ void Game::OnUpdateWindowPos()
 
 void Game::onGameFrame(ULONGLONG currentTick)
 {
+	//int32 testX = 0;
+	//int32 testY = 0;
+
 	// Keyboard
 	if (mbPressedLeft)
 	{
 		Camera::Instance.MoveViewPort(-CELL_SIZE, 0);
+		//testX--;
 	}
+
 	if (mbPressedRight)
 	{
 		Camera::Instance.MoveViewPort(CELL_SIZE, 0);
+		//testX++;
 	}
+
 	if (mbPressedUp)
 	{
 		Camera::Instance.MoveViewPort(0, -CELL_SIZE / 2);
+		//testY--;
 	}
+
 	if (mbPressedDown)
 	{
 		Camera::Instance.MoveViewPort(0, CELL_SIZE / 2);
+		//testY++;
 	}
-
+#if 1
 	// Unit Position Update
 	for (Unit* unit : mUnits)
 	{
@@ -920,14 +963,41 @@ void Game::onGameFrame(ULONGLONG currentTick)
 		const std::list<Image*>* images = sprite->GetImages();
 		for (Image* image : *images)
 		{
-			image->Update();
+			image->UpdateGraphicData();
 		}
 	}
 
 	// Building Preview Update
 	if (mBuildingPreview != nullptr)
 	{
-		mBuildingPreview->Update();
+		mBuildingPreview->UpdateGraphicData();
+	}
+
+	// Image Frame Update
+	for (Unit* unit : mUnits)
+	{
+		Sprite* sprite = unit->GetSprite();
+		const std::list<Image*>* images = sprite->GetImages();
+		for (Image* image : *images)
+		{
+			AnimationController::Instance.UpdateImageFrame(image, currentTick);
+		}
+	}
+#endif
+
+	//IntVector2 position = mTestSprite->GetPosition();
+	//mTestSprite->SetPosition({ position.X + testX, position.Y + testY });
+
+	//mTestImage->UpdateGraphicData();
+
+	for (Unit* unit : mUnits)
+	{
+		Sprite* sprite = unit->GetSprite();
+		const std::list<Image*>* images = sprite->GetImages();
+		for (Image* image : *images)
+		{
+			image->UpdateGraphicData();
+		}
 	}
 }
 
@@ -937,6 +1007,7 @@ void Game::drawScene()
 	{
 		mDDrawDevice->Clear();
 
+#if 1
 		mDDrawDevice->DrawMap(CELL_SIZE, MAP_WIDTH, MAP_HEIGHT, (const uint8*)gMiniTiles, mMapImage, mMapImageWidth);
 
 #ifdef _DEBUG
@@ -958,7 +1029,6 @@ void Game::drawScene()
 
 		for (Unit* unit : mUnits)
 		{
-
 			if (unit != nullptr)
 			{
 				const Sprite* sprite = unit->GetSprite();
@@ -972,32 +1042,50 @@ void Game::drawScene()
 
 				const std::list<Image*>* images = sprite->GetImages();
 
-				for (const Image* image : *images)
+				//for (const Image* image : *images)
+				for (auto iter = images->rbegin(); iter != images->rend(); ++iter)
 				{
+					Image* image = *iter;
 #ifdef _DEBUG
 					if (image == nullptr)
 					{
 						__debugbreak();
 					}
 #endif // _DEBUG
+
+					if (image->IsHidden())
+					{
+						continue;
+					}
+
 					const GRPFrame* frame = image->GetCurrentFrame();
 					const uint8* compressedImage = image->GetCompressedImage();
-					const Palette* palette = image->GetPaletteIndex();
+					const Palette* palette = image->GetPalette();
 					IntVector2 screenPosition = image->GetScreenPosition();
-
+					IntRect grpBounds = image->GetGRPBounds();
 
 					if (image->GetImageID() == BW::ImageNumber::IMG_SELECT_022)
 					{
 						if (sprite->GetSelectionIndex() != -1)
 						{
 							const Palette* pal = ImageResource::Instance.GetPalette(5);
-							mDDrawDevice->DrawGRP(screenPosition.X, screenPosition.Y, frame, compressedImage, pal);
+							mDDrawDevice->DrawGRP2(screenPosition.X, screenPosition.Y, frame, grpBounds, compressedImage, pal);
 						}
 
 						continue;
 					}
 
-					mDDrawDevice->DrawGRP(screenPosition.X, screenPosition.Y, frame, compressedImage, palette);
+					if (!image->IsFlipped())
+					{
+						mDDrawDevice->DrawGRP2(screenPosition.X, screenPosition.Y, frame, grpBounds, compressedImage, palette);
+					}
+					else
+					{
+						mDDrawDevice->DrawGRP2Flipped(screenPosition.X, screenPosition.Y, frame, grpBounds, compressedImage, palette);
+					}
+
+					mDDrawDevice->DrawBound({ screenPosition.X, screenPosition.Y, screenPosition.X + grpBounds.Right, screenPosition.Y + grpBounds.Bottom }, 0xffff0000);
+
 #ifdef _DEBUG
 					if (mDDrawDevice->IsBoundOn)
 					{
@@ -1020,7 +1108,7 @@ void Game::drawScene()
 		{
 			const GRPFrame* frame = mBuildingPreview->GetCurrentFrame();
 			const uint8* compressedImage = mBuildingPreview->GetCompressedImage();
-			const Palette* palette = mBuildingPreview->GetPaletteIndex();
+			const Palette* palette = mBuildingPreview->GetPalette();
 			IntVector2 screenPosition = mBuildingPreview->GetScreenPosition();
 			mDDrawDevice->DrawGRPWithBlending(screenPosition.X, screenPosition.Y, frame, compressedImage, palette);
 		}
@@ -1065,6 +1153,21 @@ void Game::drawScene()
 
 			mDDrawDevice->DrawGRP(x, y, frame, compressedImage, ImageResource::Instance.GetPalette(5));
 		}
+#endif
+
+		//IntVector2 screenPosition = mTestImage->GetScreenPosition();
+		//const GRPFrame* frame = mTestImage->GetCurrentFrame();
+		//const uint8* compressedImage = mTestImage->GetCompressedImage();
+		//const Palette* palette = mTestImage->GetPalette();
+		//
+		//if (!mTestImage->IsFlipped())
+		//{
+		//	mDDrawDevice->DrawGRP2(screenPosition.X, screenPosition.Y, frame, mTestImage->GetGRPBounds(), compressedImage, palette);
+		//}
+		//else
+		//{
+		//	mDDrawDevice->DrawGRP2Flipped(screenPosition.X, screenPosition.Y, frame, mTestImage->GetGRPBounds(), compressedImage, palette);
+		//}
 
 		mDDrawDevice->EndDraw();
 	}
@@ -1146,7 +1249,7 @@ void Game::loadMap()
 		return;
 	}
 
-	fread(mtmxData, sizeof(uint16), width * height, fp);
+	fread(mtmxData, sizeof(uint16), (size_t)(width * height), fp);
 
 	fclose(fp);
 #pragma endregion

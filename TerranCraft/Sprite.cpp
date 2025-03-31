@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "Sprite.h"
 #include "Image.h"
+#include "BWFile.h"
+#include "Arrangement.h"
 
 BW::SpriteNumber Sprite::GetSpriteNumber(BW::UnitType unitType)
 {
@@ -34,7 +36,11 @@ bool Sprite::Initalize(BW::SpriteNumber spriteID)
 	mSpriteID = spriteID;
 
 	mImagePrimary = new Image();
-	BW::ImageNumber imageNumber = Image::GetImagePrimaryID(spriteID);
+	//BW::ImageNumber imageNumber = Image::GetImagePrimaryID(spriteID);
+
+	const SpriteData* spriteData = Arrangement::Instance.GetSpriteData();
+	BW::ImageNumber imageNumber = (BW::ImageNumber)spriteData->ImageFiles[(int32)spriteID];
+
 	if (!mImagePrimary->Initialize(imageNumber, this))
 	{
 		delete mImagePrimary;
@@ -44,7 +50,11 @@ bool Sprite::Initalize(BW::SpriteNumber spriteID)
 
 	mImages.push_back(mImagePrimary);
 
-	BW::ImageNumber selectionCircle = BW::ImageNumber::IMG_SELECT_022;
+#if 1
+
+	uint8 selectionCircleIndex = spriteData->SelectionCircleImages[(int32)spriteID - 130];
+	BW::ImageNumber selectionCircle = (BW::ImageNumber)((uint16)BW::ImageNumber::IMG_SELECT_022 + selectionCircleIndex);
+	//BW::ImageNumber selectionCircle = BW::ImageNumber::IMG_SELECT_022;
 	Image* selectionCircleImage = new Image();
 	if (!selectionCircleImage->Initialize(selectionCircle, this))
 	{
@@ -52,9 +62,9 @@ bool Sprite::Initalize(BW::SpriteNumber spriteID)
 		goto LB_RETURN;
 	}
 
-	selectionCircleImage->SetOffsets({ 0, 11 });
-	mImages.push_front(selectionCircleImage);
-
+	//selectionCircleImage->SetOffsets({ 0, 11 });
+	mImages.push_back(selectionCircleImage);
+#endif
 	bResult = true;
 
 LB_RETURN:

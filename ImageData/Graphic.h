@@ -4,10 +4,10 @@
 
 struct GRPFrame
 {
-	int8 X;
-	int8 Y;
-	int8 Width;
-	int8 Height;
+	uint8 X;
+	uint8 Y;
+	uint8 Width;
+	uint8 Height;
 	uint32 DataOffset;
 };
 

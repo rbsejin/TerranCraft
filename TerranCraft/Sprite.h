@@ -23,8 +23,12 @@ public:
 	BW::SpriteNumber GetSpriteID() const { return mSpriteID; }
 	int32 GetSelectionIndex() const { return mSelectionIndex; }
 	void SetSelectionIndex(int32 selectionIndex) { mSelectionIndex = selectionIndex; }
-	const Image* GetImage() const { return mImagePrimary; }
+	const Image* GetPrimaryImage() const { return mImagePrimary; }
+	Image* GetPrimaryImage() { return mImagePrimary; }
 	const std::list<Image*>* GetImages() const { return &mImages; }
+	void AddBefore(Image* image) { mImages.push_front(image); }
+	void AddAffter(Image* image) { mImages.push_back(image); }
+	void RemoveImage(Image* image) { mImages.remove(image); }
 
 private:
 	BW::SpriteNumber mSpriteID = BW::SpriteNumber::None;

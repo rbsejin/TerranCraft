@@ -132,6 +132,18 @@
     <ClInclude Include="Unit.h">
       <Filter>Game</Filter>
     </ClInclude>
+    <ClInclude Include="AnimationController.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="IScriptCode.h">
+      <Filter>BWLib</Filter>
+    </ClInclude>
+    <ClInclude Include="Arrangement.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="BWFile.h">
+      <Filter>Game</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TerranCraft.cpp">
@@ -168,6 +180,12 @@
       <Filter>Game</Filter>
     </ClCompile>
     <ClCompile Include="Unit.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="AnimationController.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Arrangement.cpp">
       <Filter>Game</Filter>
     </ClCompile>
   </ItemGroup>

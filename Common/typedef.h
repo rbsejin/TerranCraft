@@ -22,11 +22,25 @@ struct IntRect
 
 static_assert(sizeof(IntRect) == 16, "Rect size is invalid");
 
+struct Int16Rect
+{
+	int16 Left;
+	int16 Top;
+	int16 Right;
+	int16 Bottom;
+};
+
 struct IntVector2
 {
 	int32 X;
 	int32 Y;
 };
+
+struct Int16Vector2
+{
+	int16 X;
+	int16 Y;
+};;
 
 struct FloatVector2
 {

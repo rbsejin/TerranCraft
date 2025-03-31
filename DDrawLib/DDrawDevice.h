@@ -37,6 +37,8 @@ public:
 	bool DrawPCX(int32 screenX, int32 screenY, const Chunk* chunk, int32 width, int32 height, const RGBColor* palette);
 	bool DrawGRP(int32 screenX, int32 screenY, const GRPFrame* frame, const uint8* compressedImage, const Palette* palette);
 	bool DrawGRPWithBlending(int32 screenX, int32 screenY, const GRPFrame* frame, const uint8* compressedImage, const Palette* palette);
+	bool DrawGRP2(int32 screenX, int32 screenY, const GRPFrame* frame, IntRect grpRect, const uint8* compressedImage, const Palette* palette);
+	bool DrawGRP2Flipped(int32 screenX, int32 screenY, const GRPFrame* frame, IntRect grpRect, const uint8* compressedImage, const Palette* palette);
 	bool CalculateClipArea(IntVector2* outSrcStart, IntVector2* outDestStart, IntVector2* outDestSize, IntVector2 pos, IntVector2 imageSize) const;
 
 	void Clear();

@@ -12,6 +12,11 @@ class Image;
 class Unit;
 struct Chunk;
 
+class Sprite;
+struct ImageData;
+struct SpriteData;
+struct UnitData;
+
 class Game final
 {
 public:
@@ -92,6 +97,13 @@ private:
 	IntRect mCursorBounds = { 0, };
 	
 	Image* mBuildingPreview = nullptr;
+
+	// Test
+	Unit* mTestUnit = nullptr;
+	Sprite* mTestSprite = nullptr;
+	Image* mTestImage = nullptr;
+	int32 mTestX = 0;
+	int32 mTestY = 0;
 };
 
 extern Game* gGame;

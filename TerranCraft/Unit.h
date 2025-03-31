@@ -39,7 +39,7 @@ public:
 
 private:
 	// Tingy
-	int32 mHP = 40;
+	int32 mHP = 0;
 	Sprite* mSprite = nullptr;
 
 	// Flingy
@@ -48,11 +48,11 @@ private:
 	int32 mSpeed = 4;
 	uint8 mDirection = 0;
 	FloatVector2 mCurrentVelocity = { 0, };
-	FloatVector2 mPosition = { 16, 16 };
+	FloatVector2 mPosition = { 0, };
 
 	// Unit
 	BW::UnitType mUnitType = BW::UnitType::None;
-	IntRect mContourBounds = { 8, 8, 9, 10 };
+	IntRect mContourBounds = { 0, };
 	eButtonset mCurrentButtonset = eButtonset::Marine;
 
 	std::list<IntVector2> mPath;

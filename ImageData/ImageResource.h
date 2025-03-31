@@ -8,7 +8,7 @@ struct GRPHeader;
 class ImageResource
 {
 public:
-	bool Load(const char* grpListFilename, const char* paletteListFilename);
+	bool Load(const char* paletteListFilename);
 	void Destroy();
 
 	const Palette* GetPalette(int index) const;

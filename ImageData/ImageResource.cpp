@@ -1,9 +1,11 @@
 #include "pch.h"
 #include "ImageResource.h"
+#include "../TerranCraft/Arrangement.h"
+#include "../TerranCraft/BWFile.h"
 
 ImageResource ImageResource::Instance;
 
-bool ImageResource::Load(const char* grpListFilename, const char* paletteListFilename)
+bool ImageResource::Load(const char* paletteListFilename)
 {
 	bool bResult = false;
 
@@ -11,35 +13,22 @@ bool ImageResource::Load(const char* grpListFilename, const char* paletteListFil
 
 #pragma region Load GRP
 	{
-		FILE* fp = nullptr;
-		fopen_s(&fp, grpListFilename, "rt");
-
-		if (fp == nullptr)
-		{
-			goto LB_RETURN;
-		}
-
 		constexpr size_t BUFFER_SIZE = 1024;
 		char buffer[BUFFER_SIZE] = { 0, };
 		int index = 0;
 
 		// format: [index] [path]
-		while (fgets(buffer, BUFFER_SIZE, fp) != nullptr)
+		//while (fgets(buffer, BUFFER_SIZE, fp) != nullptr)
+
+		uint16 imageCount = Arrangement::Instance.GetImageCount();
+
+		for (int i = 0; i < imageCount; i++)
 		{
+			const ImageData* imageData = Arrangement::Instance.GetImageData();
+			int32 index = imageData->GRPFiles[i] - 1;
+			const char* grpFilename = Arrangement::Instance.GetImageName((uint16)index);
 			char grpListFilename[MAX_PATH] = { 0, };
-			int count = sscanf(buffer, "%d %s", &index, grpListFilename);
-
-#ifdef _DEBUG
-			if (count != 2)
-			{
-				__debugbreak();
-			}
-#endif // _DEBUG
-
-			if (strlen(grpListFilename) == 0)
-			{
-				continue;
-			}
+			sprintf(grpListFilename, "%s/%s", "../data/STARDAT/unit/", grpFilename);
 
 			// Load GRP files
 			{
@@ -57,7 +46,7 @@ bool ImageResource::Load(const char* grpListFilename, const char* paletteListFil
 				fseek(fp, 0, SEEK_SET);
 
 #ifdef _DEBUG
-				if (mGRPFiles[index] != nullptr)
+				if (mGRPFiles[i] != nullptr)
 				{
 					__debugbreak();
 				}
@@ -65,13 +54,11 @@ bool ImageResource::Load(const char* grpListFilename, const char* paletteListFil
 
 				GRPHeader* grpFile = (GRPHeader*)malloc(fileSize);
 				fread(grpFile, fileSize, 1, fp);
-				mGRPFiles[index] = grpFile;
+				mGRPFiles[i] = grpFile;
 
 				fclose(fp);
 			}
 		}
-
-		fclose(fp);
 	}
 #pragma endregion
 

@@ -5,9 +5,7 @@
 #include "DDrawDevice.h"
 #include "../ImageData/Graphic.h"
 #include "../ImageData/Palette.h"
-#include "../TerranCraft/PathFinder.h"
 #include "../TerranCraft/Camera.h"
-#include "../TerranCraft/Map.h"
 
 DDrawDevice::DDrawDevice()
 {
@@ -1053,6 +1051,214 @@ bool DDrawDevice::DrawGRPWithBlending(int32 screenX, int32 screenY, const GRPFra
 				}
 
 				destX += pixelCount;
+			}
+		}
+
+		pDestPerLine += mLockedBackBufferPitch;
+	}
+
+	bResult = true;
+LB_RETURN:
+	return bResult;
+}
+
+bool DDrawDevice::DrawGRP2(int32 screenX, int32 screenY, const GRPFrame* frame, IntRect grpRect, const uint8* compressedImage, const Palette* palette)
+{
+#ifdef _DEBUG
+	if (mLockedBackBuffer == nullptr)
+	{
+		__debugbreak();
+	}
+
+	if (compressedImage == nullptr)
+	{
+		__debugbreak();
+	}
+
+	if (frame == nullptr)
+	{
+		__debugbreak();
+	}
+
+	if (palette == nullptr)
+	{
+		__debugbreak();
+	}
+#endif // _DEBUG
+
+	bool bResult = false;
+
+	if (grpRect.Right < 0 || grpRect.Bottom < 0)
+	{
+		goto LB_RETURN;
+	}
+
+	uint8* pDestPerLine = mLockedBackBuffer + screenY * mLockedBackBufferPitch;
+	const uint16* pOffset = (const uint16*)compressedImage + grpRect.Top;
+
+	for (int32 y = 0; y < grpRect.Bottom; y++)
+	{
+		const uint8* pStream = compressedImage + *pOffset++;
+		const uint8* pDest = pDestPerLine + screenX * 4;
+
+		int32 x = 0;
+
+		while (x < frame->Width)
+		{
+			uint8 opcode = *pStream++;
+
+			if (opcode >= 0x80)
+			{
+				// 1. byte >= 0x80: 0을 출력
+				int32 count = opcode - 0x80;
+
+				int32 s = max(x, grpRect.Left);
+				int32 e = min(x + count, grpRect.Left + grpRect.Right);
+				int32 c = max(e - s, 0);
+
+				pDest += c * 4;
+				x += count;
+			}
+			else if (opcode >= 0x40)
+			{
+				// 2. 0x40 <= byte < 0x80 : 다음 바이트를 (byte - 0x40)만큼 반복해서 출력
+				int32 count = opcode - 0x40;
+
+				uint32 pixel = palette->GetColor(*pStream++);
+
+				int32 s = max(x, grpRect.Left);
+				int32 e = min(x + count, grpRect.Left + grpRect.Right);
+
+				while (s < e)
+				{
+					*(uint32*)pDest = pixel;
+					pDest += 4;
+					s++;
+				}
+
+				x += count;
+			}
+			else
+			{
+				// 3. byte < 0x40 : 그대로 출력
+				int32 count = opcode;
+
+				for (int32 i = 0; i < count; i++)
+				{
+					if (x >= grpRect.Left && x < grpRect.Left + grpRect.Right)
+					{
+						uint32 pixel = palette->GetColor(*pStream);
+						*(uint32*)pDest = pixel;
+						pDest += 4;
+					}
+				
+					pStream++;
+					x++;
+				}
+			}
+		}
+
+		pDestPerLine += mLockedBackBufferPitch;
+	}
+
+	bResult = true;
+LB_RETURN:
+	return bResult;
+}
+
+bool DDrawDevice::DrawGRP2Flipped(int32 screenX, int32 screenY, const GRPFrame* frame, IntRect grpRect, const uint8* compressedImage, const Palette* palette)
+{
+#ifdef _DEBUG
+	if (mLockedBackBuffer == nullptr)
+	{
+		__debugbreak();
+	}
+
+	if (compressedImage == nullptr)
+	{
+		__debugbreak();
+	}
+
+	if (frame == nullptr)
+	{
+		__debugbreak();
+	}
+
+	if (palette == nullptr)
+	{
+		__debugbreak();
+	}
+#endif // _DEBUG
+
+	bool bResult = false;
+
+	if (grpRect.Right < 0 || grpRect.Bottom < 0)
+	{
+		goto LB_RETURN;
+	}
+
+	uint8* pDestPerLine = mLockedBackBuffer + screenY * mLockedBackBufferPitch;
+	const uint16* pOffset = (const uint16*)compressedImage + grpRect.Top;
+
+	for (int32 y = 0; y < grpRect.Bottom; y++)
+	{
+		const uint8* pStream = compressedImage + *pOffset++;
+		const uint8* pDest = pDestPerLine + (screenX + grpRect.Right - 1) * 4;
+
+		int32 x = frame->Width - 1;
+
+		while (x >= 0)
+		{
+			uint8 opcode = *pStream++;
+
+			if (opcode >= 0x80)
+			{
+				// 1. byte >= 0x80: 0을 출력
+				int32 count = opcode - 0x80;
+
+				int32 s = min(x, grpRect.Left + grpRect.Right - 1);
+				int32 e = max(x - count, 0);
+				int32 c = min(e - s, 0);
+
+				pDest += c * 4;
+				x -= count;
+			}
+			else if (opcode >= 0x40)
+			{
+				// 2. 0x40 <= byte < 0x80 : 다음 바이트를 (byte - 0x40)만큼 반복해서 출력
+				int32 count = opcode - 0x40;
+
+				uint32 pixel = palette->GetColor(*pStream++);
+
+				int32 s = min(x, grpRect.Left + grpRect.Right - 1);
+				int32 e = max(x - count, 0);
+
+				while (s > e)
+				{
+					*(uint32*)pDest = pixel;
+					pDest -= 4;
+					s--;
+				}
+
+				x -= count;
+			}
+			else
+			{
+				// 3. byte < 0x40 : 그대로 출력
+				int32 count = opcode;
+
+				for (int32 i = 0; i < count; i++)
+				{
+					if (x >= grpRect.Left && x < grpRect.Left + grpRect.Right)
+					{
+						uint32 pixel = palette->GetColor(*pStream);
+						*(uint32*)pDest = pixel;
+						pDest -= 4;
+					}
+
+					pStream++;
+					x--;
+				}
 			}
 		}
 
