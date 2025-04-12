@@ -470,6 +470,9 @@ bool bDrawing = false;
 
 void Game::OnMouseMove(unsigned int nFlags, int x, int y)
 {
+	x /= 2;
+	y /= 2;
+
 #ifdef _DEBUG
 	if (bDrawing && bEnableDrawing)
 	{
@@ -587,6 +590,9 @@ LB_RETURN:
 
 void Game::OnLButtonDown(unsigned int nFlags, int x, int y)
 {
+	x /= 2;
+	y /= 2;
+
 	bDrawing = true;
 
 	if (mPlayerOrder != PlayerOrder::None)
@@ -662,11 +668,17 @@ void Game::OnLButtonDown(unsigned int nFlags, int x, int y)
 
 void Game::OnRButtonUp(unsigned int nFlags, int x, int y)
 {
+	x /= 2;
+	y /= 2;
+
 	// TODO: OnRButtonUp Implementation
 }
 
 void Game::OnRButtonDown(unsigned int nFlags, int x, int y)
 {
+	x /= 2;
+	y /= 2;
+
 	if (!mbSelectable)
 	{
 		return;

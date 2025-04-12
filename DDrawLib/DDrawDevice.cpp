@@ -74,8 +74,10 @@ bool DDrawDevice::Initialize(HWND hWnd)
 
 	OnUpdateWindowPos();
 
-	uint32 width = mWindowRect.right - mWindowRect.left;
-	uint32 height = mWindowRect.bottom - mWindowRect.top;
+	//uint32 width = mWindowRect.right - mWindowRect.left;
+	//uint32 height = mWindowRect.bottom - mWindowRect.top;
+	uint32 width = 640;
+	uint32 height = 480;
 
 	Camera::Instance.SetSize({ (int32)width, (int32)height });
 
@@ -1336,8 +1338,10 @@ void DDrawDevice::OnUpdateWindowSize()
 
 	OnUpdateWindowPos();
 
-	uint32 width = mWindowRect.right - mWindowRect.left;
-	uint32 height = mWindowRect.bottom - mWindowRect.top;
+	//uint32 width = mWindowRect.right - mWindowRect.left;
+	//uint32 height = mWindowRect.bottom - mWindowRect.top;
+	uint32 width = 640;
+	uint32 height = 480;
 
 	createBackSurface(width, height);
 

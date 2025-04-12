@@ -139,8 +139,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	//constexpr int CLIENT_WIDTH = 1920;
 	//constexpr int CLIENT_HEIGHT = 1080;
 
-	constexpr int CLIENT_WIDTH = 640;
-	constexpr int CLIENT_HEIGHT = 480;
+	constexpr int CLIENT_WIDTH = 640 * 2;
+	constexpr int CLIENT_HEIGHT = 480 * 2;
 
 	RECT rect = { 0, 0, CLIENT_WIDTH, CLIENT_HEIGHT };
 	AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, TRUE);
