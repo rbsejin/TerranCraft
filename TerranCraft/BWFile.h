@@ -35,7 +35,7 @@ struct SpriteData
 	uint8 Unknown[SPRITE_COUNT];
 	uint8 IsVisibles[SPRITE_COUNT];
 	uint8 SelectionCircleImages[HEALTH_BAR_COUNT];
-	uint8 SelectionCircleOffsets[HEALTH_BAR_COUNT];
+	uint8 SelectionCircleOffsets[HEALTH_BAR_COUNT]; // Vert. Position
 };
 #pragma pack(pop)
 
@@ -64,83 +64,156 @@ struct UnitData
 	enum { INFESTATION_COUNT = 96 };
 	uint8 Graphics[UNIT_COUNT];
 	// 0xe4
-	uint16 Subunit1[UNIT_COUNT];
+	uint16 Subunit1s[UNIT_COUNT];
 	// 0x2ac
-	uint16 Subunit2[UNIT_COUNT];
+	uint16 Subunit2s[UNIT_COUNT];
 	// 0x474
-	uint16 Infestation[INFESTATION_COUNT];
+	uint16 Infestations[INFESTATION_COUNT];
 	// 0x53f
-	uint32 ConstructionAnimation[UNIT_COUNT];
+	uint32 ConstructionAnimations[UNIT_COUNT];
 	// 0x8c4
-	uint8 UnitDirection[UNIT_COUNT];
-	uint8 ShieldEnable[UNIT_COUNT];
-	uint16 ShieldAmount[UNIT_COUNT];
+	uint8 UnitDirections[UNIT_COUNT];
+	uint8 ShieldEnables[UNIT_COUNT];
+	uint16 ShieldAmounts[UNIT_COUNT];
 	// 0xc53
 	uint32 HitPoints[UNIT_COUNT]; // Hit Points of unit, note that the displayed value in broodwar is ceil(hitPoints/256)
-								  // Set to 1 to indicate existence for non-units. Official.
-	// 0xfe4
-	uint8 ElevationLevel[UNIT_COUNT];
-	uint8 Unknown[UNIT_COUNT];
-	uint8 Sublabel[UNIT_COUNT];
+	// Set to 1 to indicate existence for non-units. Official.
+// 0xfe4
+	uint8 ElevationLevels[UNIT_COUNT];
+	uint8 Unknowns[UNIT_COUNT];
+	uint8 Sublabels[UNIT_COUNT];
 	// 0x1290
-	uint8 CompAIIdle[UNIT_COUNT];
-	uint8 HumanAIIdle[UNIT_COUNT];
-	uint8 ReturntoIdle[UNIT_COUNT];
-	uint8 AttackUnit[UNIT_COUNT];
-	uint8 AttackMove[UNIT_COUNT];
+	uint8 CompAIIdles[UNIT_COUNT];
+	uint8 HumanAIIdles[UNIT_COUNT];
+	uint8 ReturntoIdles[UNIT_COUNT];
+	uint8 AttackUnits[UNIT_COUNT];
+	uint8 AttackMoves[UNIT_COUNT];
 	// 0x1704
-	uint8 GroundWeapon[UNIT_COUNT];
+	uint8 GroundWeapons[UNIT_COUNT];
 	uint8 MaxGroundHits[UNIT_COUNT];
-	uint8 AirWeapon[UNIT_COUNT];
+	uint8 AirWeapons[UNIT_COUNT];
 	uint8 MaxAirHits[UNIT_COUNT];
 	// 0x1a94
-	uint8 AIInternal[UNIT_COUNT]; // Ingore Strategic Suicide missions/Don't become a guard => Eanble
+	uint8 AIInternals[UNIT_COUNT]; // Ingore Strategic Suicide missions/Don't become a guard => Eanble
 	// 0x1b78
 	uint32 SpecialAbilityFlags[UNIT_COUNT];
-	uint8 TargetAcquisitionRange[UNIT_COUNT];
-	uint8 SightRange[UNIT_COUNT];
-	uint8 ArmorUpgrade[UNIT_COUNT];
-	uint8 UnitSize[UNIT_COUNT];
-	uint8 Armor[UNIT_COUNT];
-	uint8 RightClickAction[UNIT_COUNT];
+	uint8 TargetAcquisitionRanges[UNIT_COUNT];
+	uint8 SightRanges[UNIT_COUNT];
+	uint8 ArmorUpgrades[UNIT_COUNT];
+	uint8 UnitSizes[UNIT_COUNT];
+	uint8 Armors[UNIT_COUNT];
+	uint8 RightClickActions[UNIT_COUNT];
 	// 0x2460
-	uint16 ReadySound[106];
+	uint16 ReadySounds[106];
 	// 0x2534
-	uint16 WhatSoundStart[UNIT_COUNT];
-	uint16 WhatSoundEnd[UNIT_COUNT];
+	uint16 WhatSoundStarts[UNIT_COUNT];
+	uint16 WhatSoundEnds[UNIT_COUNT];
 	// 0x28c4
-	uint16 PissSoundStart[106];
-	uint16 PissSoundEnd[106];
-	uint16 YesSoundStart[106];
-	uint16 YesSoundEnd[106];
+	uint16 PissSoundStarts[106];
+	uint16 PissSoundEnds[106];
+	uint16 YesSoundStarts[106];
+	uint16 YesSoundEnds[106];
 	// 0x2c14
-	Int16Vector2 StarEditPlacementBox[UNIT_COUNT];
+	Int16Vector2 StarEditPlacementBoxes[UNIT_COUNT];
 	// 0x2fa4
-	Int16Vector2 AddonPosition[96]; // 106~201: 96 * 4
+	Int16Vector2 AddonPositions[96]; // 106~201: 96 * 4
 	// 0x3124
 	Int16Rect UnitDimensions[UNIT_COUNT];
-	uint16 Portrait[UNIT_COUNT];
-	uint16 MineralCost[UNIT_COUNT];
-	uint16 VespeneCost[UNIT_COUNT];
+	uint16 Portraits[UNIT_COUNT];
+	uint16 MineralCosts[UNIT_COUNT];
+	uint16 VespeneCosts[UNIT_COUNT];
 	// 0x3d9c
-	uint16 BuildTime[UNIT_COUNT];
+	uint16 BuildTimes[UNIT_COUNT];
 	// 0x3f64
-	uint16 Unknown1[UNIT_COUNT];
+	uint16 Unknown1s[UNIT_COUNT];
 	// 0x412c
 	uint8 StarEditGroupFlags[UNIT_COUNT];
 	// 0x4210
-	uint8 SupplyProvided[UNIT_COUNT];
-	uint8 SupplyRequired[UNIT_COUNT];
-	uint8 SpaceRequired[UNIT_COUNT];
-	uint8 SpaceProvided[UNIT_COUNT];
+	uint8 SupplyProvideds[UNIT_COUNT];
+	uint8 SupplyRequireds[UNIT_COUNT];
+	uint8 SpaceRequireds[UNIT_COUNT];
+	uint8 SpaceProvideds[UNIT_COUNT];
 	// 0x45a0
-	uint16 BuildScore[UNIT_COUNT];
-	uint16 DestroyScore[UNIT_COUNT];
+	uint16 BuildScores[UNIT_COUNT];
+	uint16 DestroyScores[UNIT_COUNT];
 	// 0x4930
-	uint16 UnitMapString[UNIT_COUNT];
-	uint8 BroodwarUnitFlag[UNIT_COUNT];
+	uint16 UnitMapStrings[UNIT_COUNT];
+	uint8 BroodwarUnitFlags[UNIT_COUNT];
 	uint16 StarEditAvailabilityFlags[UNIT_COUNT];
 };
 #pragma pack(pop)
 
 //static_assert(sizeof(UnitData) == 19876, "UnitData size is invalid");
+
+#pragma pack(push, 1)
+struct WeaponData
+{
+	enum { WEAPON_COUNT = 130 };
+	uint16 Labels[WEAPON_COUNT]; // Name
+	uint32 Graphics[WEAPON_COUNT]; // Flingy
+	uint8 Unuseds[WEAPON_COUNT];
+	uint16 TargetFlags[WEAPON_COUNT];
+	uint32 MinimumRanges[WEAPON_COUNT];
+	uint32 MaximumRanges[WEAPON_COUNT];
+	uint8 DamageUpgrades[WEAPON_COUNT];
+	uint8 WeaponTypes[WEAPON_COUNT];
+	uint8 WeaponBehaviors[WEAPON_COUNT];
+	uint8 RemoveAfters[WEAPON_COUNT];
+	uint8 ExplosionTypes[WEAPON_COUNT];
+	uint16 InnerSplashRanges[WEAPON_COUNT]; // Inside
+	uint16 MediumSplashRanges[WEAPON_COUNT]; // Center
+	uint16 OuterSplashRanges[WEAPON_COUNT]; // Outside
+	uint16 DamageAmounts[WEAPON_COUNT];
+	uint16 DamageBonuss[WEAPON_COUNT];
+	uint8 WeaponCooldowns[WEAPON_COUNT];
+	uint8 DamageFactors[WEAPON_COUNT];
+	uint8 AttackAngles[WEAPON_COUNT]; // degree
+	uint8 LaunchSpins[WEAPON_COUNT]; // degree
+	uint8 ForwardOffsets[WEAPON_COUNT]; // x
+	uint8 UpwardOffsets[WEAPON_COUNT]; // y
+	uint16 TargetErrorMessages[WEAPON_COUNT];
+	uint16 Icons[WEAPON_COUNT];
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+struct UpgradeData
+{
+	enum { UPGRADE_COUNT = 61 };
+	uint16 MineralCostBases[UPGRADE_COUNT];
+	uint16 MineralCostFactors[UPGRADE_COUNT];
+	uint16 VespeneCostBases[UPGRADE_COUNT];
+	uint16 BespeneCostFactors[UPGRADE_COUNT];
+	uint16 ResearchTimeBases[UPGRADE_COUNT];
+	uint16 ResearchTimeFactors[UPGRADE_COUNT];
+	uint16 Unknowns[UPGRADE_COUNT];
+	uint16 Icons[UPGRADE_COUNT];
+	uint16 Labels[UPGRADE_COUNT]; // Name
+	uint8 Races[UPGRADE_COUNT];
+	uint8 MaxRepeats[UPGRADE_COUNT];
+	uint8 BroodwarOnlys[UPGRADE_COUNT];
+};
+#pragma pack(pop)
+
+struct ButtonSet
+{
+	enum { BUTTON_SET_COUNT = 250 };
+	struct ButtonList
+	{
+		uint32 ButtonCount;
+		uint32 Unknown1;
+		struct ButtonInfo
+		{
+			uint16 Location;
+			uint16 Icon;
+			uint32 Condition;
+			uint32 Action;
+			uint16 ConditionValue;
+			uint16 ActionValue;
+			uint16 Enable;
+			uint16 Disable;
+		};
+		ButtonInfo ButtonInfos[1];
+	};
+	ButtonList* ButtonLists[BUTTON_SET_COUNT];
+};

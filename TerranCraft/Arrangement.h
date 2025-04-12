@@ -6,6 +6,9 @@ struct ImageData;
 struct UnitData;
 struct SpriteData;
 struct FlingyData;
+struct ButtonSet;
+struct WeaponData;
+struct UpgradeData;
 
 class Arrangement
 {
@@ -20,6 +23,9 @@ public:
 	const SpriteData* GetSpriteData() const { return mSpriteData; }
 	const FlingyData* GetFlingyData() const { return mFlingyData; }
 	const UnitData* GetUnitData() const { return mUnitData; }
+	const WeaponData* GetWeaponData() const { return mWeaponData; }
+	const UpgradeData* GetUpgradeData() const { return mUpgradeData; }
+	const ButtonSet* GetButtonSet() const { return mButtonSet; }
 private:
 	Arrangement() = default;
 	~Arrangement();
@@ -31,4 +37,8 @@ private:
 	SpriteData* mSpriteData = nullptr;
 	FlingyData* mFlingyData = nullptr;
 	UnitData* mUnitData = nullptr;
+	WeaponData* mWeaponData = nullptr;
+	UpgradeData* mUpgradeData = nullptr;
+	ButtonSet* mButtonSet = nullptr;
+	uint8* mButtonSetData = nullptr;
 };

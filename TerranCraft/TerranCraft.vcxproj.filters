@@ -102,9 +102,6 @@
     <ClInclude Include="..\BWLib\WeaponType.h">
       <Filter>BWLib</Filter>
     </ClInclude>
-    <ClInclude Include="..\ImageData\ImageResource.h">
-      <Filter>ImageData</Filter>
-    </ClInclude>
     <ClInclude Include="PathFinder.h">
       <Filter>Game</Filter>
     </ClInclude>
@@ -144,6 +141,12 @@
     <ClInclude Include="BWFile.h">
       <Filter>Game</Filter>
     </ClInclude>
+    <ClInclude Include="Bullet.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Order.h">
+      <Filter>Game</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TerranCraft.cpp">
@@ -163,9 +166,6 @@
     </ClCompile>
     <ClCompile Include="Image.cpp">
       <Filter>Game</Filter>
-    </ClCompile>
-    <ClCompile Include="..\ImageData\ImageResource.cpp">
-      <Filter>ImageData</Filter>
     </ClCompile>
     <ClCompile Include="..\Util\Util.cpp">
       <Filter>Util</Filter>

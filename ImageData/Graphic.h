@@ -56,32 +56,10 @@ struct PCXHeader
 
 static_assert(sizeof(PCXHeader) == 128, "PCXHeader size is invalid");
 
-struct RGBByte
+struct PCXImage
 {
-	uint8 R;
-	uint8 G;
-	uint8 B;
-};
-
-struct PCXPalette
-{
-	uint8 Manufacturer;
-
-	RGBByte Color[256];
-};
-
-union RGBColor
-{
-	struct
-	{
-		uint8 B;
-		uint8 G;
-		uint8 R;
-		uint8 Reserved;
-	};
-	struct
-	{
-		// 0xXXRRGGBB
-		uint32 Value;
-	};
+	PALETTEENTRY PaletteData[256];
+	int32 Width;
+	int32 Height;
+	uint8 Data[1];
 };

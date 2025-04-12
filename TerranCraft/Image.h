@@ -8,20 +8,21 @@
 
 struct GRPHeader;
 struct GRPFrame;
-class Palette;
 class Sprite;
+
+class DDrawDevice;
 
 class Image final
 {
 public:
-	static BW::ImageNumber GetImagePrimaryID(BW::SpriteNumber spriteID);
-
 	Image() = default;
 	~Image() = default;
 
 	bool Initialize(BW::ImageNumber imageID, Sprite* parent);
 
 	void UpdateGraphicData();
+
+	void DrawImage(DDrawDevice* ddrawDevice) const;
 
 	const GRPFrame* GetCurrentFrame() const;
 	const uint8* GetCompressedImage() const;
@@ -35,7 +36,7 @@ public:
 	void SetDirection(uint8 direction);
 	bool IsFlipped() const { return mFlags & 0x0002; }
 	bool IsHidden() const { return mFlags & 0x0040; }
-	void Hide(bool isHidden) { isHidden ? mFlags |= 0x0040 : mFlags &= ~0x0040; }
+	void SetHidden(bool isHidden) { isHidden ? mFlags |= 0x0040 : mFlags &= ~0x0040; }
 	void SetOffsets(IntVector2 offset) { mOffset = offset; }
 	IntVector2 GetOffsets() const { return mOffset; }
 	uint16 GetIScriptHeader() const { return mIScriptHeader; }
@@ -48,11 +49,9 @@ public:
 	uint16 GetFrameSet() const { return mFrameSet; }
 	void SetFrameSet(uint16 frameSet) { mFrameSet = frameSet; }
 	uint32 GetFrameIndex() const { return mFrameIndex; }
-	//void SetFrameIndex(uint32 frameIndex) { mFrameIndex = frameIndex; }
 	void UpdateFrameIndex();
 	IntRect GetGRPBounds() const { return mGRPBounds; }
 	const GRPHeader* GetGRPFile() const { return mGRPFile; }
-	const Palette* GetPalette() const { return mPalette; }
 	const Sprite* GetParent() const { return mParent; }
 	Sprite* GetParent() { return mParent; }
 
@@ -60,6 +59,12 @@ private:
 	BW::ImageNumber mImageID = BW::ImageNumber::None;
 	//BW::RLEType mRLE = BW::RLEType::Normal;
 	uint8 mDirection = 0; // 0 ~ 31
+	/*  0x0001  - Redraw
+		0x0002  - Flipped/Mirrored
+		0x0008  - Has rotation frames
+		0x0020  - Clickable
+		0x0040  - Hidden/Invisible (don't draw)
+	*/
 	uint8 mFlags = 0;
 	IntVector2 mOffset = { 0, };
 	uint16 mIScriptHeader = 0;
@@ -72,6 +77,5 @@ private:
 	IntVector2 mScreenPosition = { 0, };
 	IntRect mGRPBounds = { 0, };
 	const GRPHeader* mGRPFile = nullptr;
-	const Palette* mPalette = nullptr;
 	Sprite* mParent = nullptr;
 };

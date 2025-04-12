@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <time.h>
 #include "../DDrawLib/DDrawDevice.h"
-#include "../ImageData/ImageResource.h"
 #include "../ImageData/Graphic.h"
 #include "Game.h"
 #include "Unit.h"
@@ -17,8 +16,14 @@
 #include "AnimationController.h"
 #include "BWFile.h"
 #include "Arrangement.h"
+#include "../BWLib/WeaponType.h"
+#include "../BWLib/UpgradeType.h"
+#include "../ImageData/Palette.h"
 
 Game* gGame = nullptr;
+
+std::list<Sprite*> Game::Sprites;
+GRPHeader* Game::sGRPFiles[IMAGE_COUNT];
 
 Game::Game()
 {
@@ -43,355 +48,36 @@ bool Game::Initalize(HWND hWnd)
 		goto LB_RETURN;
 	}
 
-	const char* consolePath = "../data/STARDAT/game/tconsole.pcx";
-
-	loadPCX(consolePath);
-
+#pragma region Load Resources
 	Arrangement::Instance.Load();
-	ImageResource::Instance.Load("../data/palettelist.txt");
-
+	loadImages();
 	AnimationController::Instance.Load("../data/STARDAT/scripts/iscript.bin");
 
-	Unit* unit = new Unit();
-
-	if (!unit->Initialize(BW::UnitType::Terran_Marine))
-	{
-		goto LB_RETURN;
-	}
-	unit->SetPosition({ 128, 128 });
-	mUnits.push_back(unit);
-
-	// Test
-	mTestUnit = unit;
-	mTestSprite = unit->GetSprite();
-	mTestImage = mTestSprite->GetPrimaryImage();
-
-#if 0
-	Unit* unit2 = new Unit();
-	if (!unit2->Initialize(BW::UnitType::Terran_SCV))
-	{
-		goto LB_RETURN;
-	}
-	mUnits.push_back(unit2);
-#endif
 	loadMap();
+	loadGRP(&mButtonsGRP, "../data/STARDAT/unit/cmdbtns/cmdicons.grp");
+	loadGRP(&mTCmdBtnsGRP, "../data/STARDAT/unit/cmdbtns/tcmdbtns.grp");
+	loadPCX(&mTConsolePCX, "../data/STARDAT/game/tconsole.pcx");
+	loadPCX(&mTUnitPCX, "../data/STARDAT/game/tunit.pcx");
+	loadPCX(&mTSelectPCX, "../data/STARDAT/game/tselect.pcx");
+	loadPCX(&mTWirePCX, "../data/STARDAT/game/twire.pcx");
 
-#pragma region cmdicon
+	pcxToPaletteEntries(mTUnitPCX, Palette::sTUnitPaletteEntries);
+	pcxToPaletteEntries(mTSelectPCX, Palette::sTSelectPaletteEntries);
+	pcxToPaletteEntries(mTWirePCX, Palette::sTWirePaletteEntries);
 
-	FILE* fp = nullptr;
-	fopen_s(&fp, "../data/STARDAT/unit/cmdbtns/cmdicons.grp", "rb");
-
-	if (fp == nullptr)
+#pragma region wirefram
 	{
-		goto LB_RETURN;
+		char paths[WIRE_FRAME_COUNT][MAX_PATH] = {
+			"../data/STARDAT/unit/wirefram/grpwire.grp", // multi selection wireframe
+			"../data/STARDAT/unit/wirefram/tranwire.grp", // transport wireframe
+			"../data/STARDAT/unit/wirefram/wirefram.grp" // single selection wireframe
+		};
+
+		for (int32 i = 0; i < WIRE_FRAME_COUNT; i++)
+		{
+			loadGRP(mWireframeGRPs + i, paths[i]);
+		}
 	}
-
-	fseek(fp, 0, SEEK_END);
-	int32 fileSize = ftell(fp);
-
-	rewind(fp);
-
-	mButtonsGRP = (GRPHeader*)malloc(fileSize);
-	fread(mButtonsGRP, fileSize, 1, fp);
-
-	fclose(fp);
-
-	memset(mButtonsets, 0, sizeof(mButtonsets));
-	ButtonInfo button;
-	Buttonset* buttonset = mButtonsets;
-
-	// Marine
-	{
-		buttonset = mButtonsets + eButtonset::Marine;
-
-		// Move
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 1;
-		button.Icon = CommandIcon::Move;
-		button.Enable = 664;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Stop
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 2;
-		button.Icon = CommandIcon::Stop;
-		button.Enable = 665;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Attack
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 3;
-		button.Icon = CommandIcon::Attack;
-		button.Enable = 666;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Patrol
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 4;
-		button.Icon = CommandIcon::Patrol;
-		button.Enable = 667;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Hold Position
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 5;
-		button.Icon = CommandIcon::HoldPosition;
-		button.Enable = 668;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Use Stimpack
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 7;
-		button.Icon = CommandIcon::UseStimpack;
-		button.Enable = 334;
-		button.Disable = 346;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-	}
-
-	// SCV
-	{
-		buttonset = mButtonsets + eButtonset::SCV;
-
-		// Move
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 1;
-		button.Icon = CommandIcon::Move;
-		button.Enable = 664;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Stop
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 2;
-		button.Icon = CommandIcon::Stop;
-		button.Enable = 665;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Attack
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 3;
-		button.Icon = CommandIcon::Attack;
-		button.Enable = 666;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Repair
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 4;
-		button.Icon = CommandIcon::Repair;
-		button.Enable = 667;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Gather
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 5;
-		button.Icon = CommandIcon::Gather;
-		button.Enable = 675;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Return Resoruces
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 6;
-		button.Icon = CommandIcon::ReturnResource;
-		button.Enable = 676;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Terran Basic Building
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 7;
-		button.Icon = CommandIcon::TerranBasicBuilding;
-		button.Enable = 677;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Terran Advanced Building
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 8;
-		button.Icon = CommandIcon::TerranAdvancedBuilding;
-		button.Enable = 678;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Cancel
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 9;
-		button.Icon = CommandIcon::Cancel;
-		button.Enable = 669;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-	}
-
-	// Command Center
-	{
-		buttonset = mButtonsets + eButtonset::TerranCommandCenter;
-
-		// Move
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 1;
-		button.Icon = CommandIcon::Move;
-		button.Enable = 664;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// SCV
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 1;
-		button.Icon = CommandIcon::SCV;
-		button.Enable = 592;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Stop
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 2;
-		button.Icon = CommandIcon::Stop;
-		button.Enable = 665;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Set Rally Point
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 6;
-		button.Icon = CommandIcon::SetRallyPoint;
-		button.Enable = 672;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Comsat Station
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 7;
-		button.Icon = CommandIcon::ComsatStation;
-		button.Enable = 658;
-		button.Disable = 708;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Nuclear Silo
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 8;
-		button.Icon = CommandIcon::NuclearSilo;
-		button.Enable = 659;
-		button.Disable = 709;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Land
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 9;
-		button.Icon = CommandIcon::Land;
-		button.Enable = 670;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Lift Off
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 9;
-		button.Icon = CommandIcon::LiftOff;
-		button.Enable = 671;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Cancel
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 9;
-		button.Icon = CommandIcon::Cancel;
-		button.Enable = 693;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Cancel
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 9;
-		button.Icon = CommandIcon::Cancel;
-		button.Enable = 694;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-	}
-
-	// Terran Structure Construction
-	{
-		buttonset = mButtonsets + eButtonset::TerranStructureConstruction;
-
-		// Command Center
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 1;
-		button.Icon = CommandIcon::CommandCenter;
-		button.Enable = 646;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Supply Depot
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 2;
-		button.Icon = CommandIcon::SupplyDepot;
-		button.Enable = 647;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Refinery
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 3;
-		button.Icon = CommandIcon::Refinery;
-		button.Enable = 648;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Barracks
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 4;
-		button.Icon = CommandIcon::Barracks;
-		button.Enable = 649;
-		button.Disable = 710;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Engineering Bay
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 5;
-		button.Icon = CommandIcon::EngineeringBay;
-		button.Enable = 650;
-		button.Disable = 715;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Missile Tower
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 6;
-		button.Icon = CommandIcon::MissileTower;
-		button.Enable = 651;
-		button.Disable = 717;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Academy
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 7;
-		button.Icon = CommandIcon::Academy;
-		button.Enable = 652;
-		button.Disable = 711;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Bunker
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 8;
-		button.Icon = CommandIcon::Bunker;
-		button.Enable = 653;
-		button.Disable = 718;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-
-		// Cancel
-		memset(&button, 0, sizeof(ButtonInfo));
-		button.Location = 9;
-		button.Icon = CommandIcon::Cancel;
-		button.Enable = 688;
-		button.Disable = 0;
-		buttonset->ButtonList[buttonset->ButtonCount++] = button;
-	}
-
 #pragma endregion
 
 #pragma region Cursor
@@ -405,7 +91,7 @@ bool Game::Initalize(HWND hWnd)
 	}
 
 	char buffer[1024] = { 0, };
-	int index = 0;
+	int32 index = 0;
 	char cursorFilename[MAX_PATH] = { 0, };
 
 	while (fgets(buffer, 1024, cursorListFile) != nullptr)
@@ -426,34 +112,62 @@ bool Game::Initalize(HWND hWnd)
 			continue;
 		}
 
-		FILE* cursorFile = nullptr;
-
-		fopen_s(&cursorFile, cursorFilename, "rb");
-
-		if (cursorFile == nullptr)
-		{
-#ifdef _DEBUG
-			__debugbreak();
-#endif // _DEBUG
-			continue;
-		}
-
-		fseek(cursorFile, 0, SEEK_END);
-		int32 fileSize = ftell(cursorFile);
-
-		fseek(cursorFile, 0, SEEK_SET);
-
-		GRPHeader* cursorGRP = (GRPHeader*)malloc(fileSize);
-		fread(cursorGRP, fileSize, 1, cursorFile);
-
-		mCursorGRPs[index] = cursorGRP;
-
-		fclose(cursorFile);
+		loadGRP(mCursorGRPs + index, cursorFilename);
 	}
 
 	fclose(cursorListFile);
+#pragma endregion
+
+#pragma region CursorMarker
+	{
+		mCursorMarkerSprite = new Sprite();
+		mCursorMarkerSprite->Initalize(BW::SpriteNumber::Cursor_Marker);
+		Image* primaryImage = mCursorMarkerSprite->GetPrimaryImage();
+		primaryImage->SetHidden(true);
+	}
+#pragma endregion
 
 #pragma endregion
+
+	BW::UnitType unitTypes[4] = {
+		BW::UnitType::Terran_Marine,
+		BW::UnitType::Terran_SCV,
+		BW::UnitType::Terran_Vulture,
+		//BW::UnitType::Terran_Firebat
+		BW::UnitType::Terran_Medic
+	};
+
+	for (int32 j = 0; j < 4; j++)
+	{
+		for (int32 i = 0; i < 6; i++)
+		{
+			Unit* unit = new Unit();
+
+			if (!unit->Initialize(unitTypes[j]))
+			{
+				goto LB_RETURN;
+			}
+			unit->SetPosition({ 128 + i * 64.f, (j + 1) * 64.f });
+			mUnits.push_back(unit);
+		}
+	}
+
+	mButtonset = Arrangement::Instance.GetButtonSet();
+
+	for (int32 i = 0; i < SELECTION_CIRCLE_IMAGE_COUNT; i++)
+	{
+		BW::ImageNumber selectionCircle = (BW::ImageNumber)((uint16)BW::ImageNumber::IMG_SELECT_022 + i);
+
+		Image* selectionCircleImage = new Image();
+		if (!selectionCircleImage->Initialize(selectionCircle, nullptr))
+		{
+			__debugbreak();
+			delete selectionCircleImage;
+			continue;
+		}
+
+		mSelectionCircleImages[i] = selectionCircleImage;
+	}
 
 	srand((unsigned int)time(nullptr));
 
@@ -463,8 +177,66 @@ LB_RETURN:
 	return bResult;
 }
 
+void Game::pcxToPaletteEntries(PCXImage* pcx, PALETTEENTRY* pDest)
+{
+	PALETTEENTRY* palette = pcx->PaletteData;
+
+	uint8* buffer = pcx->Data;
+	int32 width = pcx->Width;
+	int32 x = 0;
+
+	while (x < width)
+	{
+		uint8 byte = *buffer++;
+		if ((byte & 0xc0) == 0xc0)
+		{
+			int32 count = byte & 0x3f;
+			uint8 index = *buffer++;
+			PALETTEENTRY color = pcx->PaletteData[index];
+
+			if (*(uint32*)&color != 0x00000000)
+			{
+				for (int32 i = 0; i < count; i++)
+				{
+					*(pDest + (x + i)) = color;
+				}
+			}
+
+			x += count;
+		}
+		else
+		{
+			PALETTEENTRY color = pcx->PaletteData[byte];
+			*(pDest + x) = color;
+			x++;
+		}
+	}
+}
+
 void Game::Cleanup()
 {
+	for (int32 i = 0; i < SELECTION_CIRCLE_IMAGE_COUNT; i++)
+	{
+		delete mSelectionCircleImages[i];
+		mSelectionCircleImages[i] = nullptr;
+	}
+
+	destroyGRP(&mTCmdBtnsGRP);
+
+	for (int32 i = 0; i < WIRE_FRAME_COUNT; i++)
+	{
+		destroyGRP(mWireframeGRPs + i);
+	}
+
+	for (Sprite* sprite : Sprites)
+	{
+		delete sprite;
+	}
+	Sprites.clear();
+
+	delete mCursorMarkerSprite;
+	mCursorMarkerSprite = nullptr;
+
 	AnimationController::Instance.Destroy();
 
 	for (int i = 0; i < CURSOR_IMAGE_COUNT; i++)
@@ -479,14 +251,11 @@ void Game::Cleanup()
 	delete mBuildingPreview;
 	mBuildingPreview = nullptr;
 
-	free(mButtonsGRP);
-	mButtonsGRP = nullptr;
-
-	free(mChunk);
-	mChunk = nullptr;
-
-	delete[] mMapImage;
-	mMapImage = nullptr;
+	destroyGRP(&mButtonsGRP);
+	destroyPCX(&mTSelectPCX);
+	destroyPCX(&mTUnitPCX);
+	destroyPCX(&mTConsolePCX);
+	destroyMap();
 
 	for (Unit* unit : mUnits)
 	{
@@ -494,7 +263,10 @@ void Game::Cleanup()
 	}
 	mUnits.clear();
 
-	ImageResource::Instance.Destroy();
+	for (GRPHeader* grp : sGRPFiles)
+	{
+		free(grp);
+	}
 
 	delete mDDrawDevice;
 	mDDrawDevice = nullptr;
@@ -573,30 +345,8 @@ void Game::OnKeyDown(unsigned int vkCode, unsigned int scanCode)
 		//	bEnableDrawing = !bEnableDrawing;
 		//	break;
 #endif // _DEBUG
-	case 'Q':
-	{
-		uint8 direction = mTestImage->GetDirection();
-		direction++;
-		if (direction >= 0x20)
-		{
-			direction -= 0x20;
-		}
-		mTestImage->SetDirection(direction);
-	}
-	break;
-	case 'W':
-	{
-		uint8 direction = mTestImage->GetDirection();
-		direction--;
-		if ((int8)direction < 0)
-		{
-			direction += 0x20;
-		}
-		mTestImage->SetDirection(direction);
-	}
-	break;
 	case 'B':
-		mCurrentButtonset = eButtonset::TerranStructureConstruction;
+		mCurrentButtonset = eButtonset::Terran_Structure_Construction;
 		break;
 	case 'C':
 		delete mBuildingPreview;
@@ -605,6 +355,7 @@ void Game::OnKeyDown(unsigned int vkCode, unsigned int scanCode)
 		break;
 	case 'S':
 	{
+#if 0
 		IntRect countourBounds = mSelectedUnits[0]->GetContourBounds();
 		FloatVector2 position = mSelectedUnits[0]->GetPosition();
 
@@ -613,18 +364,78 @@ void Game::OnKeyDown(unsigned int vkCode, unsigned int scanCode)
 		scv->Initialize(BW::UnitType::Terran_SCV);
 		scv->SetPosition({ (float)scvPosition.X, (float)scvPosition.Y });
 		mUnits.push_back(scv);
+#endif
+
+		for (int32 i = 0; i < mSelectedUnits.size(); i++)
+		{
+			//mSelectedUnits[i]->SetOrderType(BW::OrderType::Stop);
+			mSelectedUnits[i]->ClearOrders();
+			Order* order = new Order();
+			order->OrderType = BW::OrderType::Stop;
+			order->Target = nullptr;
+			mSelectedUnits[i]->AddOrder(order);
+
+			Sprite* sprite = mSelectedUnits[i]->GetSprite();
+
+			const std::list<Image*>* images = sprite->GetImages();
+			for (Image* image : *images)
+			{
+				BW::IScriptAnimation anim = BW::IScriptAnimation::Init;
+				image->SetAnim(anim);
+				uint16 iscriptHeader = image->GetIScriptHeader();
+				uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+				image->SetIScriptOffset(iscriptOffset);
+				image->SetSleep(0);
+			}
+		}
 	}
 	break;
 	case 'V':
 		break;
-	case VK_OEM_4:
-		mCursorIndex--;
-		break;
-	case VK_OEM_6:
-		mCursorIndex++;
-		break;
+	case 'A':
+	{
+		mPlayerOrder = PlayerOrder::Attack;
+	}
+	break;
+	case 'M':
+	{
+		mPlayerOrder = PlayerOrder::Move;
+	}
+	break;
+	case 'T':
+	{
+		for (int32 i = 0; i < mSelectedUnits.size(); i++)
+		{
+			uint8 cooldown = mSelectedUnits[i]->GetGroundWeaponCooldown();
+			cooldown /= 2;
+			mSelectedUnits[i]->SetGroundWeaponCooldown(cooldown);
+		}
+	}
+	break;
+	// delete key
+	case VK_DELETE:
+	{
+		for (int32 i = 0; i < mSelectedUnits.size(); i++)
+		{
+			Unit* unit = mSelectedUnits[i];
+			//unit->SetOrderType(BW::OrderType::Die);
+			unit->ClearOrders();
+			Order* order = new Order();
+			order->OrderType = BW::OrderType::Die;
+			order->Target = nullptr;
+			unit->AddOrder(order);
+
+			Sprite* sprite = unit->GetSprite();
+			sprite->OnDeselected();
+		}
+
+		mSelectedUnits.clear();
+	}
 	case VK_ESCAPE:
-		mCurrentButtonset = mSelectedUnits[0]->GetCurrentButtonset();
+		if (mSelectedUnits.size() > 0)
+		{
+			mCurrentButtonset = mSelectedUnits[0]->GetCurrentButtonset();
+		}
 		break;
 	default:
 		break;
@@ -674,6 +485,11 @@ void Game::OnMouseMove(unsigned int nFlags, int x, int y)
 	mCursorScreenPos.X = x;
 	mCursorScreenPos.Y = y;
 
+	if (!mbSelectable)
+	{
+		return;
+	}
+
 	if (mBuildingPreview != nullptr)
 	{
 		IntVector2 cameraPosition = Camera::Instance.GetPosition();
@@ -685,42 +501,21 @@ void Game::OnMouseMove(unsigned int nFlags, int x, int y)
 
 	if (nFlags & MK_LBUTTON)
 	{
-		mCursorIndex = 1;
-		mHoveredUnit = nullptr;
-
 		mCursorBounds.Left = x;
 		mCursorBounds.Top = y;
 
 		return;
 	}
-
-	for (Unit* unit : mUnits)
-	{
-		IntRect unitBound;
-		unitBound.Left = (int32)unit->GetPosition().X - unit->GetContourBounds().Left;
-		unitBound.Top = (int32)unit->GetPosition().Y - unit->GetContourBounds().Top;
-		unitBound.Right = (int32)unit->GetPosition().X + unit->GetContourBounds().Right;
-		unitBound.Bottom = (int32)unit->GetPosition().Y + unit->GetContourBounds().Bottom;
-
-		IntVector2 cursorMapPosition = { x, y };
-		cursorMapPosition.X += Camera::Instance.GetPosition().X;
-		cursorMapPosition.Y += Camera::Instance.GetPosition().Y;
-
-		if (IsCollisonRectVsPoint(unitBound, cursorMapPosition))
-		{
-			mHoveredUnit = unit;
-			// TODO: 아군: 3, 적군: 4, 중립: 5
-			mCursorIndex = 3;
-			return;
-		}
-	}
-
-	mCursorIndex = 0;
-	mHoveredUnit = nullptr;
 }
 
 void Game::OnLButtonUp(unsigned int nFlags, int x, int y)
 {
+	if (!mbSelectable)
+	{
+		mbSelectable = true;
+		return;
+	}
+
 	bDrawing = false;
 
 	std::vector<Unit*> tempUnits;
@@ -731,13 +526,14 @@ void Game::OnLButtonUp(unsigned int nFlags, int x, int y)
 		for (Unit* unit : mSelectedUnits)
 		{
 			Sprite* sprite = unit->GetSprite();
-			sprite->SetSelectionIndex(-1);
+			sprite->OnDeselected();
 		}
-
 		mSelectedUnits.clear();
+
 		Sprite* sprite = mHoveredUnit->GetSprite();
-		sprite->SetSelectionIndex(0);
+		sprite->OnSelected(0);
 		mSelectedUnits.push_back(mHoveredUnit);
+		mCurrentButtonset = mHoveredUnit->GetCurrentButtonset();
 		goto LB_RETURN;
 	}
 
@@ -749,6 +545,11 @@ void Game::OnLButtonUp(unsigned int nFlags, int x, int y)
 
 	for (Unit* unit : mUnits)
 	{
+		if (tempUnits.size() >= MAX_SELECTED_UNIT_COUNT)
+		{
+			break;
+		}
+
 		Sprite* sprite = unit->GetSprite();
 		IntVector2 position = sprite->GetPosition();
 
@@ -763,19 +564,22 @@ void Game::OnLButtonUp(unsigned int nFlags, int x, int y)
 		for (Unit* unit : mSelectedUnits)
 		{
 			Sprite* sprite = unit->GetSprite();
-			sprite->SetSelectionIndex(-1);
+			sprite->OnDeselected();
 		}
 
-		for (int i = 0; i < tempUnits.size(); i++)
+		for (int32 i = 0; i < tempUnits.size(); i++)
 		{
 			Sprite* sprite = tempUnits[i]->GetSprite();
-			sprite->SetSelectionIndex(i);
+			sprite->OnSelected(i);
 		}
 
 		std::swap(mSelectedUnits, tempUnits);
+
+		// TODO: 여러 유닛 선택했을 때 버튼셋으로 수정할 것
+		mCurrentButtonset = mSelectedUnits[0]->GetCurrentButtonset();
 	}
 
-	mCursorIndex = 0;
+	//mCursorIndex = 0;
 
 LB_RETURN:
 	memset(&mCursorBounds, 0, sizeof(mCursorBounds));
@@ -784,6 +588,53 @@ LB_RETURN:
 void Game::OnLButtonDown(unsigned int nFlags, int x, int y)
 {
 	bDrawing = true;
+
+	if (mPlayerOrder != PlayerOrder::None)
+	{
+		IntVector2 cameraPosition = Camera::Instance.GetPosition();
+		x += cameraPosition.X;
+		y += cameraPosition.Y;
+
+		switch (mPlayerOrder)
+		{
+		case PlayerOrder::Attack:
+			if (mHoveredUnit != nullptr)
+			{
+				attack(x, y);
+			}
+			break;
+		case PlayerOrder::Move:
+			move(x, y);
+			break;
+		case PlayerOrder::HoldPosition:
+			break;
+		case PlayerOrder::Patrol:
+			break;
+		case PlayerOrder::Stop:
+			break;
+		case PlayerOrder::Harvest:
+			break;
+		case PlayerOrder::ReturnCargo:
+			break;
+		case PlayerOrder::Repair:
+			break;
+		case PlayerOrder::None:
+			break;
+		default:
+			break;
+		}
+
+		mCursorIndex = 0;
+		mPlayerOrder = PlayerOrder::None;
+		if (mHoveredUnit != nullptr)
+		{
+			markUnit();
+		}
+		else
+		{
+			markCursor();
+		}
+	}
 
 	if (mBuildingPreview != nullptr)
 	{
@@ -802,10 +653,11 @@ void Game::OnLButtonDown(unsigned int nFlags, int x, int y)
 		return;
 	}
 
+	// Drag
 	mCursorBounds.Left = x;
 	mCursorBounds.Top = y;
-	mCursorBounds.Right = x + 1;
-	mCursorBounds.Bottom = y + 1;
+	mCursorBounds.Right = x;
+	mCursorBounds.Bottom = y;
 }
 
 void Game::OnRButtonUp(unsigned int nFlags, int x, int y)
@@ -815,10 +667,83 @@ void Game::OnRButtonUp(unsigned int nFlags, int x, int y)
 
 void Game::OnRButtonDown(unsigned int nFlags, int x, int y)
 {
+	if (!mbSelectable)
+	{
+		return;
+	}
+
+#if 0
 	IntVector2 cameraPosition = Camera::Instance.GetPosition();
 	x += cameraPosition.X;
 	y += cameraPosition.Y;
+	move(x, y);
 
+	mCursorIndex = 0;
+	mPlayerOrder = PlayerOrder::None;
+	if (mHoveredUnit != nullptr)
+	{
+		markUnit();
+	}
+	else
+	{
+		markCursor();
+	}
+#endif
+}
+
+void Game::markCursor()
+{
+	Sprite* sprite = mCursorMarkerSprite;
+	Image* primaryImage = sprite->GetPrimaryImage();
+	primaryImage->SetHidden(false);
+
+	BW::IScriptAnimation anim = BW::IScriptAnimation::GndAttkInit;
+	primaryImage->SetAnim(anim);
+	uint16 iscriptHeader = primaryImage->GetIScriptHeader();
+	uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+	primaryImage->SetIScriptOffset(iscriptOffset);
+	primaryImage->SetSleep(0);
+}
+
+void Game::updateWireframePalette(const Unit* unit)
+{
+	BW::UnitType unitType = unit->GetUnitType();
+	int32 hp = unit->GetHP();
+	int32 maxHP = unit->GetMaxHP();
+	int32 lostHP = maxHP - hp;
+	float percent = (float)lostHP / maxHP;
+	int32 temp = (int32)(percent * 8);
+
+	PALETTEENTRY green = Palette::sTWirePaletteEntries[1];
+	PALETTEENTRY yellow = Palette::sTWirePaletteEntries[0];
+	PALETTEENTRY red = Palette::sTWirePaletteEntries[10];
+
+	PALETTEENTRY paletteEntries[4] = { green, green, green, green };
+	for (int32 i = 0; i < 4; i++)
+	{
+		uint8 wireIndex = 0;
+		if (temp == 0)
+		{
+			break;
+		}
+		else if (temp >= 2)
+		{
+			wireIndex = 1;
+			temp -= 2;
+			paletteEntries[i] = red;
+		}
+		else
+		{
+			wireIndex = 0;
+			temp = 0;
+			paletteEntries[i] = yellow;
+		}
+	}
+	Palette::SetEntries(Palette::sData, 208, 4, paletteEntries);
+}
+
+void Game::move(int x, int y)
+{
 	for (uint32 i = 0; i < mSelectedUnits.size(); i++)
 	{
 		Unit* unit = mSelectedUnits[i];
@@ -858,7 +783,71 @@ void Game::OnRButtonDown(unsigned int nFlags, int x, int y)
 		float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
 		FloatVector2 currentVelocity = { distanceX / distance, distanceY / distance };
 		unit->SetCurrentVelocity(currentVelocity);
+
+		// Walk Animation
+		Sprite* sprite = mSelectedUnits[i]->GetSprite();
+		Image* primaryImage = sprite->GetPrimaryImage();
+		BW::IScriptAnimation anim = BW::IScriptAnimation::Walking;
+		primaryImage->SetAnim(anim);
+		uint16 iscriptHeader = primaryImage->GetIScriptHeader();
+		uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+		primaryImage->SetIScriptOffset(iscriptOffset);
+		primaryImage->SetSleep(0);
+
+		{
+			Order* order = new Order();
+			order->OrderType = BW::OrderType::Move;
+			order->Target = nullptr;
+			mSelectedUnits[i]->AddOrder(order);
+		}
 	}
+}
+
+void Game::attack(int x, int y)
+{
+	// Attack Animation
+	for (int32 i = 0; i < mSelectedUnits.size(); i++)
+	{
+		// turn to target
+		Unit* unit = mSelectedUnits[i];
+		FloatVector2 position = unit->GetPosition();
+		FloatVector2 target = { (float)x, (float)y };
+
+		float distanceX = target.X - position.X;
+		float distanceY = target.Y - position.Y;
+
+		float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
+		float directionX = distanceX / distance;
+		float directionY = distanceY / distance;
+
+		float angle = atan2f(distanceY, distanceX);
+		angle += (float)M_PI;
+		uint8 direction = (uint8)(angle * 128.0f / M_PI - 64);
+		direction /= 8;
+
+		unit->SetFacingDirection(direction);
+
+		Sprite* sprite = unit->GetSprite();
+		Image* primaryImage = sprite->GetPrimaryImage();
+		BW::IScriptAnimation anim = BW::IScriptAnimation::GndAttkInit;
+		primaryImage->SetAnim(anim);
+		uint16 iscriptHeader = primaryImage->GetIScriptHeader();
+		uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+		primaryImage->SetIScriptOffset(iscriptOffset);
+		primaryImage->SetSleep(0);
+
+		{
+			Order* order = new Order();
+			order->OrderType = BW::OrderType::AttackUnit;
+			order->Target = mHoveredUnit;
+			mSelectedUnits[i]->AddOrder(order);
+		}
+	}
+}
+
+void Game::markUnit()
+{
+	mbSelectable = false;
 }
 
 bool Game::OnSysKeyDown(unsigned int vkCode, unsigned int scanCode, bool bAltKeyDown)
@@ -885,86 +874,33 @@ void Game::OnUpdateWindowPos()
 
 void Game::onGameFrame(ULONGLONG currentTick)
 {
-	//int32 testX = 0;
-	//int32 testY = 0;
-
-	// Keyboard
+#pragma region Keyboard
 	if (mbPressedLeft)
 	{
 		Camera::Instance.MoveViewPort(-CELL_SIZE, 0);
-		//testX--;
 	}
 
 	if (mbPressedRight)
 	{
 		Camera::Instance.MoveViewPort(CELL_SIZE, 0);
-		//testX++;
 	}
 
 	if (mbPressedUp)
 	{
 		Camera::Instance.MoveViewPort(0, -CELL_SIZE / 2);
-		//testY--;
 	}
 
 	if (mbPressedDown)
 	{
 		Camera::Instance.MoveViewPort(0, CELL_SIZE / 2);
-		//testY++;
 	}
+#pragma endregion
+
 #if 1
 	// Unit Position Update
 	for (Unit* unit : mUnits)
 	{
-		IntVector2 nextMovementWaypoint = unit->GetNextMovementWaypoint();
-		FloatVector2 position = unit->GetPosition();
-
-		float distanceX = nextMovementWaypoint.X - position.X;
-		float distanceY = nextMovementWaypoint.Y - position.Y;
-		float distanceSquare = distanceX * distanceX + distanceY * distanceY;
-
-		int32 speed = unit->GetSpeed();
-		FloatVector2 newPosition = position;
-
-		if (distanceSquare > speed * speed)
-		{
-			FloatVector2 currentVelocity = unit->GetCurrentVelocity();
-			newPosition.X += currentVelocity.X * speed;
-			newPosition.Y += currentVelocity.Y * speed;
-		}
-		else
-		{
-			newPosition.X = (float)nextMovementWaypoint.X;
-			newPosition.Y = (float)nextMovementWaypoint.Y;
-
-			std::list<IntVector2>* path = unit->GetPath();
-
-			if (!path->empty())
-			{
-				nextMovementWaypoint = path->front();
-				path->pop_front();
-				unit->SetNextMovementWaypoint(nextMovementWaypoint);
-
-				distanceX = nextMovementWaypoint.X - newPosition.X;
-				distanceY = nextMovementWaypoint.Y - newPosition.Y;
-
-				float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
-				FloatVector2 currentVelocity = { distanceX / distance, distanceY / distance };
-				unit->SetCurrentVelocity(currentVelocity);
-			}
-		}
-
-		unit->SetPosition(newPosition);
-
-		Sprite* sprite = unit->GetSprite();
-		IntVector2 spritePosition = { (int32)newPosition.X, (int32)newPosition.Y };
-		sprite->SetPosition(spritePosition);
-
-		const std::list<Image*>* images = sprite->GetImages();
-		for (Image* image : *images)
-		{
-			image->UpdateGraphicData();
-		}
+		unit->Update();
 	}
 
 	// Building Preview Update
@@ -978,27 +914,155 @@ void Game::onGameFrame(ULONGLONG currentTick)
 	{
 		Sprite* sprite = unit->GetSprite();
 		const std::list<Image*>* images = sprite->GetImages();
+
+		// TODO: intrusive list로 변경후에 하나의 for문으로 변경해야함.
+		std::list<Image*> tempImages;
 		for (Image* image : *images)
 		{
-			AnimationController::Instance.UpdateImageFrame(image, currentTick);
+			tempImages.push_back(image);
+		}
+		for (Image* image : tempImages)
+		{
+			AnimationController::Instance.UpdateImageFrame(unit, image);
+		}
+	}
+
+	std::list<Sprite*> tempSprites;
+	for (Sprite* sprite : Sprites)
+	{
+		tempSprites.push_back(sprite);
+	}
+
+	for (Sprite* sprite : tempSprites)
+	{
+		const std::list<Image*>* images = sprite->GetImages();
+		// TODO: intrusive list로 변경후에 하나의 for문으로 변경해야함.
+		std::list<Image*> tempImages;
+		for (Image* image : *images)
+		{
+			tempImages.push_back(image);
+		}
+		for (Image* image : tempImages)
+		{
+			AnimationController::Instance.UpdateImageFrame(nullptr, image);
 		}
 	}
 #endif
 
-	//IntVector2 position = mTestSprite->GetPosition();
-	//mTestSprite->SetPosition({ position.X + testX, position.Y + testY });
+	{
+		auto iter = mUnits.begin();
+		while (iter != mUnits.end())
+		{
+			Unit* unit = *iter;
+			Sprite* sprite = unit->GetSprite();
+			if (sprite != nullptr)
+			{
+				const std::list<Image*>* images = sprite->GetImages();
+				for (Image* image : *images)
+				{
+					image->UpdateGraphicData();
+				}
 
-	//mTestImage->UpdateGraphicData();
+				++iter;
+			}
+			else
+			{
+				// TODO: intrusive list로 변경후에 for문 없이 삭제하도록 수정해야함
+				iter = mUnits.erase(iter);
+
+				for (auto iter = mSelectedUnits.begin(); iter != mSelectedUnits.end(); iter++)
+				{
+					if (*iter == unit)
+					{
+						iter = mSelectedUnits.erase(iter);
+						break;
+					}
+				}
+
+				delete unit;
+			}
+		}
+	}
+
+	{
+		auto iter = Sprites.begin();
+		while (iter != Sprites.end())
+		{
+			Sprite* sprite = *iter;
+			if (sprite == nullptr)
+			{
+				iter = Sprites.erase(iter);
+				delete sprite;
+			}
+			else
+			{
+				const std::list<Image*>* images = sprite->GetImages();
+				for (Image* image : *images)
+				{
+					image->UpdateGraphicData();
+				}
+				++iter;
+			}
+		}
+	}
+
+	if (mHoveredUnit == nullptr)
+	{
+		if (mPlayerOrder == PlayerOrder::None)
+		{
+			mCursorIndex = 0;
+		}
+		else
+		{
+			mCursorIndex = 14;
+		}
+	}
+	else
+	{
+		if (mPlayerOrder == PlayerOrder::None)
+		{
+			mCursorIndex = 3;
+		}
+		else
+		{
+			mCursorIndex = 15;
+		}
+	}
+
+	mCursorFrame++;
+	if (mCursorFrame >= mCursorGRPs[mCursorIndex]->FrameCount * 3)
+	{
+		mCursorFrame = 0;
+	}
+
+	mHoveredUnit = nullptr;
 
 	for (Unit* unit : mUnits)
 	{
-		Sprite* sprite = unit->GetSprite();
-		const std::list<Image*>* images = sprite->GetImages();
-		for (Image* image : *images)
+		IntRect unitBound;
+		unitBound.Left = (int32)unit->GetPosition().X - unit->GetContourBounds().Left;
+		unitBound.Top = (int32)unit->GetPosition().Y - unit->GetContourBounds().Top;
+		unitBound.Right = (int32)unit->GetPosition().X + unit->GetContourBounds().Right;
+		unitBound.Bottom = (int32)unit->GetPosition().Y + unit->GetContourBounds().Bottom;
+
+		IntVector2 cursorMapPosition = { mCursorScreenPos.X, mCursorScreenPos.Y };
+		cursorMapPosition.X += Camera::Instance.GetPosition().X;
+		cursorMapPosition.Y += Camera::Instance.GetPosition().Y;
+
+		if (IsCollisonRectVsPoint(unitBound, cursorMapPosition))
 		{
-			image->UpdateGraphicData();
+			mHoveredUnit = unit;
+			// TODO: 아군: 3, 적군: 4, 중립: 5
+			break;
 		}
 	}
+
+	// Cursor Marker
+	IntVector2 cameraPosition = Camera::Instance.GetPosition();
+	mCursorMarkerSprite->SetPosition({ cameraPosition.X + mCursorScreenPos.X, cameraPosition.Y + mCursorScreenPos.Y });
+	Image* cursorMarkerImage = mCursorMarkerSprite->GetPrimaryImage();
+	AnimationController::Instance.UpdateImageFrame(nullptr, cursorMarkerImage);
+	cursorMarkerImage->UpdateGraphicData();
 }
 
 void Game::drawScene()
@@ -1029,78 +1093,59 @@ void Game::drawScene()
 
 		for (Unit* unit : mUnits)
 		{
-			if (unit != nullptr)
+			const Sprite* sprite = unit->GetSprite();
+			int32 spriteID = (int32)sprite->GetSpriteID();
+
 			{
-				const Sprite* sprite = unit->GetSprite();
+				int32 index = 0; // 0: green, 8: yellow, 16: red
+				constexpr int32 PALETTE_ENTRY_COUNT = 7;
+				PALETTEENTRY paletteEntries[PALETTE_ENTRY_COUNT] = { 0, };
+				Palette::SetEntries(Palette::sData, 1, PALETTE_ENTRY_COUNT, Palette::sTSelectPaletteEntries + index);
+			}
+			{
+				int32 index = 16;
+				constexpr int32 PALETTE_ENTRY_COUNT = 8;
+				Palette::SetEntries(Palette::sData, 8, PALETTE_ENTRY_COUNT, Palette::sTUnitPaletteEntries + index);
+			}
 
-#ifdef _DEBUG
-				if (sprite == nullptr)
+			sprite->Draw(mDDrawDevice);
+
+			if (sprite->IsSelected())
+			{
+				Image* selectionCircleImage = sprite->GetSelectionCircleImage();
+				IntVector2 position = selectionCircleImage->GetScreenPosition();
+				IntRect grpBound = selectionCircleImage->GetGRPBounds();
+				int32 width = grpBound.Right;
+				int32 height = grpBound.Bottom;
+
+				const SpriteData* spriteData = Arrangement::Instance.GetSpriteData();
+				int32 healthBarIndex = (int32)spriteID - (SpriteData::SPRITE_COUNT - SpriteData::HEALTH_BAR_COUNT);
+				int32 healthBar = spriteData->HealthBars[healthBarIndex];
 				{
-					__debugbreak();
-				}
-#endif // _DEBUG
-
-				const std::list<Image*>* images = sprite->GetImages();
-
-				//for (const Image* image : *images)
-				for (auto iter = images->rbegin(); iter != images->rend(); ++iter)
-				{
-					Image* image = *iter;
-#ifdef _DEBUG
-					if (image == nullptr)
+					int32 hpBar = (healthBar - 1) / 3;
+					if (hpBar < 6)
 					{
-						__debugbreak();
+						hpBar = 6;
 					}
-#endif // _DEBUG
+					int32 hpBarWidth = hpBar * 3;
+					int32 x = position.X + (width - hpBarWidth) / 2;
+					mDDrawDevice->DrawRect(x, position.Y + height + 10, hpBarWidth, 3, 0xffffffff);
 
-					if (image->IsHidden())
-					{
-						continue;
-					}
+					int32 maxHP = unit->GetMaxHP();
+					int32 unitHP = unit->GetHP();
 
-					const GRPFrame* frame = image->GetCurrentFrame();
-					const uint8* compressedImage = image->GetCompressedImage();
-					const Palette* palette = image->GetPalette();
-					IntVector2 screenPosition = image->GetScreenPosition();
-					IntRect grpBounds = image->GetGRPBounds();
+					hpBar = (int32)(ceilf((float)unitHP / maxHP * hpBar));
+					hpBarWidth = hpBar * 3;
 
-					if (image->GetImageID() == BW::ImageNumber::IMG_SELECT_022)
-					{
-						if (sprite->GetSelectionIndex() != -1)
-						{
-							const Palette* pal = ImageResource::Instance.GetPalette(5);
-							mDDrawDevice->DrawGRP2(screenPosition.X, screenPosition.Y, frame, grpBounds, compressedImage, pal);
-						}
-
-						continue;
-					}
-
-					if (!image->IsFlipped())
-					{
-						mDDrawDevice->DrawGRP2(screenPosition.X, screenPosition.Y, frame, grpBounds, compressedImage, palette);
-					}
-					else
-					{
-						mDDrawDevice->DrawGRP2Flipped(screenPosition.X, screenPosition.Y, frame, grpBounds, compressedImage, palette);
-					}
-
-					mDDrawDevice->DrawBound({ screenPosition.X, screenPosition.Y, screenPosition.X + grpBounds.Right, screenPosition.Y + grpBounds.Bottom }, 0xffff0000);
-
-#ifdef _DEBUG
-					if (mDDrawDevice->IsBoundOn)
-					{
-						FloatVector2 unitPosition = unit->GetPosition();
-						IntRect countourBounds = unit->GetContourBounds();
-						IntRect unitBound = { (int32)unitPosition.X - countourBounds.Left, (int32)unitPosition.Y - countourBounds.Top, (int32)unitPosition.X + countourBounds.Right, (int32)unitPosition.Y + countourBounds.Bottom };
-						unitBound.Left -= Camera::Instance.GetPosition().X;
-						unitBound.Right -= Camera::Instance.GetPosition().X;
-						unitBound.Top -= Camera::Instance.GetPosition().Y;
-						unitBound.Bottom -= Camera::Instance.GetPosition().Y;
-						mDDrawDevice->DrawBound(unitBound, 0xff00ff00);
-					}
-#endif // _DEBUG
+					mDDrawDevice->DrawRect(x, position.Y + height + 10, hpBarWidth, 3, 0xff00ff00);
 				}
 			}
+		}
+
+		// remnants, ...
+		for (Sprite* sprite : Game::Sprites)
+		{
+			sprite->Draw(mDDrawDevice);
 		}
 
 		// Building Prreview
@@ -1108,14 +1153,15 @@ void Game::drawScene()
 		{
 			const GRPFrame* frame = mBuildingPreview->GetCurrentFrame();
 			const uint8* compressedImage = mBuildingPreview->GetCompressedImage();
-			const Palette* palette = mBuildingPreview->GetPalette();
+			//const Palette* palette = mBuildingPreview->GetPalette();
+			PALETTEENTRY* palette = Palette::sData;
 			IntVector2 screenPosition = mBuildingPreview->GetScreenPosition();
 			mDDrawDevice->DrawGRPWithBlending(screenPosition.X, screenPosition.Y, frame, compressedImage, palette);
 		}
 
-		if (mChunk != nullptr)
+		if (mTConsolePCX != nullptr)
 		{
-			mDDrawDevice->DrawPCX(0, 0, mChunk, mImageWidth, mImageHeight, mPalette);
+			mDDrawDevice->DrawPCX(0, 0, mTConsolePCX->Data, mTConsolePCX->Width, mTConsolePCX->Height, mTConsolePCX->PaletteData);
 		}
 
 		if (mButtonsGRP != nullptr)
@@ -1123,51 +1169,165 @@ void Game::drawScene()
 			int x = 508;
 			int y = 358;
 
-			for (int32 i = 0; i < mButtonsets[mCurrentButtonset].ButtonCount; i++)
+			auto buttonList = mButtonset->ButtonLists[(uint32)mCurrentButtonset];
+
+			for (uint32 i = 0; i < buttonList->ButtonCount; i++)
 			{
-				ButtonInfo buttonInfo = mButtonsets[mCurrentButtonset].ButtonList[i];
+				ButtonSet::ButtonList::ButtonInfo buttonInfo = buttonList->ButtonInfos[i];
 				int location = buttonInfo.Location;
-				int32 frameIndex = (int32)mButtonsets[mCurrentButtonset].ButtonList[i].Icon;
+				int32 frameIndex = (int32)buttonList->ButtonInfos[i].Icon;
 				GRPFrame* frame = mButtonsGRP->Frames + frameIndex;
 				uint8* compressedImage = (uint8*)mButtonsGRP + frame->DataOffset;
-				mDDrawDevice->DrawGRP(x + (location - 1) % 3 * 47, y + (location - 1) / 3 * 41, frame, compressedImage, ImageResource::Instance.GetPalette(5));
+
+				Palette::SetEntries(Palette::sData, 1, 16, Palette::sIconData);
+
+				mDDrawDevice->DrawGRP(x + (location - 1) % 3 * 47, y + (location - 1) / 3 * 41, frame, compressedImage, Palette::sData);
 			}
 		}
 
 		mDDrawDevice->DrawBound(mCursorBounds, 0xff00ff00);
 
+#pragma region UI
+		// Wireframe
+		if (mSelectedUnits.size() == 1)
+		{
+			Unit* unit = mSelectedUnits[0];
+			BW::UnitType unitType = unit->GetUnitType();
+			int32 index = (uint32)unitType;
+
+			{
+				GRPHeader* wireframeGRP = mWireframeGRPs[2];
+				GRPFrame* frame = wireframeGRP->Frames + index;
+				uint8* compressedImage = (uint8*)wireframeGRP + frame->DataOffset;
+
+				int32 x = 177;
+				int32 y = 389;
+
+				updateWireframePalette(unit);
+				mDDrawDevice->DrawGRP(x, y, frame, compressedImage, Palette::sData);
+			}
+
+			{
+				int32 icons[4] = { 0, };
+				int32 upgradeCount = 0;
+
+				int32 x = 240;
+				int32 y = 440;
+
+				const UnitData* unitData = Arrangement::Instance.GetUnitData();
+				const UpgradeData* upgardeData = Arrangement::Instance.GetUpgradeData();
+				const WeaponData* weaponData = Arrangement::Instance.GetWeaponData();
+				int32 armorUpgradeIndex = unitData->ArmorUpgrades[index];
+				int32 armorIconIndex = upgardeData->Icons[armorUpgradeIndex];
+				if (armorIconIndex != 0)
+				{
+					icons[upgradeCount++] = armorIconIndex;
+				}
+
+				if (unitData->ShieldEnables[index] != 0)
+				{
+					icons[upgradeCount++] = upgardeData->Icons[15]; // Protoss Plasma Shields
+				}
+
+				int32 groundWeaponIndex = unitData->GroundWeapons[index];
+				if (groundWeaponIndex != (int32)BW::WeaponType::None)
+				{
+					int32 groundWeaponIconIndex = weaponData->Icons[groundWeaponIndex];
+					icons[upgradeCount++] = groundWeaponIconIndex;
+				}
+
+				int32 airWeaponIndex = unitData->AirWeapons[index];
+				if (airWeaponIndex != (int32)BW::WeaponType::None && groundWeaponIndex != airWeaponIndex)
+				{
+					int32 airWeaponIconIndex = weaponData->Icons[airWeaponIndex];
+					icons[upgradeCount++] = airWeaponIconIndex;
+				}
+
+				for (int32 i = 0; i < upgradeCount; i++)
+				{
+					if (icons[i] != 0)
+					{
+						if (mButtonsGRP != nullptr)
+						{
+							GRPFrame* frame = mButtonsGRP->Frames + icons[i];
+							uint8* compressedImage = (uint8*)mButtonsGRP + frame->DataOffset;
+							Palette::SetEntries(Palette::sData, 1, 16, Palette::sIconWireData);
+							mDDrawDevice->DrawGRP(x + 2, y + 2, frame, compressedImage, Palette::sData);
+						}
+					}
+
+					{
+						GRPFrame* frame = mTCmdBtnsGRP->Frames + 12;
+						uint8* compressedImage = (uint8*)mTCmdBtnsGRP + frame->DataOffset;
+						mDDrawDevice->DrawGRP(x, y, frame, compressedImage, Palette::sData);
+					}
+
+					x += 40;
+				}
+			}
+		}
+		else
+		{
+			for (int32 i = 0; i < mSelectedUnits.size(); i++)
+			{
+				Unit* unit = mSelectedUnits[i];
+				BW::UnitType unitType = unit->GetUnitType();
+				int32 index = (uint32)unitType;
+
+				{
+					int32 col = i / 2;
+					int32 row = i % 2;
+
+					int32 x = 167 + 37 * col;
+					int32 y = 396 + 37 * row;
+
+					GRPFrame* frame = mTCmdBtnsGRP->Frames + 2;
+					uint8* compressedImage = (uint8*)mTCmdBtnsGRP + frame->DataOffset;
+					mDDrawDevice->DrawGRP(x, y, frame, compressedImage, Palette::sData);
+
+					x += frame->Width / 2;
+					y += frame->Height / 2;
+
+					updateWireframePalette(unit);
+
+					GRPHeader* wireframeGRP = mWireframeGRPs[0];
+					GRPFrame* wireframe = wireframeGRP->Frames + index;
+					uint8* wireCompressedImage = (uint8*)wireframeGRP + wireframe->DataOffset;
+					int32 wireFrameX = x - wireframeGRP->Width / 2 + wireframe->X;
+					int32 wireFrameY = y - wireframeGRP->Height / 2 + wireframe->Y;
+					mDDrawDevice->DrawGRP(wireFrameX, wireFrameY, wireframe, wireCompressedImage, Palette::sData);
+				}
+			}
+		}
+
+		// Cursor Marker
+		{
+			Image* primaryImage = mCursorMarkerSprite->GetPrimaryImage();
+			if (!primaryImage->IsHidden())
+			{
+				const GRPFrame* frame = primaryImage->GetCurrentFrame();
+				const uint8* compressedImage = primaryImage->GetCompressedImage();
+				IntVector2 screenPosition = primaryImage->GetScreenPosition();
+				IntRect grpBound = primaryImage->GetGRPBounds();
+				mDDrawDevice->DrawGRP2(screenPosition.X, screenPosition.Y, frame, grpBound, compressedImage, Palette::sData);
+			}
+		}
+
 		// Cursor
 		if (mCursorGRPs[mCursorIndex] != nullptr)
 		{
-			GRPFrame* frame = mCursorGRPs[mCursorIndex]->Frames;
-			uint8* compressedImage = (uint8*)mCursorGRPs[mCursorIndex] + frame->DataOffset;
+			GRPHeader* cursorGRP = mCursorGRPs[mCursorIndex];
+			GRPFrame* frame = cursorGRP->Frames + mCursorFrame / 3;
+			uint8* compressedImage = (uint8*)cursorGRP + frame->DataOffset;
 
-			int32 x = mCursorScreenPos.X;
-			int32 y = mCursorScreenPos.Y;
+			int32 x = mCursorScreenPos.X - cursorGRP->Width / 2 + frame->X;
+			int32 y = mCursorScreenPos.Y - cursorGRP->Height / 2 + frame->Y;
 
-			if (mCursorIndex != 0)
-			{
-				x -= frame->Width / 2;
-				y -= frame->Height / 2;
-			}
-
-			mDDrawDevice->DrawGRP(x, y, frame, compressedImage, ImageResource::Instance.GetPalette(5));
+			mDDrawDevice->DrawGRP(x, y, frame, compressedImage, Palette::sData);
 		}
-#endif
+#pragma endregion
 
-		//IntVector2 screenPosition = mTestImage->GetScreenPosition();
-		//const GRPFrame* frame = mTestImage->GetCurrentFrame();
-		//const uint8* compressedImage = mTestImage->GetCompressedImage();
-		//const Palette* palette = mTestImage->GetPalette();
-		//
-		//if (!mTestImage->IsFlipped())
-		//{
-		//	mDDrawDevice->DrawGRP2(screenPosition.X, screenPosition.Y, frame, mTestImage->GetGRPBounds(), compressedImage, palette);
-		//}
-		//else
-		//{
-		//	mDDrawDevice->DrawGRP2Flipped(screenPosition.X, screenPosition.Y, frame, mTestImage->GetGRPBounds(), compressedImage, palette);
-		//}
+#endif
 
 		mDDrawDevice->EndDraw();
 	}
@@ -1305,7 +1465,16 @@ void Game::loadMap()
 	delete cv5;
 }
 
-bool Game::loadPCX(const char* filepath)
+void Game::destroyMap()
+{
+	delete[] mMapImage;
+	mMapImage = nullptr;
+
+	mMapImageWidth = 0;
+	mMapImageHeight = 0;
+}
+
+bool Game::loadPCX(PCXImage** outPCXImage, const char* filepath)
 {
 	bool bResult = false;
 
@@ -1321,16 +1490,11 @@ bool Game::loadPCX(const char* filepath)
 	int32 fileSize = ftell(fp);
 	rewind(fp);
 
-	free(mChunk);
-	mChunk = (Chunk*)malloc(fileSize + sizeof(Chunk) - 1);
-	memset(mChunk, 0, fileSize + sizeof(Chunk) - 1);
+	Chunk* chunk = (Chunk*)malloc(fileSize + sizeof(Chunk) - 1);
+	memset(chunk, 0, fileSize + sizeof(Chunk) - 1);
 
-	mChunk->Type[0] = 'P';
-	mChunk->Type[1] = 'C';
-	mChunk->Type[2] = 'X';
-	mChunk->Type[3] = ' ';
-	mChunk->Length = fileSize;
-	fread(mChunk->Data, 1, fileSize, fp);
+	chunk->Length = fileSize;
+	fread(chunk->Data, 1, fileSize, fp);
 
 	fclose(fp);
 #pragma endregion
@@ -1339,12 +1503,12 @@ bool Game::loadPCX(const char* filepath)
 	int32 width = 0;
 	int32 height = 0;
 
-	if (mChunk->Length < sizeof(PCXHeader) + 768 + 1)
+	if (chunk->Length <= sizeof(PCXHeader) + 0x300)
 	{
 		goto LB_RETURN;
 	}
 
-	memcpy(&header, mChunk->Data, sizeof(PCXHeader));
+	memcpy(&header, chunk->Data, sizeof(PCXHeader));
 	width = header.XMax - header.XMin + 1;
 	height = header.YMax - header.YMin + 1;
 
@@ -1361,11 +1525,17 @@ bool Game::loadPCX(const char* filepath)
 		goto LB_RETURN;
 	}
 
+	size_t pcxSize = sizeof(PCXImage) + chunk->Length - sizeof(PCXHeader) - 0x300 - 1;
+	*outPCXImage = (PCXImage*)malloc(pcxSize);
+	memset(*outPCXImage, 0, pcxSize);
 
-	mImageWidth = header.BytesPerLine;
-	mImageHeight = height;
+	(*outPCXImage)->Width = (int32)header.BytesPerLine;
+	(*outPCXImage)->Height = (int32)height;
 
-	const uint8* paletteCurrent = mChunk->Data + mChunk->Length - 768;
+	size_t dataSize = chunk->Length - sizeof(PCXHeader) - 0x300;
+	memcpy((*outPCXImage)->Data, chunk->Data + sizeof(PCXHeader), dataSize);
+
+	const uint8* paletteCurrent = chunk->Data + chunk->Length - 0x300;
 
 	if (*(paletteCurrent - 1) != 0x0c)
 	{
@@ -1374,14 +1544,87 @@ bool Game::loadPCX(const char* filepath)
 
 	for (int32 i = 0; i < 256; i++)
 	{
-		mPalette[i].R = paletteCurrent[3 * i];
-		mPalette[i].G = paletteCurrent[3 * i + 1];
-		mPalette[i].B = paletteCurrent[3 * i + 2];
-		mPalette[i].Reserved = 0;
+		(*outPCXImage)->PaletteData[i].peRed = paletteCurrent[3 * i];
+		(*outPCXImage)->PaletteData[i].peGreen = paletteCurrent[3 * i + 1];
+		(*outPCXImage)->PaletteData[i].peBlue = paletteCurrent[3 * i + 2];
+		(*outPCXImage)->PaletteData[i].peFlags = 0;
 	}
+
+	free(chunk);
+	chunk = nullptr;
 
 	bResult = true;
 
 LB_RETURN:
+	return bResult;
+}
+
+void Game::destroyPCX(PCXImage** pcxImage)
+{
+	free(*pcxImage);
+	*pcxImage = nullptr;
+}
+
+bool Game::loadGRP(GRPHeader** outGRPHeader, const char* filepath)
+{
+	bool bResult = false;
+
+	FILE* fp = nullptr;
+	fopen_s(&fp, filepath, "rb");
+
+	if (fp == nullptr)
+	{
+		goto LB_RETURN;
+	}
+
+	fseek(fp, 0, SEEK_END);
+	int32 fileSize = ftell(fp);
+
+	rewind(fp);
+
+	*outGRPHeader = (GRPHeader*)malloc(fileSize);
+	fread(*outGRPHeader, fileSize, 1, fp);
+
+	fclose(fp);
+
+	bResult = true;
+
+LB_RETURN:
+	return false;
+}
+
+void Game::destroyGRP(GRPHeader** grpHeader)
+{
+	free(*grpHeader);
+	*grpHeader = nullptr;
+}
+
+bool Game::loadImages()
+{
+	bool bResult = false;
+
+#pragma region Load GRP
+	{
+		constexpr size_t BUFFER_SIZE = 1024;
+		char buffer[BUFFER_SIZE] = { 0, };
+		int index = 0;
+
+		uint16 imageCount = Arrangement::Instance.GetImageCount();
+
+		for (int i = 0; i < imageCount; i++)
+		{
+			const ImageData* imageData = Arrangement::Instance.GetImageData();
+			const char* grpFilename = Arrangement::Instance.GetImageName(i);
+			char grpListFilename[MAX_PATH] = { 0, };
+			sprintf(grpListFilename, "%s/%s", "../data/STARDAT/unit/", grpFilename);
+
+			// Load GRP files
+			loadGRP(sGRPFiles + i, grpListFilename);
+		}
+	}
+#pragma endregion
+
+	bResult = true;
+
 	return bResult;
 }

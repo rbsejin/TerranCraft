@@ -1,11 +1,13 @@
 #pragma once
 
-#include <list>
-
 #include "../Common/typedef.h"
 #include "../ImageData/Graphic.h"
+#include "../BWLib/UnitType.h"
+#include "../BWLib/ImageNumber.h"
 #include "CommandIcon.h"
 #include <vector>
+#include <list>
+#include "Order.h"
 
 class DDrawDevice;
 class Image;
@@ -13,9 +15,40 @@ class Unit;
 struct Chunk;
 
 class Sprite;
+class Image;
 struct ImageData;
 struct SpriteData;
 struct UnitData;
+struct ButtonSet;
+
+enum class PlayerOrder
+{
+	Attack,
+	Move,
+	HoldPosition,
+	Patrol,
+	Stop,
+	Harvest,
+	ReturnCargo,
+	Repair,
+	None
+};
+
+enum class CursorType
+{
+	Arrow,
+	Drag,
+	Mag,
+	Scroll,
+	Target
+};
+
+enum class CursorTargetType
+{
+	Green, // Ally
+	Red, // Enemy
+	Yellow // Neutral
+};
 
 class Game final
 {
@@ -43,7 +76,26 @@ private:
 	void drawScene();
 
 	void loadMap();
-	bool loadPCX(const char* filepath);
+	void destroyMap();
+	bool loadPCX(PCXImage** outPCXImage, const char* filepath);
+	void destroyPCX(PCXImage** pcxImage);
+	bool loadGRP(GRPHeader** outGRPHeader, const char* filepath);
+	void destroyGRP(GRPHeader** grpHeader);
+	bool loadImages();
+
+	void move(int x, int y);
+	void attack(int x, int y);
+	void markUnit();
+	void markCursor();
+	void updateWireframePalette(const Unit* unit);
+	void pcxToPaletteEntries(PCXImage* pcx, PALETTEENTRY* pDest);
+
+public:
+	static std::list<Sprite*> Sprites;
+
+	// GRP Images
+	enum { IMAGE_COUNT = BW::ImageNumber::None };
+	static GRPHeader* sGRPFiles[IMAGE_COUNT];
 
 private:
 	DDrawDevice* mDDrawDevice = nullptr;
@@ -77,33 +129,37 @@ private:
 	uint32 mMapImageHeight = 0;
 
 	// PCX
-	Chunk* mChunk = nullptr;
-	RGBColor mPalette[256] = { 0, };
-	int32 mImageWidth = 0;
-	int32 mImageHeight = 0;
+	PCXImage* mTConsolePCX = nullptr;
+	PCXImage* mTUnitPCX = nullptr;
+	PCXImage* mTSelectPCX = nullptr;
+	PCXImage* mTWirePCX = nullptr;
 
 	// UI
-	GRPHeader* mButtonsGRP;
-	enum { BUTTON_COUNT = 9 };
-	enum { BUTTONSET_COUNT = 250 };
-	Buttonset mButtonsets[BUTTONSET_COUNT] = { 0, };
-	eButtonset mCurrentButtonset = eButtonset::Marine;
+	GRPHeader* mButtonsGRP = nullptr;
+	const ButtonSet* mButtonset = nullptr;
+	eButtonset mCurrentButtonset = eButtonset::None;
+	GRPHeader* mTCmdBtnsGRP = nullptr;
+	// wireframe
+	enum { WIRE_FRAME_COUNT = 3 };
+	GRPHeader* mWireframeGRPs[WIRE_FRAME_COUNT] = { 0, };
 
 	// Cursor
 	enum { CURSOR_IMAGE_COUNT = 19 };
 	GRPHeader* mCursorGRPs[CURSOR_IMAGE_COUNT] = { 0, };
 	int32 mCursorIndex = 0;
+	int32 mCursorFrame = 0;
 	IntVector2 mCursorScreenPos = { 0, };
 	IntRect mCursorBounds = { 0, };
+	//CursorType mCursorType = CursorType::Arrow;
+	Sprite* mCursorMarkerSprite = nullptr;
+	PlayerOrder mPlayerOrder = PlayerOrder::None;
+	bool mbSelectable = true;
 	
 	Image* mBuildingPreview = nullptr;
 
-	// Test
-	Unit* mTestUnit = nullptr;
-	Sprite* mTestSprite = nullptr;
-	Image* mTestImage = nullptr;
-	int32 mTestX = 0;
-	int32 mTestY = 0;
+	std::list<Order> mUnitOrders;
+	enum { SELECTION_CIRCLE_IMAGE_COUNT = 10 };
+	Image* mSelectionCircleImages[SELECTION_CIRCLE_IMAGE_COUNT];
 };
 
 extern Game* gGame;

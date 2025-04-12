@@ -4,6 +4,7 @@
 #include "../BWLib/IScriptEntryNumber.h"
 #include "../BWLib/IScriptAnimation.h"
 
+class Unit;
 class Image;
 
 struct IndexEntry
@@ -24,7 +25,7 @@ class AnimationController final
 public:
 	bool Load(const char* filename);
 	void Destroy();
-	void UpdateImageFrame(Image* image, ULONGLONG currentTick);
+	void UpdateImageFrame(Unit* unit, Image* image) const;
 
 	uint16 GetIScriptHeader(uint32 entryNumber) const;
 	uint16 GetIScriptOffset(uint16 headerOffset, BW::IScriptAnimation animation) const;

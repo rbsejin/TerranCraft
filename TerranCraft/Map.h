@@ -48,7 +48,7 @@ struct WPEData
 	uint8 R;
 	uint8 G;
 	uint8 B;
-	uint8 Padding;
+	uint8 Reserved;
 };
 
 struct WPE

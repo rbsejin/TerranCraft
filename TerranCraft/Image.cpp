@@ -1,6 +1,5 @@
 #include "pch.h"
 
-#include "../ImageData/ImageResource.h"
 #include "../ImageData/Graphic.h"
 #include "Sprite.h"
 #include "Image.h"
@@ -10,25 +9,9 @@
 #include "BWFile.h"
 #include "Arrangement.h"
 
-BW::ImageNumber Image::GetImagePrimaryID(BW::SpriteNumber spriteID)
-{
-	BW::ImageNumber imageID = BW::ImageNumber::None;
-	switch (spriteID)
-	{
-	case BW::SpriteNumber::Marine:
-		imageID = BW::ImageNumber::Marine;
-		break;
-	case BW::SpriteNumber::SCV:
-		imageID = BW::ImageNumber::SCV;
-		break;
-	case BW::SpriteNumber::Command_Center:
-		imageID = BW::ImageNumber::Command_Center;
-		break;
-	default:
-		break;
-	}
-	return imageID;
-}
+#include "../DDrawLib/DDrawDevice.h"
+#include "../ImageData/Palette.h"
+#include "Game.h"
 
 bool Image::Initialize(BW::ImageNumber imageID, Sprite* parent)
 {
@@ -36,57 +19,15 @@ bool Image::Initialize(BW::ImageNumber imageID, Sprite* parent)
 
 	mImageID = imageID;
 	mParent = parent;
-	mGRPFile = ImageResource::Instance.GetGRPFile(imageID);
 
 	const ImageData* imageData = Arrangement::Instance.GetImageData();
-	
+	int32 index = imageData->GRPFiles[(int32)imageID] - 1;
+	mGRPFile = Game::sGRPFiles[index];
 
 	uint32 IscriptID = imageData->IscriptIDs[(int32)imageID];
 
-#if 0
-	switch (imageID)
-	{
-	case BW::ImageNumber::Marine:
-		//mPalette = ImageResource::Instance.GetPalette(6);
-		iscriptEntryNumber = BW::IScriptEntryNumber::Marine;
-		break;
-	case BW::ImageNumber::Marine_Shadow:
-		//mPalette = ImageResource::Instance.GetPalette(4);
-		iscriptEntryNumber = BW::IScriptEntryNumber::Shadow_Header;
-		break;
-	case BW::ImageNumber::SCV:
-		//mPalette = ImageResource::Instance.GetPalette(6);
-		iscriptEntryNumber = BW::IScriptEntryNumber::SCV;
-		break;
-	case BW::ImageNumber::SCV_Shadow:
-		//mPalette = ImageResource::Instance.GetPalette(1);
-		iscriptEntryNumber = BW::IScriptEntryNumber::Shadow_Header;
-		break;
-	case BW::ImageNumber::Command_Center:
-		//mPalette = ImageResource::Instance.GetPalette(6);
-		iscriptEntryNumber = BW::IScriptEntryNumber::Command_Center;
-		break;
-	case BW::ImageNumber::Command_Center_Shadow:
-		//mPalette = ImageResource::Instance.GetPalette(1);
-		iscriptEntryNumber = BW::IScriptEntryNumber::Shadow_Header;
-		break;
-	case BW::ImageNumber::Command_Center_Overlay:
-		//mPalette = ImageResource::Instance.GetPalette(6);
-		iscriptEntryNumber = BW::IScriptEntryNumber::Command_Center_Overlay;
-		break;
-	case BW::ImageNumber::IMG_SELECT_022:
-		//mPalette = ImageResource::Instance.GetPalette(6);
-		iscriptEntryNumber = BW::IScriptEntryNumber::Circle_Marker;
-		break;
-	default:
-#ifdef _DEBUG
-		__debugbreak();
-#endif // _DEBUG
-		break;
-	}
-#endif
-
-	mPalette = ImageResource::Instance.GetPalette(6);
+	//int32 paletteIndex = imageData->Remappings[(int32)imageID];
+	//mPalette = ImageResource::Instance.GetPalette(paletteIndex);
 
 	mIScriptHeader = AnimationController::Instance.GetIScriptHeader(IscriptID);
 	mIScriptOffset = AnimationController::Instance.GetIScriptOffset(mIScriptHeader, mAnim);
@@ -141,8 +82,39 @@ void Image::UpdateGraphicData()
 	mGRPBounds = bounds;
 }
 
+void Image::DrawImage(DDrawDevice* ddrawDevice) const
+{
+	if (IsHidden())
+	{
+		return;
+	}
+
+	const GRPFrame* frame = GetCurrentFrame();
+	const uint8* compressedImage = GetCompressedImage();
+
+	if (!IsFlipped())
+	{
+		ddrawDevice->DrawGRP2(mScreenPosition.X, mScreenPosition.Y, frame, mGRPBounds, compressedImage, Palette::sData);
+	}
+	else
+	{
+		ddrawDevice->DrawGRP2Flipped(mScreenPosition.X, mScreenPosition.Y, frame, mGRPBounds, compressedImage, Palette::sData);
+	}
+
+#if 0
+	mDDrawDevice->DrawBound({ screenPosition.X, screenPosition.Y, screenPosition.X + grpBounds.Right, screenPosition.Y + grpBounds.Bottom }, 0xffff0000);
+#endif
+}
+
 const GRPFrame* Image::GetCurrentFrame() const
 {
+#ifdef _DEBUG
+	if (mFrameIndex >= mGRPFile->FrameCount)
+	{
+		__debugbreak();
+	}
+#endif // _DEBUG
+
 	return mGRPFile->Frames + mFrameIndex;
 }
 

@@ -36,25 +36,19 @@ bool DDrawDevice::Initialize(HWND hWnd)
 	ddsd.dwFlags = DDSD_CAPS;
 	ddsd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE;
 
-	if (FAILED(DirectDrawCreate(nullptr, &mDirectDraw, nullptr)))
+	if (FAILED(DirectDrawCreateEx(nullptr, (void**)&mDirectDraw, IID_IDirectDraw7, nullptr)))
 	{
-		MessageBox(nullptr, L"DirectDrawCreate() Failed", L"Error", MB_OK);
+		MessageBox(nullptr, L"DirectDrawCreateEx() Failed", L"Error", MB_OK);
 		goto LB_RESULT;
 	}
 
-	if (FAILED(mDirectDraw->QueryInterface(IID_IDirectDraw7, (void**)&mDirectDraw7)))
-	{
-		MessageBox(nullptr, L"QueryInterface() Failed", L"Error", MB_OK);
-		goto LB_RESULT;
-	}
-
-	if (FAILED(mDirectDraw7->SetCooperativeLevel(hWnd, DDSCL_NORMAL)))
+	if (FAILED(mDirectDraw->SetCooperativeLevel(hWnd, DDSCL_NORMAL)))
 	{
 		MessageBox(nullptr, L"SetCooperativeLevel() Failed", L"Error", MB_OK);
 		goto LB_RESULT;
 	}
 
-	if (FAILED(mDirectDraw7->CreateSurface(&ddsd, &mPrimarySurface, nullptr)))
+	if (FAILED(mDirectDraw->CreateSurface(&ddsd, &mPrimarySurface, nullptr)))
 	{
 		MessageBox(nullptr, L"CreateSurface() Failed", L"Error", MB_OK);
 		goto LB_RESULT;
@@ -110,12 +104,6 @@ void DDrawDevice::Cleanup()
 	{
 		mPrimarySurface->Release();
 		mPrimarySurface = nullptr;
-	}
-
-	if (mDirectDraw7 != nullptr)
-	{
-		mDirectDraw7->Release();
-		mDirectDraw7 = nullptr;
 	}
 
 	if (mDirectDraw != nullptr)
@@ -617,12 +605,9 @@ bool DDrawDevice::DrawBitmap(int32 screenX, int32 screenY, int32 width, int32 he
 	return bResult;
 }
 
-bool DDrawDevice::DrawPCX(int32 screenX, int32 screenY, const Chunk* chunk, int32 width, int32 height, const RGBColor* palette)
+bool DDrawDevice::DrawPCX(int32 screenX, int32 screenY, const uint8* buffer, int32 width, int32 height, const PALETTEENTRY* palette)
 {
 	bool bResult = false;
-
-	const uint8* dataCurrent = chunk->Data + 128;
-	const uint8* dataEnd = chunk->Data + chunk->Length - 767;
 
 	uint8* pDest = mLockedBackBuffer + screenY * mLockedBackBufferPitch + screenX * 4;
 
@@ -632,17 +617,18 @@ bool DDrawDevice::DrawPCX(int32 screenX, int32 screenY, const Chunk* chunk, int3
 
 		while (x < width)
 		{
-			uint8 byte = *dataCurrent++;
+			uint8 byte = *buffer++;
 			if ((byte & 0xc0) == 0xc0)
 			{
 				int32 count = byte & 0x3f;
-				uint8 color = *dataCurrent++;
+				uint8 index = *buffer++;
+				uint32 color = Palette::GetColor(palette, index);
 
-				if (palette[color].Value != 0x00000000)
+				if (color != 0x00000000)
 				{
 					for (int32 i = 0; i < count; i++)
 					{
-						*(uint32*)(pDest + (x + i) * 4) = palette[color].Value;
+						*(uint32*)(pDest + (x + i) * 4) = color;
 					}
 				}
 
@@ -650,7 +636,8 @@ bool DDrawDevice::DrawPCX(int32 screenX, int32 screenY, const Chunk* chunk, int3
 			}
 			else
 			{
-				*(uint32*)(pDest + x * 4) = palette[byte].Value;
+				uint32 color = Palette::GetColor(palette, byte);
+				*(uint32*)(pDest + x * 4) = color;
 				x++;
 			}
 		}
@@ -660,11 +647,10 @@ bool DDrawDevice::DrawPCX(int32 screenX, int32 screenY, const Chunk* chunk, int3
 
 	bResult = true;
 
-LB_RETURN:
 	return bResult;
 }
 
-bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GRPFrame* frame, const uint8* compressedImage, const Palette* palette)
+bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GRPFrame* frame, const uint8* compressedImage, const PALETTEENTRY* palette)
 {
 #ifdef _DEBUG
 	if (mLockedBackBuffer == nullptr)
@@ -730,7 +716,7 @@ bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GRPFrame* frame, c
 				{
 					// 2. 0x40 <= byte < 0x80 : 다음 바이트를 (byte - 0x40)만큼 반복해서 출력
 					int32 count = opcode - 0x40;
-					uint32 pixel = palette->GetColor(*pStream++);
+					uint32 pixel = Palette::GetColor(Palette::sData, *pStream++);
 					int32 pixelCount = count;
 
 					if (destX >= (int32)mWidth)
@@ -774,7 +760,7 @@ bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GRPFrame* frame, c
 
 					for (int i = 0; i < pixelCount; i++)
 					{
-						uint32 pixel = palette->GetColor(*pStream++);
+						uint32 pixel = Palette::GetColor(Palette::sData, *pStream++);
 						*(uint32*)pDest = pixel;
 						pDest -= 4;
 					}
@@ -809,7 +795,7 @@ bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GRPFrame* frame, c
 				{
 					// 2. 0x40 <= byte < 0x80 : 다음 바이트를 (byte - 0x40)만큼 반복해서 출력
 					int32 count = opcode - 0x40;
-					uint32 pixel = palette->GetColor(*pStream++);
+					uint32 pixel = Palette::GetColor(Palette::sData, *pStream++);
 					int32 pixelCount = count;
 
 					if (destX < 0)
@@ -853,7 +839,7 @@ bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GRPFrame* frame, c
 
 					for (int i = 0; i < pixelCount; i++)
 					{
-						uint32 pixel = palette->GetColor(*pStream++);
+						uint32 pixel = Palette::GetColor(Palette::sData, *pStream++);
 						*(uint32*)pDest = pixel;
 						pDest += 4;
 					}
@@ -871,7 +857,7 @@ LB_RETURN:
 	return bResult;
 }
 
-bool DDrawDevice::DrawGRPWithBlending(int32 screenX, int32 screenY, const GRPFrame* frame, const uint8* compressedImage, const Palette* palette)
+bool DDrawDevice::DrawGRPWithBlending(int32 screenX, int32 screenY, const GRPFrame* frame, const uint8* compressedImage, const PALETTEENTRY* palette)
 {
 #ifdef _DEBUG
 	if (mLockedBackBuffer == nullptr)
@@ -971,7 +957,7 @@ bool DDrawDevice::DrawGRPWithBlending(int32 screenX, int32 screenY, const GRPFra
 			{
 				// 2. 0x40 <= byte < 0x80 : 다음 바이트를 (byte - 0x40)만큼 반복해서 출력
 				int32 count = opcode - 0x40;
-				uint32 pixel = palette->GetColor(*pStream++);
+				uint32 pixel = Palette::GetColor(Palette::sData, *pStream++);
 				int32 pixelCount = count;
 
 				if (destX < 0)
@@ -1030,7 +1016,7 @@ bool DDrawDevice::DrawGRPWithBlending(int32 screenX, int32 screenY, const GRPFra
 
 				for (int i = 0; i < pixelCount; i++)
 				{
-					uint32 pixel = palette->GetColor(*pStream++);
+					uint32 pixel = Palette::GetColor(Palette::sData, *pStream++);
 					{
 						uint32 srcR = (*(uint32*)pDest & 0x00ff0000 >> 16);
 						uint32 srcG = (*(uint32*)pDest & 0x0000ff00 >> 8);
@@ -1062,7 +1048,7 @@ LB_RETURN:
 	return bResult;
 }
 
-bool DDrawDevice::DrawGRP2(int32 screenX, int32 screenY, const GRPFrame* frame, IntRect grpRect, const uint8* compressedImage, const Palette* palette)
+bool DDrawDevice::DrawGRP2(int32 screenX, int32 screenY, const GRPFrame* frame, IntRect grpRect, const uint8* compressedImage, const PALETTEENTRY* palette)
 {
 #ifdef _DEBUG
 	if (mLockedBackBuffer == nullptr)
@@ -1124,7 +1110,7 @@ bool DDrawDevice::DrawGRP2(int32 screenX, int32 screenY, const GRPFrame* frame, 
 				// 2. 0x40 <= byte < 0x80 : 다음 바이트를 (byte - 0x40)만큼 반복해서 출력
 				int32 count = opcode - 0x40;
 
-				uint32 pixel = palette->GetColor(*pStream++);
+				uint32 pixel = Palette::GetColor(Palette::sData, *pStream++);
 
 				int32 s = max(x, grpRect.Left);
 				int32 e = min(x + count, grpRect.Left + grpRect.Right);
@@ -1147,7 +1133,7 @@ bool DDrawDevice::DrawGRP2(int32 screenX, int32 screenY, const GRPFrame* frame, 
 				{
 					if (x >= grpRect.Left && x < grpRect.Left + grpRect.Right)
 					{
-						uint32 pixel = palette->GetColor(*pStream);
+						uint32 pixel = Palette::GetColor(Palette::sData, *pStream);
 						*(uint32*)pDest = pixel;
 						pDest += 4;
 					}
@@ -1166,7 +1152,7 @@ LB_RETURN:
 	return bResult;
 }
 
-bool DDrawDevice::DrawGRP2Flipped(int32 screenX, int32 screenY, const GRPFrame* frame, IntRect grpRect, const uint8* compressedImage, const Palette* palette)
+bool DDrawDevice::DrawGRP2Flipped(int32 screenX, int32 screenY, const GRPFrame* frame, IntRect grpRect, const uint8* compressedImage, const PALETTEENTRY* palette)
 {
 #ifdef _DEBUG
 	if (mLockedBackBuffer == nullptr)
@@ -1228,7 +1214,7 @@ bool DDrawDevice::DrawGRP2Flipped(int32 screenX, int32 screenY, const GRPFrame* 
 				// 2. 0x40 <= byte < 0x80 : 다음 바이트를 (byte - 0x40)만큼 반복해서 출력
 				int32 count = opcode - 0x40;
 
-				uint32 pixel = palette->GetColor(*pStream++);
+				uint32 pixel = Palette::GetColor(Palette::sData, *pStream++);
 
 				int32 s = min(x, grpRect.Left + grpRect.Right - 1);
 				int32 e = max(x - count, 0);
@@ -1251,7 +1237,7 @@ bool DDrawDevice::DrawGRP2Flipped(int32 screenX, int32 screenY, const GRPFrame* 
 				{
 					if (x >= grpRect.Left && x < grpRect.Left + grpRect.Right)
 					{
-						uint32 pixel = palette->GetColor(*pStream);
+						uint32 pixel = Palette::GetColor(Palette::sData, *pStream);
 						*(uint32*)pDest = pixel;
 						pDest -= 4;
 					}
@@ -1390,9 +1376,9 @@ bool DDrawDevice::createBackSurface(uint32 width, uint32 height)
 	ddsd.dwWidth = width;
 	ddsd.dwHeight = height;
 
-	if (FAILED(mDirectDraw7->CreateSurface(&ddsd, &mBackSurface, nullptr)))
+	if (FAILED(mDirectDraw->CreateSurface(&ddsd, &mBackSurface, nullptr)))
 	{
-		MessageBox(nullptr, L"CreateSurface() Failed", L"Error", MB_OK);
+		//MessageBox(nullptr, L"CreateSurface() Failed", L"Error", MB_OK);
 		goto LB_RETURN;
 	}
 

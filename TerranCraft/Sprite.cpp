@@ -3,26 +3,7 @@
 #include "Image.h"
 #include "BWFile.h"
 #include "Arrangement.h"
-
-BW::SpriteNumber Sprite::GetSpriteNumber(BW::UnitType unitType)
-{
-	BW::SpriteNumber spriteNumber = BW::SpriteNumber::None;
-	switch (unitType)
-	{
-	case BW::UnitType::Terran_Marine:
-		spriteNumber = BW::SpriteNumber::Marine;
-		break;
-	case BW::UnitType::Terran_SCV:
-		spriteNumber = BW::SpriteNumber::SCV;
-		break;
-	case BW::UnitType::Terran_Command_Center:
-		spriteNumber = BW::SpriteNumber::Command_Center;
-		break;
-	default:
-		break;
-	}
-	return spriteNumber;
-}
+#include "../DDrawLib/DDrawDevice.h"
 
 Sprite::~Sprite()
 {
@@ -36,7 +17,6 @@ bool Sprite::Initalize(BW::SpriteNumber spriteID)
 	mSpriteID = spriteID;
 
 	mImagePrimary = new Image();
-	//BW::ImageNumber imageNumber = Image::GetImagePrimaryID(spriteID);
 
 	const SpriteData* spriteData = Arrangement::Instance.GetSpriteData();
 	BW::ImageNumber imageNumber = (BW::ImageNumber)spriteData->ImageFiles[(int32)spriteID];
@@ -51,19 +31,17 @@ bool Sprite::Initalize(BW::SpriteNumber spriteID)
 	mImages.push_back(mImagePrimary);
 
 #if 1
-
 	uint8 selectionCircleIndex = spriteData->SelectionCircleImages[(int32)spriteID - 130];
 	BW::ImageNumber selectionCircle = (BW::ImageNumber)((uint16)BW::ImageNumber::IMG_SELECT_022 + selectionCircleIndex);
-	//BW::ImageNumber selectionCircle = BW::ImageNumber::IMG_SELECT_022;
-	Image* selectionCircleImage = new Image();
-	if (!selectionCircleImage->Initialize(selectionCircle, this))
+
+	mSelectionCircleImage = new Image();
+	if (!mSelectionCircleImage->Initialize(selectionCircle, this))
 	{
-		delete selectionCircleImage;
+		delete mSelectionCircleImage;
 		goto LB_RETURN;
 	}
-
-	//selectionCircleImage->SetOffsets({ 0, 11 });
-	mImages.push_back(selectionCircleImage);
+	int32 offsetY = spriteData->SelectionCircleOffsets[selectionCircleIndex];
+	mSelectionCircleImage->SetOffsets({ 0, offsetY });
 #endif
 	bResult = true;
 
@@ -73,6 +51,9 @@ LB_RETURN:
 
 void Sprite::Cleanup()
 {
+	delete mSelectionCircleImage;
+	mSelectionCircleImage = nullptr;
+
 	for (Image* image : mImages)
 	{
 		delete image;
@@ -80,4 +61,36 @@ void Sprite::Cleanup()
 	mImages.clear();
 
 	mImagePrimary = nullptr;
+}
+
+void Sprite::Draw(DDrawDevice* ddrawDevice) const
+{
+	if (IsDrawSelectionCircle())
+	{
+		mSelectionCircleImage->DrawImage(ddrawDevice);
+	}
+
+	for (Image* image : mImages)
+	{
+		image->DrawImage(ddrawDevice);
+	}
+}
+
+void Sprite::OnSelected(int32 selectedIndex)
+{
+#ifdef _DEBUG
+	if (selectedIndex < 0 || selectedIndex >= 12)
+	{
+		__debugbreak();
+	}
+#endif // _DEBUG
+
+	mFlags |= 0x09; // 0x01: Draw selection circle, 0x08: Selected
+	mSelectionIndex = selectedIndex;
+}
+
+void Sprite::OnDeselected()
+{
+	mFlags &= ~0x09; // 0x01: Draw selection circle, 0x08: Selected
+	mSelectionIndex = -1;
 }
