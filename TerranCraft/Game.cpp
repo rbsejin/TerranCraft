@@ -255,6 +255,7 @@ void Game::Cleanup()
 	destroyPCX(&mTSelectPCX);
 	destroyPCX(&mTUnitPCX);
 	destroyPCX(&mTConsolePCX);
+	destroyPCX(&mTWirePCX);
 	destroyMap();
 
 	for (Unit* unit : mUnits)
