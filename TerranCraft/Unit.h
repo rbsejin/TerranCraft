@@ -5,42 +5,29 @@
 #include "CommandIcon.h"
 #include "../BWLib/IScriptAnimation.h"
 #include "../BWLib/OrderType.h"
+#include "Flingy.h"
 #include <list>
+#include "../BWLib/FlingyType.h"
+#include "Target.h"
 
 class Sprite;
 class Image;
 class Weapon;
 class Order;
 
-class Unit final
+class Unit final : public Flingy
 {
 public:
 	Unit() = default;
-	~Unit();
+	virtual ~Unit();
 
 	bool Initialize(BW::UnitType unitType);
 	void Cleanup();
 
-	void Update();
-
-	int32 GetHP() const { return mHP; }
-	void SetHP(int32 hp) { mHP = hp; }
-	Sprite* GetSprite() const { return mSprite; }
-	void SetSprite(Sprite* sprite) { mSprite = sprite; }
-
-	IntVector2 GetMoveTarget() const { return mMoveTarget; }
-	void SetMoveTarget(IntVector2 moveTarget) { mMoveTarget = moveTarget; }
-	IntVector2 GetNextMovementWaypoint() const { return mNextMovementWaypoint; }
-	void SetNextMovementWaypoint(IntVector2 nextMovementWaypoint) { mNextMovementWaypoint = nextMovementWaypoint; }
-	int32 GetCurrentSpeed() const { return mCurrentSpeed; }
-	uint8 GetFacingDirection() const { return mFacingDirection; }
-	void SetFacingDirection(uint8 facingDirection) { mFacingDirection = facingDirection; }
-	FloatVector2 GetCurrentVelocity() const { return mCurrentVelocity; }
-	void SetCurrentVelocity(FloatVector2 currentVelocity) { mCurrentVelocity = currentVelocity; }
+	virtual void Update() override;
+	void PerformOrder();
 
 	BW::UnitType GetUnitType() const { return mUnitType; }
-	FloatVector2 GetPosition() const { return mPosition; }
-	void SetPosition(FloatVector2 position) { mPosition = position; }
 	uint8 GetGroundWeaponCooldown() const { return mGroundWeaponCooldown; }
 	void SetGroundWeaponCooldown(uint8 groundWeaponCooldown) { mGroundWeaponCooldown = groundWeaponCooldown; }
 	IntRect GetContourBounds() const { return mContourBounds; }
@@ -52,41 +39,20 @@ public:
 	bool IsMoving() const;
 	bool IsAttacking() const;
 
-	// 
-	bool IsNobrkcode() const { return mbNobrkcode; }
-	void SetNobrkcode(bool value) { mbNobrkcode = value; }
-	bool IsAttackable() const { return mbAttackable; }
-	void SetAttackable(bool value) { mbAttackable = value; }
-	void AddOrder(Order* order) { mOrders.push_front(order); }
-	Order* GetFrontOrder() const { return mOrders.empty() ? nullptr : mOrders.front(); }
-	void RemoveFrontOrder() { if (!mOrders.empty()) mOrders.pop_front(); }
-	void ClearOrders()
-	{
-		auto iter = mOrders.begin();
-		while (iter != mOrders.end())
-		{
-			Order* order = *iter;
-			delete order;
-			iter = mOrders.erase(iter);
-		}
-	}
+	void AddOrder(Order* order) { mOrderQueue.push_back(order); }
+	void RemoveOrder() { mOrderQueue.pop_front(); }
+	Order* GetFrontOrder() const { return (mOrderQueue.empty()) ? nullptr : mOrderQueue.front(); }
+	void ClearOrders();
+	void SetStandby() { mOrderType = BW::OrderType::None; }
 
 	int32 GetMaxHP() const;
-	uint8 GetScriptID() const;
+	uint8 GetFlingyID() const;
 
 private:
-	// Tingy
-	int32 mHP = 0;
-	Sprite* mSprite = nullptr;
+	void startMove(Target target);
+	void move();
 
-	// Flingy
-	IntVector2 mMoveTarget = { 0, };
-	IntVector2 mNextMovementWaypoint = { 0, };
-	int32 mCurrentSpeed = 4;
-	uint8 mFacingDirection = 0;
-	FloatVector2 mCurrentVelocity = { 0, };
-	FloatVector2 mPosition = { 0, };
-
+private:
 	uint8 mGroundWeaponCooldown = 0;
 	int32 mCoolTime = 0;
 
@@ -96,8 +62,7 @@ private:
 	eButtonset mCurrentButtonset = eButtonset::Terran_Marine;
 
 	std::list<IntVector2> mPath;
-	std::list<Order*> mOrders;
-
-	bool mbNobrkcode = false;
-	bool mbAttackable = true;
+	std::list<Order*> mOrderQueue;
+	BW::OrderType mOrderType = BW::OrderType::None;
+	Target mOrderTarget = { 0, };
 };

@@ -1,0 +1,55 @@
+#include "pch.h"
+#include "Flingy.h"
+#include "Arrangement.h"
+#include "BWFile.h"
+#include "Sprite.h"
+#include "Image.h"
+#include "../BWLib/ImageNumber.h"
+
+Flingy::~Flingy()
+{
+	Cleanup();
+}
+
+bool Flingy::Initialize(BW::FlingyType flingyType)
+{
+	bool bResult = false;
+	mFlingyType = flingyType;
+	const FlingyData* flingyData = Arrangement::Instance.GetFlingyData();
+	uint32 flingyID = (uint32)flingyType;
+	mCurrentSpeed = flingyData->Speeds[flingyID];
+
+	// TODO: Implement the following
+	//Accelerations[flingyID];
+	//HaltDistances[flingyID];
+	//TurnRadiuses[flingyID];
+	//MovementControls[flingyID];
+
+	return bResult;
+}
+
+void Flingy::Cleanup()
+{
+	Thingy::Cleanup();
+}
+
+void Flingy::Update()
+{
+	IntVector2 spritePosition = { (int32)mPosition.X, (int32)mPosition.Y };
+	Sprite* sprite = GetSprite();
+	sprite->SetPosition(spritePosition);
+
+	const std::list<Image*>* images = sprite->GetImages();
+	for (Image* image : *images)
+	{
+		BW::ImageNumber imageID = image->GetImageID();
+		image->SetDirection(mFacingDirection);
+		image->UpdateGraphicData();
+	}
+
+	Image* selectionCircleImage = sprite->GetSelectionCircleImage();
+	if (selectionCircleImage != nullptr)
+	{
+		selectionCircleImage->UpdateGraphicData();
+	}
+}

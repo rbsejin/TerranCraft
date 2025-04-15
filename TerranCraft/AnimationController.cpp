@@ -107,7 +107,7 @@ void printOpcode(BW::ImageNumber imageNumber, const char* opcode)
 	//OutputDebugStringA(buffer);
 }
 
-void AnimationController::UpdateImageFrame(Unit* unit, Image* image) const
+void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 {
 	int32 sleep = image->GetSleep();
 
@@ -138,11 +138,6 @@ void AnimationController::UpdateImageFrame(Unit* unit, Image* image) const
 				direction = d;
 			}
 			image->SetDirection(direction);
-
-			if (unit != nullptr)
-			{
-				unit->SetFacingDirection(direction);
-			}
 
 			printOpcode(imageNumber, "PLAYFRAM");
 		}
@@ -370,14 +365,15 @@ void AnimationController::UpdateImageFrame(Unit* unit, Image* image) const
 			GetData(&y, iscriptOffset, sizeof(y));
 			iscriptOffset += sizeof(y);
 
-			Sprite* sprite = new Sprite();
-			sprite->Initalize((BW::SpriteNumber)spriteID);
+			Thingy* newThingy = new Thingy();
+			newThingy->Initialize(1, (BW::SpriteNumber)spriteID);
+			Sprite* sprite = newThingy->GetSprite();
 			Sprite* parent = image->GetParent();
 			IntVector2 position = parent->GetPosition();
 			position.X += x;
 			position.Y += y;
 			sprite->SetPosition(position);
-			Game::Sprites.push_back(sprite);
+			Game::sThingies.push_back(newThingy);
 
 			printOpcode(imageNumber, "LOWSPRUL");
 		}
@@ -438,13 +434,9 @@ void AnimationController::UpdateImageFrame(Unit* unit, Image* image) const
 
 			if (imageCount == 0)
 			{
-				if (unit != nullptr)
+				if (thingy != nullptr)
 				{
-					unit->SetSprite(nullptr);
-				}
-				else
-				{
-					Game::Sprites.remove(parent);
+					thingy->SetSprite(nullptr);
 				}
 
 				delete parent;
@@ -574,9 +566,10 @@ void AnimationController::UpdateImageFrame(Unit* unit, Image* image) const
 			uint8 d = (direction - amount + 32) % 32;
 			image->SetDirection(d);
 
-			if (unit != nullptr)
+			if (thingy != nullptr)
 			{
-				unit->SetFacingDirection(d);
+				Flingy* flingy = (Flingy*)thingy;
+				flingy->SetFacingDirection(d);
 			}
 
 			printOpcode(imageNumber, "TURNCCWISE");
@@ -592,9 +585,10 @@ void AnimationController::UpdateImageFrame(Unit* unit, Image* image) const
 			uint8 d = (direction + amount + 32) % 32;
 			image->SetDirection(d);
 
-			if (unit != nullptr)
+			if (thingy != nullptr)
 			{
-				unit->SetFacingDirection(d);
+				Flingy* flingy = (Flingy*)thingy;
+				flingy->SetFacingDirection(d);
 			}
 
 			printOpcode(imageNumber, "TURNCWISE");
@@ -606,9 +600,10 @@ void AnimationController::UpdateImageFrame(Unit* unit, Image* image) const
 			uint8 d = (direction + 1) % 32;
 			image->SetDirection(d);
 
-			if (unit != nullptr)
+			if (thingy != nullptr)
 			{
-				unit->SetFacingDirection(d);
+				Flingy* flingy = (Flingy*)thingy;
+				flingy->SetFacingDirection(d);
 			}
 
 			printOpcode(imageNumber, "TURN1CWISE");
@@ -633,9 +628,10 @@ void AnimationController::UpdateImageFrame(Unit* unit, Image* image) const
 			uint8 d = (direction + randAmount + 32) % 32;
 			image->SetDirection(d);
 
-			if (unit != nullptr)
+			if (thingy != nullptr)
 			{
-				unit->SetFacingDirection(d);
+				Flingy* flingy = (Flingy*)thingy;
+				flingy->SetFacingDirection(d);
 			}
 
 			printOpcode(imageNumber, "TURNRAND");
@@ -694,10 +690,10 @@ void AnimationController::UpdateImageFrame(Unit* unit, Image* image) const
 		break;
 		case IScriptOpcode::GOTOREPEATATTK:
 		{
-			//image->SetAnim(BW::IScriptAnimation::GndAttkRpt);
-			if (unit != nullptr)
+			if (thingy != nullptr)
 			{
-				unit->SetAttackable(true);
+				Flingy* flingy = (Flingy*)thingy;
+				flingy->SetRepeatAttackable(true);
 			}
 
 			printOpcode(imageNumber, "GOTOREPEATATTK");
@@ -732,18 +728,20 @@ void AnimationController::UpdateImageFrame(Unit* unit, Image* image) const
 		break;
 		case IScriptOpcode::NOBRKCODESTART:
 		{
-			if (unit != nullptr)
+			if (thingy != nullptr)
 			{
-				unit->SetNobrkcode(true);
+				Flingy* flingy = (Flingy*)thingy;
+				flingy->SetNobrkcode(true);
 			}
 			printOpcode(imageNumber, "NOBRKCODESTART");
 		}
 		break;
 		case IScriptOpcode::NOBRKCODEEND:
 		{
-			if (unit != nullptr)
+			if (thingy != nullptr)
 			{
-				unit->SetNobrkcode(false);
+				Flingy* flingy = (Flingy*)thingy;
+				flingy->SetNobrkcode(false);
 			}
 			printOpcode(imageNumber, "NOBRKCODEEND");
 		}
@@ -778,9 +776,10 @@ void AnimationController::UpdateImageFrame(Unit* unit, Image* image) const
 
 			image->SetDirection(direction);
 
-			if (unit != nullptr)
+			if (thingy != nullptr)
 			{
-				unit->SetFacingDirection(direction);
+				Flingy* flingy = (Flingy*)thingy;
+				flingy->SetFacingDirection(direction);
 			}
 
 			printOpcode(imageNumber, "SETFLDIRECT");

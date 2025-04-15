@@ -11,8 +11,11 @@
 
 class DDrawDevice;
 class Image;
+class Thingy;
 class Unit;
+class Bullet;
 struct Chunk;
+
 
 class Sprite;
 class Image;
@@ -84,14 +87,21 @@ private:
 	bool loadImages();
 
 	void move(int x, int y);
+	void move(Target target);
 	void attack(int x, int y);
+	void attack(Target target);
 	void markUnit();
 	void markCursor();
 	void updateWireframePalette(const Unit* unit);
 	void pcxToPaletteEntries(PCXImage* pcx, PALETTEENTRY* pDest);
 
 public:
-	static std::list<Sprite*> Sprites;
+	static std::list<Thingy*> sThingies;
+	//static std::list<Sprite*> sSprites;
+	static std::list<Unit*> sUnits;
+	static std::list<Bullet*> sBullets;
+	static std::vector<Unit*> sSelectedUnits;
+	static std::list<IntVector2> sCellPath;
 
 	// GRP Images
 	enum { IMAGE_COUNT = BW::ImageNumber::None };
@@ -108,12 +118,8 @@ private:
 	LARGE_INTEGER mFrequency;
 	LARGE_INTEGER mPrevCounter;
 
-	std::list<Unit*> mUnits;
 	enum { MAX_SELECTED_UNIT_COUNT = 12 };
-	std::vector<Unit*> mSelectedUnits;
 	Unit* mHoveredUnit = nullptr;
-
-	std::list<IntVector2> mCellPath;
 
 	// Keyboard
 	bool mbPressedLeft = false;

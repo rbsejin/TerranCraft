@@ -147,6 +147,21 @@
     <ClInclude Include="Order.h">
       <Filter>Game</Filter>
     </ClInclude>
+    <ClInclude Include="..\BWLib\FlingyType.h">
+      <Filter>BWLib</Filter>
+    </ClInclude>
+    <ClInclude Include="Thingy.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Flingy.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BWLib\MovementFlags.h">
+      <Filter>BWLib</Filter>
+    </ClInclude>
+    <ClInclude Include="Target.h">
+      <Filter>Game</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TerranCraft.cpp">
@@ -186,6 +201,15 @@
       <Filter>Game</Filter>
     </ClCompile>
     <ClCompile Include="Arrangement.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Thingy.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Bullet.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Flingy.cpp">
       <Filter>Game</Filter>
     </ClCompile>
   </ItemGroup>

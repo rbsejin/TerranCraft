@@ -46,7 +46,7 @@ struct FlingyData
 {
 	enum { FLINGY_COUNT = 209 };
 	uint16 Sprites[FLINGY_COUNT];
-	uint32 Speeds[FLINGY_COUNT];
+	int32 Speeds[FLINGY_COUNT];
 	uint16 Accelerations[FLINGY_COUNT];
 	uint32 HaltDistances[FLINGY_COUNT];
 	uint8 TurnRadiuses[FLINGY_COUNT];
@@ -62,7 +62,7 @@ struct UnitData
 {
 	enum { UNIT_COUNT = 228 };
 	enum { INFESTATION_COUNT = 96 };
-	uint8 Graphics[UNIT_COUNT];
+	uint8 Graphics[UNIT_COUNT]; // Flingy
 	// 0xe4
 	uint16 Subunit1s[UNIT_COUNT];
 	// 0x2ac

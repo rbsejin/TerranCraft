@@ -1,12 +1,11 @@
 #include "pch.h"
 
-#include <Windows.h>
-#include <stdio.h>
 #include <time.h>
 #include "../DDrawLib/DDrawDevice.h"
 #include "../ImageData/Graphic.h"
 #include "Game.h"
 #include "Unit.h"
+#include "Bullet.h"
 #include "Sprite.h"
 #include "Image.h"
 #include "PathFinder.h"
@@ -22,7 +21,12 @@
 
 Game* gGame = nullptr;
 
-std::list<Sprite*> Game::Sprites;
+std::list<Thingy*> Game::sThingies;
+//std::list<Sprite*> Game::sSprites;
+std::list<Unit*> Game::sUnits;
+std::list<Bullet*> Game::sBullets;
+std::vector<Unit*> Game::sSelectedUnits;
+std::list<IntVector2> Game::sCellPath;
 GRPHeader* Game::sGRPFiles[IMAGE_COUNT];
 
 Game::Game()
@@ -131,9 +135,8 @@ bool Game::Initalize(HWND hWnd)
 
 	BW::UnitType unitTypes[4] = {
 		BW::UnitType::Terran_Marine,
-		BW::UnitType::Terran_SCV,
 		BW::UnitType::Terran_Vulture,
-		//BW::UnitType::Terran_Firebat
+		BW::UnitType::Terran_SCV,
 		BW::UnitType::Terran_Medic
 	};
 
@@ -147,8 +150,10 @@ bool Game::Initalize(HWND hWnd)
 			{
 				goto LB_RETURN;
 			}
+
 			unit->SetPosition({ 128 + i * 64.f, (j + 1) * 64.f });
-			mUnits.push_back(unit);
+			sUnits.push_back(unit);
+			sThingies.push_back(unit);
 		}
 	}
 
@@ -215,6 +220,8 @@ void Game::pcxToPaletteEntries(PCXImage* pcx, PALETTEENTRY* pDest)
 
 void Game::Cleanup()
 {
+	sBullets.clear();
+
 	for (int32 i = 0; i < SELECTION_CIRCLE_IMAGE_COUNT; i++)
 	{
 		delete mSelectionCircleImages[i];
@@ -227,12 +234,6 @@ void Game::Cleanup()
 	{
 		destroyGRP(mWireframeGRPs + i);
 	}
-
-	for (Sprite* sprite : Sprites)
-	{
-		delete sprite;
-	}
-	Sprites.clear();
 
 	delete mCursorMarkerSprite;
 	mCursorMarkerSprite = nullptr;
@@ -258,11 +259,14 @@ void Game::Cleanup()
 	destroyPCX(&mTWirePCX);
 	destroyMap();
 
-	for (Unit* unit : mUnits)
+
+	sUnits.clear();
+
+	for (Thingy* thingy : sThingies)
 	{
-		delete unit;
+		delete thingy;
 	}
-	mUnits.clear();
+	sThingies.clear();
 
 	for (GRPHeader* grp : sGRPFiles)
 	{
@@ -367,27 +371,14 @@ void Game::OnKeyDown(unsigned int vkCode, unsigned int scanCode)
 		mUnits.push_back(scv);
 #endif
 
-		for (int32 i = 0; i < mSelectedUnits.size(); i++)
+		for (int32 i = 0; i < sSelectedUnits.size(); i++)
 		{
-			//mSelectedUnits[i]->SetOrderType(BW::OrderType::Stop);
-			mSelectedUnits[i]->ClearOrders();
+			Unit* unit = sSelectedUnits[i];
+			unit->SetStandby();
+			unit->ClearOrders();
 			Order* order = new Order();
 			order->OrderType = BW::OrderType::Stop;
-			order->Target = nullptr;
-			mSelectedUnits[i]->AddOrder(order);
-
-			Sprite* sprite = mSelectedUnits[i]->GetSprite();
-
-			const std::list<Image*>* images = sprite->GetImages();
-			for (Image* image : *images)
-			{
-				BW::IScriptAnimation anim = BW::IScriptAnimation::Init;
-				image->SetAnim(anim);
-				uint16 iscriptHeader = image->GetIScriptHeader();
-				uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
-				image->SetIScriptOffset(iscriptOffset);
-				image->SetSleep(0);
-			}
+			unit->AddOrder(order);
 		}
 	}
 	break;
@@ -405,37 +396,23 @@ void Game::OnKeyDown(unsigned int vkCode, unsigned int scanCode)
 	break;
 	case 'T':
 	{
-		for (int32 i = 0; i < mSelectedUnits.size(); i++)
+		for (int32 i = 0; i < sSelectedUnits.size(); i++)
 		{
-			uint8 cooldown = mSelectedUnits[i]->GetGroundWeaponCooldown();
+			uint8 cooldown = sSelectedUnits[i]->GetGroundWeaponCooldown();
 			cooldown /= 2;
-			mSelectedUnits[i]->SetGroundWeaponCooldown(cooldown);
+			sSelectedUnits[i]->SetGroundWeaponCooldown(cooldown);
 		}
 	}
 	break;
 	// delete key
 	case VK_DELETE:
 	{
-		for (int32 i = 0; i < mSelectedUnits.size(); i++)
-		{
-			Unit* unit = mSelectedUnits[i];
-			//unit->SetOrderType(BW::OrderType::Die);
-			unit->ClearOrders();
-			Order* order = new Order();
-			order->OrderType = BW::OrderType::Die;
-			order->Target = nullptr;
-			unit->AddOrder(order);
-
-			Sprite* sprite = unit->GetSprite();
-			sprite->OnDeselected();
-		}
-
-		mSelectedUnits.clear();
 	}
+	break;
 	case VK_ESCAPE:
-		if (mSelectedUnits.size() > 0)
+		if (sSelectedUnits.size() > 0)
 		{
-			mCurrentButtonset = mSelectedUnits[0]->GetCurrentButtonset();
+			mCurrentButtonset = sSelectedUnits[0]->GetCurrentButtonset();
 		}
 		break;
 	default:
@@ -523,20 +500,20 @@ void Game::OnLButtonUp(unsigned int nFlags, int x, int y)
 	bDrawing = false;
 
 	std::vector<Unit*> tempUnits;
-	tempUnits.reserve(mUnits.size());
+	tempUnits.reserve(sUnits.size());
 
 	if (mHoveredUnit != nullptr)
 	{
-		for (Unit* unit : mSelectedUnits)
+		for (Unit* unit : sSelectedUnits)
 		{
 			Sprite* sprite = unit->GetSprite();
 			sprite->OnDeselected();
 		}
-		mSelectedUnits.clear();
+		sSelectedUnits.clear();
 
 		Sprite* sprite = mHoveredUnit->GetSprite();
 		sprite->OnSelected(0);
-		mSelectedUnits.push_back(mHoveredUnit);
+		sSelectedUnits.push_back(mHoveredUnit);
 		mCurrentButtonset = mHoveredUnit->GetCurrentButtonset();
 		goto LB_RETURN;
 	}
@@ -547,7 +524,7 @@ void Game::OnLButtonUp(unsigned int nFlags, int x, int y)
 	bounds.Right += Camera::Instance.GetPosition().X;
 	bounds.Bottom += Camera::Instance.GetPosition().Y;
 
-	for (Unit* unit : mUnits)
+	for (Unit* unit : sUnits)
 	{
 		if (tempUnits.size() >= MAX_SELECTED_UNIT_COUNT)
 		{
@@ -565,7 +542,7 @@ void Game::OnLButtonUp(unsigned int nFlags, int x, int y)
 
 	if (tempUnits.size() > 0)
 	{
-		for (Unit* unit : mSelectedUnits)
+		for (Unit* unit : sSelectedUnits)
 		{
 			Sprite* sprite = unit->GetSprite();
 			sprite->OnDeselected();
@@ -577,10 +554,10 @@ void Game::OnLButtonUp(unsigned int nFlags, int x, int y)
 			sprite->OnSelected(i);
 		}
 
-		std::swap(mSelectedUnits, tempUnits);
+		std::swap(sSelectedUnits, tempUnits);
 
 		// TODO: 여러 유닛 선택했을 때 버튼셋으로 수정할 것
-		mCurrentButtonset = mSelectedUnits[0]->GetCurrentButtonset();
+		mCurrentButtonset = sSelectedUnits[0]->GetCurrentButtonset();
 	}
 
 	//mCursorIndex = 0;
@@ -605,11 +582,14 @@ void Game::OnLButtonDown(unsigned int nFlags, int x, int y)
 		switch (mPlayerOrder)
 		{
 		case PlayerOrder::Attack:
-			if (mHoveredUnit != nullptr)
-			{
-				attack(x, y);
-			}
-			break;
+		{
+			Target target;
+			target.Unit = mHoveredUnit;
+			target.Position = { x, y };
+
+			attack(target);
+		}
+		break;
 		case PlayerOrder::Move:
 			move(x, y);
 			break;
@@ -654,7 +634,7 @@ void Game::OnLButtonDown(unsigned int nFlags, int x, int y)
 
 		IntVector2 position = mBuildingPreview->GetPosition();
 		unit->SetPosition({ (float)position.X, (float)position.Y });
-		mUnits.push_back(unit);
+		sUnits.push_back(unit);
 		delete mBuildingPreview;
 		mBuildingPreview = nullptr;
 		return;
@@ -685,7 +665,7 @@ void Game::OnRButtonDown(unsigned int nFlags, int x, int y)
 		return;
 	}
 
-#if 0
+#if 1
 	IntVector2 cameraPosition = Camera::Instance.GetPosition();
 	x += cameraPosition.X;
 	y += cameraPosition.Y;
@@ -757,72 +737,30 @@ void Game::updateWireframePalette(const Unit* unit)
 
 void Game::move(int x, int y)
 {
-	for (uint32 i = 0; i < mSelectedUnits.size(); i++)
+	for (uint32 i = 0; i < sSelectedUnits.size(); i++)
 	{
-		Unit* unit = mSelectedUnits[i];
-
-		unit->SetMoveTarget({ x, y });
-		FloatVector2 position = unit->GetPosition();
-
-		// find path
-		IntVector2 currentCell = { (int32)(position.X / CELL_SIZE), (int32)(position.Y / CELL_SIZE) };
-		IntVector2 targetCell = { x / CELL_SIZE, y / CELL_SIZE };
-
-		mCellPath.clear();
-		IntRect countourBounds = unit->GetContourBounds();
-		int32 length = FindPathWithUnitSize(&mCellPath, (const uint8*)gMiniTiles, currentCell, targetCell, countourBounds);
-
-		if (length <= 0)
-		{
-			return;
-		}
-
-		std::list<IntVector2>* path = unit->GetPath();
-		path->clear();
-
-		for (IntVector2& cell : mCellPath)
-		{
-			IntVector2 pos = { cell.X * CELL_SIZE + CELL_SIZE / 2, cell.Y * CELL_SIZE + CELL_SIZE / 2 };
-			path->push_back(pos);
-		}
-
-		IntVector2 nextMovementWaypoint = path->front();
-		path->pop_front();
-		unit->SetNextMovementWaypoint(nextMovementWaypoint);
-
-		float distanceX = nextMovementWaypoint.X - position.X;
-		float distanceY = nextMovementWaypoint.Y - position.Y;
-
-		float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
-		FloatVector2 currentVelocity = { distanceX / distance, distanceY / distance };
-		unit->SetCurrentVelocity(currentVelocity);
-
-		// Walk Animation
-		Sprite* sprite = mSelectedUnits[i]->GetSprite();
-		Image* primaryImage = sprite->GetPrimaryImage();
-		BW::IScriptAnimation anim = BW::IScriptAnimation::Walking;
-		primaryImage->SetAnim(anim);
-		uint16 iscriptHeader = primaryImage->GetIScriptHeader();
-		uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
-		primaryImage->SetIScriptOffset(iscriptOffset);
-		primaryImage->SetSleep(0);
-
-		{
-			Order* order = new Order();
-			order->OrderType = BW::OrderType::Move;
-			order->Target = nullptr;
-			mSelectedUnits[i]->AddOrder(order);
-		}
+		Unit* unit = sSelectedUnits[i];
+		unit->SetStandby();
+		unit->ClearOrders();
+		Order* order = new Order();
+		order->OrderType = BW::OrderType::Move;
+		order->Target.Position.X = x;
+		order->Target.Position.Y = y;
+		unit->AddOrder(order);
 	}
+}
+
+void Game::move(Target target)
+{
 }
 
 void Game::attack(int x, int y)
 {
 	// Attack Animation
-	for (int32 i = 0; i < mSelectedUnits.size(); i++)
+	for (int32 i = 0; i < sSelectedUnits.size(); i++)
 	{
 		// turn to target
-		Unit* unit = mSelectedUnits[i];
+		Unit* unit = sSelectedUnits[i];
 		FloatVector2 position = unit->GetPosition();
 		FloatVector2 target = { (float)x, (float)y };
 
@@ -840,21 +778,52 @@ void Game::attack(int x, int y)
 
 		unit->SetFacingDirection(direction);
 
-		Sprite* sprite = unit->GetSprite();
-		Image* primaryImage = sprite->GetPrimaryImage();
-		BW::IScriptAnimation anim = BW::IScriptAnimation::GndAttkInit;
-		primaryImage->SetAnim(anim);
-		uint16 iscriptHeader = primaryImage->GetIScriptHeader();
-		uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
-		primaryImage->SetIScriptOffset(iscriptOffset);
-		primaryImage->SetSleep(0);
+		unit->SetStandby();
+		unit->ClearOrders();
+		Order* order = new Order();
+		order->OrderType = BW::OrderType::AttackUnit;
+		order->Target.Unit = mHoveredUnit;
+		unit->AddOrder(order);
+	}
+}
 
+void Game::attack(Target target)
+{
+	FloatVector2 targetPosition = { (float)target.Position.X, (float)target.Position.Y };
+
+	for (int32 i = 0; i < sSelectedUnits.size(); i++)
+	{
+		// turn to target
+		Unit* unit = sSelectedUnits[i];
+		FloatVector2 position = unit->GetPosition();
+
+		float distanceX = targetPosition.X - position.X;
+		float distanceY = targetPosition.Y - position.Y;
+
+		float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
+		float directionX = distanceX / distance;
+		float directionY = distanceY / distance;
+
+		float angle = atan2f(distanceY, distanceX);
+		angle += (float)M_PI;
+		uint8 direction = (uint8)(angle * 128.0f / M_PI - 64);
+		direction /= 8;
+
+		unit->SetFacingDirection(direction);
+
+		unit->SetStandby();
+		unit->ClearOrders();
+		Order* order = new Order();
+		if (target.Unit != nullptr)
 		{
-			Order* order = new Order();
 			order->OrderType = BW::OrderType::AttackUnit;
-			order->Target = mHoveredUnit;
-			mSelectedUnits[i]->AddOrder(order);
 		}
+		else
+		{
+			order->OrderType = BW::OrderType::AttackMove;
+		}
+		order->Target = target;
+		unit->AddOrder(order);
 	}
 }
 
@@ -909,113 +878,68 @@ void Game::onGameFrame(ULONGLONG currentTick)
 	}
 #pragma endregion
 
-#if 1
-	// Unit Position Update
-	for (Unit* unit : mUnits)
+	// Unit Order Update
+	std::list<Unit*> tempUnits = sUnits;
+	for (Unit* unit : tempUnits)
 	{
 		unit->Update();
 	}
 
-	// Building Preview Update
-	if (mBuildingPreview != nullptr)
+	for (auto iter = sUnits.begin(); iter != sUnits.end(); ++iter)
 	{
-		mBuildingPreview->UpdateGraphicData();
-	}
-
-	// Image Frame Update
-	for (Unit* unit : mUnits)
-	{
-		Sprite* sprite = unit->GetSprite();
-		const std::list<Image*>* images = sprite->GetImages();
-
-		// TODO: intrusive list로 변경후에 하나의 for문으로 변경해야함.
-		std::list<Image*> tempImages;
-		for (Image* image : *images)
+		Unit* unit = *iter;
+		int32 hp = unit->GetHP();
+		if (hp > 0)
 		{
-			tempImages.push_back(image);
+			continue;
 		}
-		for (Image* image : tempImages)
+
+		unit->SetStandby();
+		unit->ClearOrders();
+		Order* order = new Order();
+		order->OrderType = BW::OrderType::Die;
+		unit->AddOrder(order);
+	}
+
+	for (auto iter = sThingies.begin(); iter != sThingies.end(); ++iter)
+	{
+		Thingy* thingy = *iter;
+		const Sprite* sprite = thingy->GetSprite();
+		if (sprite == nullptr)
 		{
-			AnimationController::Instance.UpdateImageFrame(unit, image);
+			continue;
 		}
-	}
 
-	std::list<Sprite*> tempSprites;
-	for (Sprite* sprite : Sprites)
-	{
-		tempSprites.push_back(sprite);
-	}
-
-	for (Sprite* sprite : tempSprites)
-	{
 		const std::list<Image*>* images = sprite->GetImages();
 		// TODO: intrusive list로 변경후에 하나의 for문으로 변경해야함.
-		std::list<Image*> tempImages;
-		for (Image* image : *images)
-		{
-			tempImages.push_back(image);
-		}
+		std::list<Image*> tempImages = *images;
 		for (Image* image : tempImages)
 		{
-			AnimationController::Instance.UpdateImageFrame(nullptr, image);
-		}
-	}
-#endif
-
-	{
-		auto iter = mUnits.begin();
-		while (iter != mUnits.end())
-		{
-			Unit* unit = *iter;
-			Sprite* sprite = unit->GetSprite();
-			if (sprite != nullptr)
-			{
-				const std::list<Image*>* images = sprite->GetImages();
-				for (Image* image : *images)
-				{
-					image->UpdateGraphicData();
-				}
-
-				++iter;
-			}
-			else
-			{
-				// TODO: intrusive list로 변경후에 for문 없이 삭제하도록 수정해야함
-				iter = mUnits.erase(iter);
-
-				for (auto iter = mSelectedUnits.begin(); iter != mSelectedUnits.end(); iter++)
-				{
-					if (*iter == unit)
-					{
-						iter = mSelectedUnits.erase(iter);
-						break;
-					}
-				}
-
-				delete unit;
-			}
+			AnimationController::Instance.UpdateImageFrame(thingy, image);
 		}
 	}
 
 	{
-		auto iter = Sprites.begin();
-		while (iter != Sprites.end())
+		auto iter = sThingies.begin();
+		while (iter != sThingies.end())
 		{
-			Sprite* sprite = *iter;
+			Thingy* thingy = *iter;
+			Sprite* sprite = thingy->GetSprite();
 			if (sprite == nullptr)
 			{
-				iter = Sprites.erase(iter);
-				delete sprite;
+				iter = sThingies.erase(iter);
+				delete thingy;
+				thingy = nullptr;
+				continue;
 			}
-			else
+
+			const std::list<Image*>* images = sprite->GetImages();
+			for (Image* image : *images)
 			{
-				const std::list<Image*>* images = sprite->GetImages();
-				for (Image* image : *images)
-				{
-					image->UpdateGraphicData();
-				}
-				++iter;
+				image->UpdateGraphicData();
 			}
+
+			++iter;
 		}
 	}
 
@@ -1050,7 +974,7 @@ void Game::onGameFrame(ULONGLONG currentTick)
 
 	mHoveredUnit = nullptr;
 
-	for (Unit* unit : mUnits)
+	for (Unit* unit : sUnits)
 	{
 		IntRect unitBound;
 		unitBound.Left = (int32)unit->GetPosition().X - unit->GetContourBounds().Left;
@@ -1095,18 +1019,23 @@ void Game::drawScene()
 
 		if (mDDrawDevice->IsPathOn)
 		{
-			for (uint32 i = 0; i < mSelectedUnits.size(); i++)
+			for (uint32 i = 0; i < sSelectedUnits.size(); i++)
 			{
-				Unit* unit = mSelectedUnits[i];
+				Unit* unit = sSelectedUnits[i];
 				IntRect countourBounds = unit->GetContourBounds();
-				mDDrawDevice->DrawPath(mCellPath, CELL_SIZE, countourBounds, 0xff00ff00);
+				mDDrawDevice->DrawPath(sCellPath, CELL_SIZE, countourBounds, 0xff00ff00);
 			}
 		}
 #endif // _DEBUG
 
-		for (Unit* unit : mUnits)
+		for (Thingy* thingy : sThingies)
 		{
-			const Sprite* sprite = unit->GetSprite();
+			const Sprite* sprite = thingy->GetSprite();
+			if (sprite == nullptr)
+			{
+				continue;
+			}
+
 			int32 spriteID = (int32)sprite->GetSpriteID();
 
 			{
@@ -1144,8 +1073,8 @@ void Game::drawScene()
 					int32 x = position.X + (width - hpBarWidth) / 2;
 					mDDrawDevice->DrawRect(x, position.Y + height + 10, hpBarWidth, 3, 0xffffffff);
 
-					int32 maxHP = unit->GetMaxHP();
-					int32 unitHP = unit->GetHP();
+					int32 maxHP = ((Unit*)thingy)->GetMaxHP();
+					int32 unitHP = thingy->GetHP();
 
 					hpBar = (int32)(ceilf((float)unitHP / maxHP * hpBar));
 					hpBarWidth = hpBar * 3;
@@ -1155,11 +1084,17 @@ void Game::drawScene()
 			}
 		}
 
+		//for (Bullet* bullet : sBullets)
+		//{
+		//	const Sprite* sprite = bullet->GetSprite();
+		//	sprite->Draw(mDDrawDevice);
+		//}
+
 		// remnants, ...
-		for (Sprite* sprite : Game::Sprites)
-		{
-			sprite->Draw(mDDrawDevice);
-		}
+		//for (Sprite* sprite : Game::sSprites)
+		//{
+		//	sprite->Draw(mDDrawDevice);
+		//}
 
 		// Building Prreview
 		if (mBuildingPreview != nullptr)
@@ -1202,9 +1137,9 @@ void Game::drawScene()
 
 #pragma region UI
 		// Wireframe
-		if (mSelectedUnits.size() == 1)
+		if (sSelectedUnits.size() == 1)
 		{
-			Unit* unit = mSelectedUnits[0];
+			Unit* unit = sSelectedUnits[0];
 			BW::UnitType unitType = unit->GetUnitType();
 			int32 index = (uint32)unitType;
 
@@ -1281,9 +1216,9 @@ void Game::drawScene()
 		}
 		else
 		{
-			for (int32 i = 0; i < mSelectedUnits.size(); i++)
+			for (int32 i = 0; i < sSelectedUnits.size(); i++)
 			{
-				Unit* unit = mSelectedUnits[i];
+				Unit* unit = sSelectedUnits[i];
 				BW::UnitType unitType = unit->GetUnitType();
 				int32 index = (uint32)unitType;
 

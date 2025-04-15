@@ -137,9 +137,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\BWLib\FlingyType.h" />
     <ClInclude Include="..\BWLib\ImageNumber.h" />
     <ClInclude Include="..\BWLib\IScriptAnimation.h" />
     <ClInclude Include="..\BWLib\IScriptEntryNumber.h" />
+    <ClInclude Include="..\BWLib\MovementFlags.h" />
     <ClInclude Include="..\BWLib\OrderType.h" />
     <ClInclude Include="..\BWLib\ResourceType.h" />
     <ClInclude Include="..\BWLib\RLEType.h" />
@@ -162,6 +164,7 @@
     <ClInclude Include="BWFile.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="CommandIcon.h" />
+    <ClInclude Include="Flingy.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="Image.h" />
@@ -171,8 +174,10 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Sprite.h" />
+    <ClInclude Include="Target.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TerranCraft.h" />
+    <ClInclude Include="Thingy.h" />
     <ClInclude Include="Unit.h" />
     <ClInclude Include="Order.h" />
   </ItemGroup>
@@ -182,7 +187,9 @@
     <ClCompile Include="..\Util\Util.cpp" />
     <ClCompile Include="AnimationController.cpp" />
     <ClCompile Include="Arrangement.cpp" />
+    <ClCompile Include="Bullet.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Flingy.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Image.cpp" />
     <ClCompile Include="PathFinder.cpp" />
@@ -194,6 +201,7 @@
     </ClCompile>
     <ClCompile Include="Sprite.cpp" />
     <ClCompile Include="TerranCraft.cpp" />
+    <ClCompile Include="Thingy.cpp" />
     <ClCompile Include="Unit.cpp" />
   </ItemGroup>
   <ItemGroup>
