@@ -4,6 +4,7 @@
 #include "../Common/typedef.h"
 #include "../BWLib/FlingyType.h"
 #include "../BWLib/MovementFlags.h"
+#include "Target.h"
 
 class Flingy : public Thingy
 {
@@ -15,11 +16,12 @@ public:
 
 	virtual void Update();
 
-	IntVector2 GetMoveTarget() const { return mMoveTarget; }
-	void SetMoveTarget(IntVector2 moveTarget) { mMoveTarget = moveTarget; }
+	Target GetMoveTarget() const { return mMoveTarget; }
+	void SetMoveTarget(Target moveTarget) { mMoveTarget = moveTarget; }
 	IntVector2 GetNextMovementWaypoint() const { return mNextMovementWaypoint; }
 	void SetNextMovementWaypoint(IntVector2 nextMovementWaypoint) { mNextMovementWaypoint = nextMovementWaypoint; }
-	int32 GetCurrentSpeed() const { return mCurrentSpeed; }
+	int32 GetFlingyTopSpeed() const { return mFlingyTopSpeed; }
+	float GetCurrentSpeed() const { return mCurrentSpeed; }
 	uint8 GetFacingDirection() const { return mFacingDirection; }
 	void SetFacingDirection(uint8 facingDirection) { mFacingDirection = facingDirection; }
 	FloatVector2 GetCurrentVelocity() const { return mCurrentVelocity; }
@@ -35,10 +37,11 @@ public:
 
 protected:
 	BW::FlingyType mFlingyType = BW::FlingyType::None;
-	IntVector2 mMoveTarget = { 0, };
+	Target mMoveTarget = { 0, };
 	IntVector2 mNextMovementWaypoint = { 0, };
 	uint8 mMovementFlags = BW::MovementFlags::None;
-	int32 mCurrentSpeed = 4;
+	int32 mFlingyTopSpeed = 0;
+	float mCurrentSpeed = 0.f;
 	uint8 mFacingDirection = 0;
 	FloatVector2 mCurrentVelocity = { 0, };
 	FloatVector2 mPosition = { 0, };

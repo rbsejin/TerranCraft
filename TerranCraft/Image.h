@@ -4,6 +4,7 @@
 #include "../BWLib/ImageNumber.h"
 #include "../BWLib/IScriptAnimation.h"
 #include "../BWLib/SpriteNumber.h"
+#include "../BWLib/RLEType.h"
 //#include "../BWLib/RLEType.h"
 
 struct GRPHeader;
@@ -31,7 +32,8 @@ public:
 	IntVector2 GetScreenPosition() const { return mScreenPosition; }
 
 	BW::ImageNumber GetImageID() const { return mImageID; }
-	//BW::RLEType GetRLE() const { return mRLE; }
+	BW::RLEType GetRLE() const { return mRLE; }
+	uint8 GetRemapping() const { return mRemapping; }
 	uint8 GetDirection() const { return mDirection; }
 	void SetDirection(uint8 direction);
 	bool IsFlipped() const { return mFlags & 0x0002; }
@@ -57,7 +59,8 @@ public:
 
 private:
 	BW::ImageNumber mImageID = BW::ImageNumber::None;
-	//BW::RLEType mRLE = BW::RLEType::Normal;
+	BW::RLEType mRLE = BW::RLEType::Normal;
+	uint8 mRemapping = 0;
 	uint8 mDirection = 0; // 0 ~ 31
 	/*  0x0001  - Redraw
 		0x0002  - Flipped/Mirrored

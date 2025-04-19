@@ -44,6 +44,8 @@ bool Unit::Initialize(BW::UnitType unitType)
 	const WeaponData* weaponData = Arrangement::Instance.GetWeaponData();
 	mGroundWeaponCooldown = weaponData->WeaponCooldowns[(uint32)unitType];
 
+	Flingy::Initialize((BW::FlingyType)flingyID);
+
 	bResult = true;
 
 	return bResult;
@@ -76,72 +78,7 @@ void Unit::Update()
 	}
 	case BW::OrderType::AttackUnit:
 	{
-		if ((mCoolTime <= 0) && mbRepeatAttackable)
-		{
-			Unit* dealer = this;
-			const UnitData* dealerUnitData = Arrangement::Instance.GetUnitData();
-			BW::UnitType dealerUnitType = dealer->GetUnitType();
-			uint8 weaponID = dealerUnitData->GroundWeapons[(uint32)dealerUnitType];
-			const WeaponData* weaponData = Arrangement::Instance.GetWeaponData();
-			uint16 amount = weaponData->DamageAmounts[weaponID];
-
-			const UnitData* targetUnitData = Arrangement::Instance.GetUnitData();
-			Unit* targetUnit = mOrderTarget.Unit;
-#ifdef _DEBUG
-			if (targetUnit == nullptr)
-			{
-				__debugbreak();
-			}
-#endif
-			BW::UnitType targetUnitType = targetUnit->GetUnitType();
-			uint8 armor = targetUnitData->Armors[(uint32)targetUnitType];
-			int32 damage = amount - armor;
-
-			int32 hp = targetUnit->GetHP();
-			hp -= damage;
-
-			char buf[256];
-			sprintf_s(buf, "Dealer: %d, Target: %d, Damage: %d, HP: %d\n", (int)dealerUnitType, (int)targetUnitType, damage, hp);
-			OutputDebugStringA(buf);
-
-			if (hp <= 0)
-			{
-				hp = 0;
-
-				Sprite* sprite = GetSprite();
-				Image* primaryImage = sprite->GetPrimaryImage();
-				BW::IScriptAnimation anim = BW::IScriptAnimation::GndAttkToIdle;
-				primaryImage->SetAnim(anim);
-				uint16 iscriptHeader = primaryImage->GetIScriptHeader();
-				uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
-				primaryImage->SetIScriptOffset(iscriptOffset);
-				primaryImage->SetSleep(0);
-
-				ClearOrders();
-
-				mCoolTime = 0;
-			}
-			else
-			{
-				Sprite* sprite = GetSprite();
-				Image* primaryImage = sprite->GetPrimaryImage();
-				uint16 iscriptHeader = primaryImage->GetIScriptHeader();
-				uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, BW::IScriptAnimation::GndAttkRpt);
-				primaryImage->SetIScriptOffset(iscriptOffset);
-				primaryImage->SetSleep(0);
-
-				mCoolTime = mGroundWeaponCooldown;
-				mbRepeatAttackable = false;
-			}
-
-			targetUnit->SetHP(hp);
-		}
-
-		mCoolTime--;
-
-		char buf[256];
-		sprintf_s(buf, "Cooldown: %d\n", mCoolTime);
-		//OutputDebugStringA(buf);
+		attackUnit();
 		break;
 	}
 	case BW::OrderType::AttackMove:
@@ -238,7 +175,75 @@ void Unit::PerformOrder()
 		const std::list<Image*>* images = sprite->GetImages();
 		for (Image* image : *images)
 		{
-			BW::IScriptAnimation anim = BW::IScriptAnimation::Init;
+			BW::IScriptAnimation anim = image->GetAnim();
+
+			switch (anim)
+			{
+			case BW::IScriptAnimation::Init:
+				break;
+			case BW::IScriptAnimation::Death:
+				break;
+			case BW::IScriptAnimation::GndAttkInit:
+				anim = BW::IScriptAnimation::GndAttkToIdle;
+				break;
+			case BW::IScriptAnimation::AirAttkInit:
+				anim = BW::IScriptAnimation::AirAttkToIdle;
+				break;
+			case BW::IScriptAnimation::Unused1:
+				break;
+			case BW::IScriptAnimation::GndAttkRpt:
+				anim = BW::IScriptAnimation::GndAttkToIdle;
+				break;
+			case BW::IScriptAnimation::AirAttkRpt:
+				anim = BW::IScriptAnimation::AirAttkToIdle;
+				break;
+			case BW::IScriptAnimation::CastSpell:
+				break;
+			case BW::IScriptAnimation::GndAttkToIdle:
+				break;
+			case BW::IScriptAnimation::AirAttkToIdle:
+				break;
+			case BW::IScriptAnimation::Unused2:
+				break;
+			case BW::IScriptAnimation::Walking:
+				anim = BW::IScriptAnimation::WalkingToIdle;
+				break;
+			case BW::IScriptAnimation::WalkingToIdle:
+				break;
+			case BW::IScriptAnimation::SpecialState1:
+				break;
+			case BW::IScriptAnimation::SpecialState2:
+				break;
+			case BW::IScriptAnimation::AlmostBuilt:
+				break;
+			case BW::IScriptAnimation::Built:
+				break;
+			case BW::IScriptAnimation::Landing:
+				break;
+			case BW::IScriptAnimation::LiftOff:
+				break;
+			case BW::IScriptAnimation::IsWorking:
+				break;
+			case BW::IScriptAnimation::WorkingToIdle:
+				break;
+			case BW::IScriptAnimation::WarpIn:
+				break;
+			case BW::IScriptAnimation::Unused3:
+				break;
+			case BW::IScriptAnimation::StarEditInit:
+				break;
+			case BW::IScriptAnimation::Disable:
+				break;
+			case BW::IScriptAnimation::Burrow:
+				break;
+			case BW::IScriptAnimation::UnBurrow:
+				break;
+			case BW::IScriptAnimation::Enable:
+				break;
+			default:
+				break;
+			}
+
 			image->SetAnim(anim);
 			uint16 iscriptHeader = image->GetIScriptHeader();
 			uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
@@ -248,31 +253,24 @@ void Unit::PerformOrder()
 
 		mCoolTime = 0;
 		SetRepeatAttackable(true);
+		mOrderType = BW::OrderType::None;
 		break;
 	}
 	case BW::OrderType::Move:
 	{
-		startMove(order->Target);
+		startMove();
 		break;
 	}
 	case BW::OrderType::Attack1:
 		break;
 	case BW::OrderType::AttackUnit:
 	{
-		Sprite* sprite = GetSprite();
-		Image* primaryImage = sprite->GetPrimaryImage();
-
-		BW::IScriptAnimation anim = BW::IScriptAnimation::GndAttkInit;
-		primaryImage->SetAnim(anim);
-		uint16 iscriptHeader = primaryImage->GetIScriptHeader();
-		uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
-		primaryImage->SetIScriptOffset(iscriptOffset);
-		primaryImage->SetSleep(0);
+		startAttackUnit();
 		break;
 	}
 	case BW::OrderType::AttackMove:
 		// TODO: 추후 startAttackMove() 함수 구현해서 대체할 것...
-		startMove(order->Target);
+		startMove();
 		break;
 	case BW::OrderType::Nothing:
 		break;
@@ -328,12 +326,12 @@ uint8 Unit::GetFlingyID() const
 	return unitData->Graphics[(uint32)mUnitType];
 }
 
-void Unit::startMove(Target target)
+void Unit::startMove()
 {
-	int32 x = target.Position.X;
-	int32 y = target.Position.Y;
+	mMoveTarget = mOrderTarget;
+	int32 x = mMoveTarget.Position.X;
+	int32 y = mMoveTarget.Position.Y;
 
-	SetMoveTarget({ x, y });
 	FloatVector2 position = GetPosition();
 
 	// find path
@@ -371,13 +369,17 @@ void Unit::startMove(Target target)
 
 	// Walk Animation
 	Sprite* sprite = GetSprite();
-	Image* primaryImage = sprite->GetPrimaryImage();
-	BW::IScriptAnimation anim = BW::IScriptAnimation::Walking;
-	primaryImage->SetAnim(anim);
-	uint16 iscriptHeader = primaryImage->GetIScriptHeader();
-	uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
-	primaryImage->SetIScriptOffset(iscriptOffset);
-	primaryImage->SetSleep(0);
+	std::list<Image*>* images = sprite->GetImages();
+
+	for (Image* image : *images)
+	{
+		BW::IScriptAnimation anim = BW::IScriptAnimation::Walking;
+		image->SetAnim(anim);
+		uint16 iscriptHeader = image->GetIScriptHeader();
+		uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+		image->SetIScriptOffset(iscriptOffset);
+		image->SetSleep(0);
+	}
 }
 
 void Unit::move()
@@ -386,7 +388,7 @@ void Unit::move()
 	float distanceY = mNextMovementWaypoint.Y - mPosition.Y;
 	float distanceSquare = distanceX * distanceX + distanceY * distanceY;
 
-	int32 speed = mCurrentSpeed;
+	float speed = mCurrentSpeed;
 
 	if (distanceSquare > speed * speed)
 	{
@@ -423,12 +425,158 @@ void Unit::move()
 			// WalkingToIdle Animation
 			BW::IScriptAnimation anim = BW::IScriptAnimation::WalkingToIdle;
 			Sprite* sprite = GetSprite();
-			Image* primaryImage = sprite->GetPrimaryImage();
-			primaryImage->SetAnim(anim);
-			uint16 iscriptHeader = primaryImage->GetIScriptHeader();
-			uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
-			primaryImage->SetIScriptOffset(iscriptOffset);
-			primaryImage->SetSleep(0);
+
+			const std::list<Image*>* images = sprite->GetImages();
+			for (Image* image : *images)
+			{
+				image->SetAnim(anim);
+				uint16 iscriptHeader = image->GetIScriptHeader();
+				uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+				image->SetIScriptOffset(iscriptOffset);
+				image->SetSleep(0);
+			}
+
+			mOrderType = BW::OrderType::None;
 		}
 	}
+}
+
+void Unit::startAttackUnit()
+{
+	Unit* targetUnit = mOrderTarget.Unit;
+	FloatVector2 targetPosition = targetUnit->GetPosition();
+	lookAt(targetPosition);
+
+	Sprite* sprite = GetSprite();
+	std::list<Image*>* images = sprite->GetImages();
+	for (Image* image : *images)
+	{
+		BW::IScriptAnimation anim = BW::IScriptAnimation::GndAttkInit;
+		image->SetAnim(anim);
+		uint16 iscriptHeader = image->GetIScriptHeader();
+		uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+		image->SetIScriptOffset(iscriptOffset);
+		image->SetSleep(0);
+		mbRepeatAttackable = true;
+	}
+}
+
+void Unit::attackUnit()
+{
+	if ((mCoolTime <= 0) && mbRepeatAttackable)
+	{
+		mbRepeatAttackable = false;
+
+		Unit* targetUnit = mOrderTarget.Unit;
+		FloatVector2 targetPosition = targetUnit->GetPosition();
+		lookAt(targetPosition);
+
+		Unit* dealer = this;
+		const UnitData* dealerUnitData = Arrangement::Instance.GetUnitData();
+		BW::UnitType dealerUnitType = dealer->GetUnitType();
+		uint8 weaponID = dealerUnitData->GroundWeapons[(uint32)dealerUnitType];
+		const WeaponData* weaponData = Arrangement::Instance.GetWeaponData();
+		uint16 amount = weaponData->DamageAmounts[weaponID];
+
+		const UnitData* targetUnitData = Arrangement::Instance.GetUnitData();
+
+#ifdef _DEBUG
+		if (targetUnit == nullptr)
+		{
+			__debugbreak();
+		}
+#endif
+		BW::UnitType targetUnitType = targetUnit->GetUnitType();
+		uint8 armor = targetUnitData->Armors[(uint32)targetUnitType];
+		int32 damage = amount - armor;
+
+		int32 hp = targetUnit->GetHP();
+		hp -= damage;
+
+		char buf[256];
+		sprintf_s(buf, "Dealer: %d, Target: %d, Damage: %d, HP: %d\n", (int)dealerUnitType, (int)targetUnitType, damage, hp);
+		OutputDebugStringA(buf);
+
+		if (hp <= 0)
+		{
+			hp = 0;
+
+			Sprite* sprite = GetSprite();
+			std::list<Image*>* images = sprite->GetImages();
+			for (Image* image : *images)
+			{
+				BW::IScriptAnimation anim = BW::IScriptAnimation::GndAttkToIdle;
+				image->SetAnim(anim);
+				uint16 iscriptHeader = image->GetIScriptHeader();
+				uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+				image->SetIScriptOffset(iscriptOffset);
+				image->SetSleep(0);
+			}
+
+			ClearOrders();
+
+			mCoolTime = 0;
+
+			mOrderType = BW::OrderType::None;
+		}
+		else
+		{
+			Sprite* sprite = GetSprite();
+			std::list<Image*>* images = sprite->GetImages();
+			for (Image* image : *images)
+			{
+
+				uint16 iscriptHeader = image->GetIScriptHeader();
+				uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, BW::IScriptAnimation::GndAttkRpt);
+				image->SetIScriptOffset(iscriptOffset);
+				image->SetSleep(0);
+			}
+
+			mCoolTime = mGroundWeaponCooldown;
+			mbRepeatAttackable = false;
+		}
+
+		targetUnit->SetHP(hp);
+
+		// Bullet
+		Bullet* bullet = new Bullet();
+		const UnitData* unitData = Arrangement::Instance.GetUnitData();
+		BW::WeaponType weaponType = (BW::WeaponType)unitData->GroundWeapons[(uint32)mUnitType];
+		bullet->Initialize(weaponType, this);
+		//FloatVector2 position = targetUnit->GetPosition();
+		FloatVector2 position = targetPosition;
+		if (mUnitType == BW::UnitType::Terran_Vulture)
+		{
+			position = mPosition;
+		}
+
+		bullet->SetPosition(position);
+		Game::sBullets.push_back(bullet);
+		Game::sThingies.push_back(bullet);
+	}
+
+	mCoolTime--;
+
+	char buf[256];
+	sprintf_s(buf, "Cooldown: %d\n", mCoolTime);
+	//OutputDebugStringA(buf);
+}
+
+void Unit::lookAt(FloatVector2 targetPosition)
+{
+	FloatVector2 position = mPosition;
+
+	float distanceX = targetPosition.X - position.X;
+	float distanceY = targetPosition.Y - position.Y;
+
+	float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
+	float directionX = distanceX / distance;
+	float directionY = distanceY / distance;
+
+	float angle = atan2f(distanceY, distanceX);
+	angle += (float)M_PI;
+	uint8 direction = (uint8)(angle * 128.0f / M_PI - 64);
+	direction /= 8;
+
+	SetFacingDirection(direction);
 }

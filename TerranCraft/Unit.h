@@ -43,14 +43,19 @@ public:
 	void RemoveOrder() { mOrderQueue.pop_front(); }
 	Order* GetFrontOrder() const { return (mOrderQueue.empty()) ? nullptr : mOrderQueue.front(); }
 	void ClearOrders();
+	bool IsOrderQueueEmpty() const { return mOrderQueue.empty(); }
 	void SetStandby() { mOrderType = BW::OrderType::None; }
 
 	int32 GetMaxHP() const;
 	uint8 GetFlingyID() const;
+	Target GetOrderTarget() const { return mOrderTarget; }
 
 private:
-	void startMove(Target target);
+	void startMove();
 	void move();
+	void startAttackUnit();
+	void attackUnit();
+	void lookAt(FloatVector2 targetPosition);
 
 private:
 	uint8 mGroundWeaponCooldown = 0;

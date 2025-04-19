@@ -238,11 +238,13 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			iscriptOffset += sizeof(y);
 
 			// TODO: glow effect 렌더링 구현되면 추가
-#if 0
+#if 1
 			Sprite* parent = image->GetParent();
 			Image* child = new Image();
 			child->Initialize((BW::ImageNumber)imageID, parent);
 			child->SetOffsets({ x, y });
+			BW::IScriptAnimation anim = image->GetAnim();
+			child->SetAnim(anim);
 			parent->AddBefore(child);
 #endif
 
@@ -267,6 +269,8 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			Image* child = new Image();
 			child->Initialize((BW::ImageNumber)imageID, parent);
 			child->SetOffsets({ x, y });
+			BW::IScriptAnimation anim = image->GetAnim();
+			child->SetAnim(anim);
 			parent->AddAffter(child);
 #endif
 			printOpcode(imageNumber, "IMGUL");
@@ -334,6 +338,16 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			iscriptOffset += sizeof(x);
 			GetData(&y, iscriptOffset, sizeof(y));
 			iscriptOffset += sizeof(y);
+
+			Thingy* newThingy = new Thingy();
+			newThingy->Initialize(1, (BW::SpriteNumber)spriteID);
+			Sprite* sprite = newThingy->GetSprite();
+			Sprite* parent = image->GetParent();
+			IntVector2 position = parent->GetPosition();
+			position.X += x;
+			position.Y += y;
+			sprite->SetPosition(position);
+			Game::sThingies.push_back(newThingy);
 
 			printOpcode(imageNumber, "SPROL");
 		}

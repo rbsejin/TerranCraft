@@ -44,6 +44,11 @@ PALETTEENTRY Palette::sData[256] =
 };
 #undef RGBRESERVE
 
+PALETTEENTRY Palette::sOfireData[256] = { 0, };
+PALETTEENTRY Palette::sGfireData[256] = { 0, };
+PALETTEENTRY Palette::sBfireData[256] = { 0, };
+PALETTEENTRY Palette::sBexplData[256] = { 0, };
+
 PALETTEENTRY Palette::sIconData[16] =
 {
 	{ 0xFC, 0xFC, 0x38 }, { 0xE7, 0xE9, 0x2F }, { 0xFD, 0xD1, 0x39 }, { 0xFC, 0xCC, 0x2C },
@@ -74,4 +79,26 @@ uint32 Palette::GetColor(const PALETTEENTRY* palette, uint8 index)
 void Palette::SetEntries(PALETTEENTRY* palette, int32 startIndex, int32 count, const PALETTEENTRY* colors)
 {
 	memcpy(palette + startIndex, colors, count * sizeof(PALETTEENTRY));
+}
+
+void Palette::LoadPal(PALETTEENTRY* data, const char* filename)
+{
+	FILE* fp = nullptr;
+	uint8* buffer = (uint8*)malloc(sizeof(PALETTEENTRY) * 256);
+	fopen_s(&fp, filename, "rb");
+	if (fp == nullptr)
+	{
+		return;
+	}
+	fread(buffer, sizeof(PALETTEENTRY), 256, fp);
+	fclose(fp);
+
+	for (int32 i = 0; i < 256; i++)
+	{
+		data[i].peRed = buffer[i * 3 + 0];
+		data[i].peGreen = buffer[i * 3 + 1];
+		data[i].peBlue = buffer[i * 3 + 2];
+	}
+
+	free(buffer);
 }

@@ -22,7 +22,6 @@
 Game* gGame = nullptr;
 
 std::list<Thingy*> Game::sThingies;
-//std::list<Sprite*> Game::sSprites;
 std::list<Unit*> Game::sUnits;
 std::list<Bullet*> Game::sBullets;
 std::vector<Unit*> Game::sSelectedUnits;
@@ -68,6 +67,11 @@ bool Game::Initalize(HWND hWnd)
 	pcxToPaletteEntries(mTUnitPCX, Palette::sTUnitPaletteEntries);
 	pcxToPaletteEntries(mTSelectPCX, Palette::sTSelectPaletteEntries);
 	pcxToPaletteEntries(mTWirePCX, Palette::sTWirePaletteEntries);
+
+	Palette::LoadPal(Palette::sOfireData, "../data/Palettes/ofire.pal");
+	Palette::LoadPal(Palette::sGfireData, "../data/Palettes/gfire.pal");
+	Palette::LoadPal(Palette::sBfireData, "../data/Palettes/bfire.pal");
+	//Palette::LoadPal(Palette::sBexplData, "../data/Palettes/bexpl.pal");
 
 #pragma region wirefram
 	{
@@ -134,15 +138,15 @@ bool Game::Initalize(HWND hWnd)
 #pragma endregion
 
 	BW::UnitType unitTypes[4] = {
+		BW::UnitType::Terran_SCV,
 		BW::UnitType::Terran_Marine,
 		BW::UnitType::Terran_Vulture,
-		BW::UnitType::Terran_SCV,
-		BW::UnitType::Terran_Medic
+		BW::UnitType::Terran_Command_Center
 	};
 
 	for (int32 j = 0; j < 4; j++)
 	{
-		for (int32 i = 0; i < 6; i++)
+		for (int32 i = 0; i < 3; i++)
 		{
 			Unit* unit = new Unit();
 
@@ -151,7 +155,7 @@ bool Game::Initalize(HWND hWnd)
 				goto LB_RETURN;
 			}
 
-			unit->SetPosition({ 128 + i * 64.f, (j + 1) * 64.f });
+			unit->SetPosition({ 128 + i * 128.f, (j + 1) * 64.f });
 			sUnits.push_back(unit);
 			sThingies.push_back(unit);
 		}
@@ -220,8 +224,6 @@ void Game::pcxToPaletteEntries(PCXImage* pcx, PALETTEENTRY* pDest)
 
 void Game::Cleanup()
 {
-	sBullets.clear();
-
 	for (int32 i = 0; i < SELECTION_CIRCLE_IMAGE_COUNT; i++)
 	{
 		delete mSelectionCircleImages[i];
@@ -259,7 +261,7 @@ void Game::Cleanup()
 	destroyPCX(&mTWirePCX);
 	destroyMap();
 
-
+	sBullets.clear();
 	sUnits.clear();
 
 	for (Thingy* thingy : sThingies)
@@ -586,13 +588,17 @@ void Game::OnLButtonDown(unsigned int nFlags, int x, int y)
 			Target target;
 			target.Unit = mHoveredUnit;
 			target.Position = { x, y };
-
 			attack(target);
 		}
 		break;
 		case PlayerOrder::Move:
-			move(x, y);
+		{
+			Target target;
+			target.Unit = mHoveredUnit;
+			target.Position = { x, y };
+			move(target);
 			break;
+		}
 		case PlayerOrder::HoldPosition:
 			break;
 		case PlayerOrder::Patrol:
@@ -669,7 +675,11 @@ void Game::OnRButtonDown(unsigned int nFlags, int x, int y)
 	IntVector2 cameraPosition = Camera::Instance.GetPosition();
 	x += cameraPosition.X;
 	y += cameraPosition.Y;
-	move(x, y);
+
+	Target target = { 0, };
+	target.Unit = mHoveredUnit;
+	target.Position = { x, y };
+	move(target);
 
 	mCursorIndex = 0;
 	mPlayerOrder = PlayerOrder::None;
@@ -735,8 +745,15 @@ void Game::updateWireframePalette(const Unit* unit)
 	Palette::SetEntries(Palette::sData, 208, 4, paletteEntries);
 }
 
-void Game::move(int x, int y)
+void Game::move(Target target)
 {
+	FloatVector2 targetPosition = { target.Position.X, target.Position.Y };
+	Unit* targetUnit = target.Unit;
+	if (targetUnit != nullptr)
+	{
+		targetPosition = targetUnit->GetPosition();
+	}
+
 	for (uint32 i = 0; i < sSelectedUnits.size(); i++)
 	{
 		Unit* unit = sSelectedUnits[i];
@@ -744,73 +761,25 @@ void Game::move(int x, int y)
 		unit->ClearOrders();
 		Order* order = new Order();
 		order->OrderType = BW::OrderType::Move;
-		order->Target.Position.X = x;
-		order->Target.Position.Y = y;
-		unit->AddOrder(order);
-	}
-}
-
-void Game::move(Target target)
-{
-}
-
-void Game::attack(int x, int y)
-{
-	// Attack Animation
-	for (int32 i = 0; i < sSelectedUnits.size(); i++)
-	{
-		// turn to target
-		Unit* unit = sSelectedUnits[i];
-		FloatVector2 position = unit->GetPosition();
-		FloatVector2 target = { (float)x, (float)y };
-
-		float distanceX = target.X - position.X;
-		float distanceY = target.Y - position.Y;
-
-		float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
-		float directionX = distanceX / distance;
-		float directionY = distanceY / distance;
-
-		float angle = atan2f(distanceY, distanceX);
-		angle += (float)M_PI;
-		uint8 direction = (uint8)(angle * 128.0f / M_PI - 64);
-		direction /= 8;
-
-		unit->SetFacingDirection(direction);
-
-		unit->SetStandby();
-		unit->ClearOrders();
-		Order* order = new Order();
-		order->OrderType = BW::OrderType::AttackUnit;
-		order->Target.Unit = mHoveredUnit;
+		order->Target.Position.X = (int32)targetPosition.X;
+		order->Target.Position.Y = (int32)targetPosition.Y;
 		unit->AddOrder(order);
 	}
 }
 
 void Game::attack(Target target)
 {
-	FloatVector2 targetPosition = { (float)target.Position.X, (float)target.Position.Y };
+	FloatVector2 targetPosition = { target.Position.X, target.Position.Y };
+	Unit* targetUnit = target.Unit;
+	if (targetUnit != nullptr)
+	{
+		targetPosition = targetUnit->GetPosition();
+	}
 
 	for (int32 i = 0; i < sSelectedUnits.size(); i++)
 	{
 		// turn to target
 		Unit* unit = sSelectedUnits[i];
-		FloatVector2 position = unit->GetPosition();
-
-		float distanceX = targetPosition.X - position.X;
-		float distanceY = targetPosition.Y - position.Y;
-
-		float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
-		float directionX = distanceX / distance;
-		float directionY = distanceY / distance;
-
-		float angle = atan2f(distanceY, distanceX);
-		angle += (float)M_PI;
-		uint8 direction = (uint8)(angle * 128.0f / M_PI - 64);
-		direction /= 8;
-
-		unit->SetFacingDirection(direction);
-
 		unit->SetStandby();
 		unit->ClearOrders();
 		Order* order = new Order();
@@ -885,6 +854,13 @@ void Game::onGameFrame(ULONGLONG currentTick)
 		unit->Update();
 	}
 
+	// Bullet Update
+	std::list<Bullet*> tempBullets = sBullets;
+	for (Bullet* bullet : tempBullets)
+	{
+		bullet->Update();
+	}
+
 	for (auto iter = sUnits.begin(); iter != sUnits.end(); ++iter)
 	{
 		Unit* unit = *iter;
@@ -927,6 +903,43 @@ void Game::onGameFrame(ULONGLONG currentTick)
 			Sprite* sprite = thingy->GetSprite();
 			if (sprite == nullptr)
 			{
+				auto it = sUnits.begin();
+				while (it != sUnits.end())
+				{
+					Unit* unit = *it;
+					if (unit == thingy)
+					{
+						it = sUnits.erase(it);
+					}
+					else
+					{
+						Target target = unit->GetOrderTarget();
+						if (target.Unit == thingy)
+						{
+							unit->SetStandby();
+							if (!unit->IsOrderQueueEmpty())
+							{
+								unit->RemoveOrder();
+							}
+						}
+
+						target = unit->GetMoveTarget();
+						if (target.Unit == thingy)
+						{
+							unit->SetStandby();
+							if (!unit->IsOrderQueueEmpty())
+							{
+								unit->RemoveOrder();
+							}
+						}
+
+						++it;
+					}
+				}
+
+				//sUnits.erase(std::remove(sUnits.begin(), sUnits.end(), thingy), sUnits.end());
+				//sSelectedUnits.erase(std::remove(sSelectedUnits.begin(), sSelectedUnits.end(), thingy), sSelectedUnits.end());
+				sBullets.erase(std::remove(sBullets.begin(), sBullets.end(), thingy), sBullets.end());
 				iter = sThingies.erase(iter);
 				delete thingy;
 				thingy = nullptr;
@@ -1083,18 +1096,6 @@ void Game::drawScene()
 				}
 			}
 		}
-
-		//for (Bullet* bullet : sBullets)
-		//{
-		//	const Sprite* sprite = bullet->GetSprite();
-		//	sprite->Draw(mDDrawDevice);
-		//}
-
-		// remnants, ...
-		//for (Sprite* sprite : Game::sSprites)
-		//{
-		//	sprite->Draw(mDDrawDevice);
-		//}
 
 		// Building Prreview
 		if (mBuildingPreview != nullptr)

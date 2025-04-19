@@ -17,7 +17,8 @@ bool Flingy::Initialize(BW::FlingyType flingyType)
 	mFlingyType = flingyType;
 	const FlingyData* flingyData = Arrangement::Instance.GetFlingyData();
 	uint32 flingyID = (uint32)flingyType;
-	mCurrentSpeed = flingyData->Speeds[flingyID];
+	mFlingyTopSpeed = flingyData->Speeds[flingyID];
+	mCurrentSpeed = (mFlingyTopSpeed == 1) ? 4.f : (mFlingyTopSpeed / 256.f);
 
 	// TODO: Implement the following
 	//Accelerations[flingyID];

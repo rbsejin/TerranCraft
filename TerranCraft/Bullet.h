@@ -15,6 +15,8 @@ public:
 	bool Initialize(BW::WeaponType weaponType, Unit* sourceUnit);
 	void Cleanup();
 
+	void Update();
+
 	BW::WeaponType GetWeaponType() const { return mWeaponType; }
 	uint8 GetTimeRemaining() const { return mTimeRemaining; }
 	uint8 GetFlags() const { return mFlags; }

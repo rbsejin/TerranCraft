@@ -26,8 +26,7 @@ bool Image::Initialize(BW::ImageNumber imageID, Sprite* parent)
 
 	uint32 IscriptID = imageData->IscriptIDs[(int32)imageID];
 
-	//int32 paletteIndex = imageData->Remappings[(int32)imageID];
-	//mPalette = ImageResource::Instance.GetPalette(paletteIndex);
+	mRemapping = imageData->Remappings[(int32)imageID];
 
 	mIScriptHeader = AnimationController::Instance.GetIScriptHeader(IscriptID);
 	mIScriptOffset = AnimationController::Instance.GetIScriptOffset(mIScriptHeader, mAnim);
@@ -92,13 +91,35 @@ void Image::DrawImage(DDrawDevice* ddrawDevice) const
 	const GRPFrame* frame = GetCurrentFrame();
 	const uint8* compressedImage = GetCompressedImage();
 
+	PALETTEENTRY* palette = nullptr;
+	
+	switch (mRemapping)
+	{
+	case 0:
+		palette = Palette::sData;
+		break;
+	case 1:
+		palette = Palette::sOfireData;
+		break;
+	case 2:
+		palette = Palette::sGfireData;
+		break;
+	case 3:
+		palette = Palette::sBfireData;
+		break;
+	case 4:
+		palette = Palette::sBexplData;
+	default:
+		break;
+	}
+
 	if (!IsFlipped())
 	{
-		ddrawDevice->DrawGRP2(mScreenPosition.X, mScreenPosition.Y, frame, mGRPBounds, compressedImage, Palette::sData);
+		ddrawDevice->DrawGRP2(mScreenPosition.X, mScreenPosition.Y, frame, mGRPBounds, compressedImage, palette);
 	}
 	else
 	{
-		ddrawDevice->DrawGRP2Flipped(mScreenPosition.X, mScreenPosition.Y, frame, mGRPBounds, compressedImage, Palette::sData);
+		ddrawDevice->DrawGRP2Flipped(mScreenPosition.X, mScreenPosition.Y, frame, mGRPBounds, compressedImage, palette);
 	}
 
 #if 0

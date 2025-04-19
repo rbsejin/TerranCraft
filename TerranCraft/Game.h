@@ -86,9 +86,7 @@ private:
 	void destroyGRP(GRPHeader** grpHeader);
 	bool loadImages();
 
-	void move(int x, int y);
 	void move(Target target);
-	void attack(int x, int y);
 	void attack(Target target);
 	void markUnit();
 	void markCursor();
@@ -97,7 +95,6 @@ private:
 
 public:
 	static std::list<Thingy*> sThingies;
-	//static std::list<Sprite*> sSprites;
 	static std::list<Unit*> sUnits;
 	static std::list<Bullet*> sBullets;
 	static std::vector<Unit*> sSelectedUnits;

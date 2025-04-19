@@ -718,7 +718,7 @@ bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GRPFrame* frame, c
 				{
 					// 2. 0x40 <= byte < 0x80 : 다음 바이트를 (byte - 0x40)만큼 반복해서 출력
 					int32 count = opcode - 0x40;
-					uint32 pixel = Palette::GetColor(Palette::sData, *pStream++);
+					uint32 pixel = Palette::GetColor(palette, *pStream++);
 					int32 pixelCount = count;
 
 					if (destX >= (int32)mWidth)
@@ -762,7 +762,7 @@ bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GRPFrame* frame, c
 
 					for (int i = 0; i < pixelCount; i++)
 					{
-						uint32 pixel = Palette::GetColor(Palette::sData, *pStream++);
+						uint32 pixel = Palette::GetColor(palette, *pStream++);
 						*(uint32*)pDest = pixel;
 						pDest -= 4;
 					}
@@ -797,7 +797,7 @@ bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GRPFrame* frame, c
 				{
 					// 2. 0x40 <= byte < 0x80 : 다음 바이트를 (byte - 0x40)만큼 반복해서 출력
 					int32 count = opcode - 0x40;
-					uint32 pixel = Palette::GetColor(Palette::sData, *pStream++);
+					uint32 pixel = Palette::GetColor(palette, *pStream++);
 					int32 pixelCount = count;
 
 					if (destX < 0)
@@ -841,7 +841,7 @@ bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GRPFrame* frame, c
 
 					for (int i = 0; i < pixelCount; i++)
 					{
-						uint32 pixel = Palette::GetColor(Palette::sData, *pStream++);
+						uint32 pixel = Palette::GetColor(palette, *pStream++);
 						*(uint32*)pDest = pixel;
 						pDest += 4;
 					}
@@ -959,7 +959,7 @@ bool DDrawDevice::DrawGRPWithBlending(int32 screenX, int32 screenY, const GRPFra
 			{
 				// 2. 0x40 <= byte < 0x80 : 다음 바이트를 (byte - 0x40)만큼 반복해서 출력
 				int32 count = opcode - 0x40;
-				uint32 pixel = Palette::GetColor(Palette::sData, *pStream++);
+				uint32 pixel = Palette::GetColor(palette, *pStream++);
 				int32 pixelCount = count;
 
 				if (destX < 0)
@@ -1018,7 +1018,7 @@ bool DDrawDevice::DrawGRPWithBlending(int32 screenX, int32 screenY, const GRPFra
 
 				for (int i = 0; i < pixelCount; i++)
 				{
-					uint32 pixel = Palette::GetColor(Palette::sData, *pStream++);
+					uint32 pixel = Palette::GetColor(palette, *pStream++);
 					{
 						uint32 srcR = (*(uint32*)pDest & 0x00ff0000 >> 16);
 						uint32 srcG = (*(uint32*)pDest & 0x0000ff00 >> 8);
@@ -1112,7 +1112,7 @@ bool DDrawDevice::DrawGRP2(int32 screenX, int32 screenY, const GRPFrame* frame, 
 				// 2. 0x40 <= byte < 0x80 : 다음 바이트를 (byte - 0x40)만큼 반복해서 출력
 				int32 count = opcode - 0x40;
 
-				uint32 pixel = Palette::GetColor(Palette::sData, *pStream++);
+				uint32 pixel = Palette::GetColor(palette, *pStream++);
 
 				int32 s = max(x, grpRect.Left);
 				int32 e = min(x + count, grpRect.Left + grpRect.Right);
@@ -1135,7 +1135,7 @@ bool DDrawDevice::DrawGRP2(int32 screenX, int32 screenY, const GRPFrame* frame, 
 				{
 					if (x >= grpRect.Left && x < grpRect.Left + grpRect.Right)
 					{
-						uint32 pixel = Palette::GetColor(Palette::sData, *pStream);
+						uint32 pixel = Palette::GetColor(palette, *pStream);
 						*(uint32*)pDest = pixel;
 						pDest += 4;
 					}
@@ -1216,7 +1216,7 @@ bool DDrawDevice::DrawGRP2Flipped(int32 screenX, int32 screenY, const GRPFrame* 
 				// 2. 0x40 <= byte < 0x80 : 다음 바이트를 (byte - 0x40)만큼 반복해서 출력
 				int32 count = opcode - 0x40;
 
-				uint32 pixel = Palette::GetColor(Palette::sData, *pStream++);
+				uint32 pixel = Palette::GetColor(palette, *pStream++);
 
 				int32 s = min(x, grpRect.Left + grpRect.Right - 1);
 				int32 e = max(x - count, 0);
@@ -1239,7 +1239,7 @@ bool DDrawDevice::DrawGRP2Flipped(int32 screenX, int32 screenY, const GRPFrame* 
 				{
 					if (x >= grpRect.Left && x < grpRect.Left + grpRect.Right)
 					{
-						uint32 pixel = Palette::GetColor(Palette::sData, *pStream);
+						uint32 pixel = Palette::GetColor(palette, *pStream);
 						*(uint32*)pDest = pixel;
 						pDest -= 4;
 					}
