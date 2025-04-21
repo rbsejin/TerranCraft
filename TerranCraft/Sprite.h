@@ -1,7 +1,7 @@
 #pragma once
 
 #include <list>
-#include "../BWLib/SpriteNumber.h"
+#include "../BWLib/SpriteType.h"
 #include "../BWLib/UnitType.h"
 
 class Image;
@@ -13,7 +13,7 @@ public:
 	Sprite() = default;
 	~Sprite();
 
-	bool Initalize(BW::SpriteNumber spriteID);
+	bool Initalize(eSprite spriteID);
 	void Cleanup();
 
 	void Draw(DDrawDevice* ddrawDevice) const;
@@ -21,7 +21,7 @@ public:
 	IntVector2 GetPosition() const { return mPosition; }
 	void SetPosition(IntVector2 position) { mPosition = position; }
 
-	BW::SpriteNumber GetSpriteID() const { return mSpriteID; }
+	eSprite GetSpriteID() const { return mSpriteID; }
 	int32 GetSelectionIndex() const { return mSelectionIndex; }
 	const Image* GetPrimaryImage() const { return mImagePrimary; }
 	Image* GetPrimaryImage() { return mImagePrimary; }
@@ -45,7 +45,7 @@ public:
 	Image* GetSelectionCircleImage() const { return mSelectionCircleImage; }
 
 private:
-	BW::SpriteNumber mSpriteID = BW::SpriteNumber::None;
+	eSprite mSpriteID = eSprite::None;
 	//uint8 mPlayerID = 0;
 	int32 mSelectionIndex = -1;
 	//uint8 mVisibilityFlags = 0;

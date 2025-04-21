@@ -2,13 +2,16 @@
 
 #include "../Common/typedef.h"
 
-struct ImageData;
 struct UnitData;
-struct SpriteData;
-struct FlingyData;
-struct ButtonSet;
 struct WeaponData;
+struct FlingyData;
+struct SpriteData;
+struct ImageData;
 struct UpgradeData;
+struct TechData;
+struct SoundData;
+struct OrderData;
+struct ButtonsetData;
 
 class Arrangement
 {
@@ -28,16 +31,24 @@ public:
 	const UnitData* GetUnitData() const { return mUnitData; }
 	const WeaponData* GetWeaponData() const { return mWeaponData; }
 	const UpgradeData* GetUpgradeData() const { return mUpgradeData; }
-	const ButtonSet* GetButtonSet() const { return mButtonSet; }
+	const ButtonsetData* GetButtonSet() const { return mButtonsetData; }
 
 private:
-	uint8* mImageTBLData = nullptr;
-	ImageData* mImageData = nullptr;
-	SpriteData* mSpriteData = nullptr;
-	FlingyData* mFlingyData = nullptr;
+	bool loadDat(void** outData, uint32 dataSize, const char* filename);
+	bool loadTBL(uint8** outData, const char* filename);
+
+private:
 	UnitData* mUnitData = nullptr;
 	WeaponData* mWeaponData = nullptr;
+	FlingyData* mFlingyData = nullptr;
+	SpriteData* mSpriteData = nullptr;
+	uint8* mImageTBLData = nullptr;
+	ImageData* mImageData = nullptr;
 	UpgradeData* mUpgradeData = nullptr;
-	ButtonSet* mButtonSet = nullptr;
-	uint8* mButtonSetData = nullptr;
+	TechData* mTechData = nullptr;
+	uint8* mSfxTBLData = nullptr;
+	SoundData* mSoundData = nullptr;
+	OrderData* mOrderData = nullptr;
+	uint8* mBtnsetData = nullptr;
+	ButtonsetData* mButtonsetData = nullptr;
 };

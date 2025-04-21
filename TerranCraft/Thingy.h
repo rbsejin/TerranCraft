@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../Common/typedef.h"
-#include "../BWLib/SpriteNumber.h"
+#include "../BWLib/SpriteType.h"
 
 class Sprite;
 
@@ -10,7 +10,7 @@ class Thingy
 public:
 	Thingy() = default;
 	virtual ~Thingy();
-	bool Initialize(int32 hp, BW::SpriteNumber spriteNumber);
+	bool Initialize(int32 hp, eSprite spriteNumber);
 	void Cleanup();
 	int32 GetHP() const { return mHP; }
 	void SetHP(int32 hp) { mHP = hp; }

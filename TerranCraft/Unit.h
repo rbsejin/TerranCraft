@@ -2,8 +2,8 @@
 
 #include "../Common/typedef.h"
 #include "../BWLib/UnitType.h"
-#include "CommandIcon.h"
-#include "../BWLib/IScriptAnimation.h"
+#include "../BWLib/ButtonsetType.h"
+#include "../BWLib/AnimType.h"
 #include "../BWLib/OrderType.h"
 #include "Flingy.h"
 #include <list>
@@ -21,13 +21,13 @@ public:
 	Unit() = default;
 	virtual ~Unit();
 
-	bool Initialize(BW::UnitType unitType);
+	bool Initialize(eUnit unitType);
 	void Cleanup();
 
 	virtual void Update() override;
 	void PerformOrder();
 
-	BW::UnitType GetUnitType() const { return mUnitType; }
+	eUnit GetUnitType() const { return mUnitType; }
 	uint8 GetGroundWeaponCooldown() const { return mGroundWeaponCooldown; }
 	void SetGroundWeaponCooldown(uint8 groundWeaponCooldown) { mGroundWeaponCooldown = groundWeaponCooldown; }
 	IntRect GetContourBounds() const { return mContourBounds; }
@@ -35,7 +35,7 @@ public:
 
 	std::list<IntVector2>* GetPath() { return &mPath; }
 
-	BW::IScriptAnimation GetAnimation() const;
+	eAnim GetAnimation() const;
 	bool IsMoving() const;
 	bool IsAttacking() const;
 
@@ -44,7 +44,7 @@ public:
 	Order* GetFrontOrder() const { return (mOrderQueue.empty()) ? nullptr : mOrderQueue.front(); }
 	void ClearOrders();
 	bool IsOrderQueueEmpty() const { return mOrderQueue.empty(); }
-	void SetStandby() { mOrderType = BW::OrderType::None; }
+	void SetStandby() { mOrderType = eOrder::None; }
 
 	int32 GetMaxHP() const;
 	uint8 GetFlingyID() const;
@@ -66,9 +66,9 @@ private:
 	int32 mCoolTime = 0;
 
 	// Unit
-	BW::UnitType mUnitType = BW::UnitType::None;
+	eUnit mUnitType = eUnit::None;
 	IntRect mContourBounds = { 0, };
-	eButtonset mCurrentButtonset = eButtonset::Terran_Marine;
+	eButtonset mCurrentButtonset = eButtonset::TerranMarine;
 	uint16 mHPGain = 0;
 	uint16 mBuildTime = 0;
 	uint16 mRemainingBuildTime = 0;
@@ -76,7 +76,7 @@ private:
 
 	std::list<IntVector2> mPath;
 	std::list<Order*> mOrderQueue;
-	BW::OrderType mOrderType = BW::OrderType::None;
+	eOrder mOrderType = eOrder::None;
 	Target mOrderTarget = { 0, };
 
 	uint32 mSpecialAbilityFlags = 0;

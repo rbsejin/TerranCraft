@@ -2,9 +2,9 @@
 
 #include "../Common/typedef.h"
 
-enum class eUnit : uint8
+enum class eButtonset : uint32
 {
-	TerranMarine = 0,
+	TerranMarine,
 	TerranGhost,
 	TerranVulture,
 	TerranGoliath,
@@ -232,10 +232,17 @@ enum class eUnit : uint8
 	PowerupZergGasSacType2,
 	PowerupTerranGasTankType1,
 	PowerupTerranGasTankType2,
-
 	None,
-	AllUnits,
-	Men,
-	Buildings,
-	Factories
+	Unknown1,
+	Unknown2,
+	TerranCancelsProtossConstruction,
+	TerranCancelsProtossConstructionRelatableBuilding,
+	ZergMutationCancellation,
+	ZergMutationCancellationRelatableBuilding,
+	CancellationOfInfection,
+	Unknown3,
+	CancellationOfNuclearAttack,
+	ZergStructionMutation,
+	TerranStructureConstruction,
+	TerranAdvancedStructureConstruction
 };

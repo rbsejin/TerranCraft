@@ -4,7 +4,7 @@
 #include "Image.h"
 #include "Sprite.h"
 #include "Unit.h"
-#include "IScriptCode.h"
+#include "ScriptCodeType.h"
 #include "Game.h"
 
 AnimationController::~AnimationController()
@@ -93,9 +93,9 @@ void AnimationController::Destroy()
 	mData = nullptr;
 }
 
-void printOpcode(BW::ImageNumber imageNumber, const char* opcode)
+void printOpcode(eImage imageNumber, const char* opcode)
 {
-	if (imageNumber != BW::ImageNumber::Cursor_Marker)
+	if (imageNumber != eImage::CursorMarker)
 	{
 		return;
 	}
@@ -111,16 +111,16 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 
 	while (sleep == 0)
 	{
-		BW::ImageNumber imageNumber = image->GetImageID();
+		eImage imageNumber = image->GetImageID();
 
 		uint8 opcode;
 		uint16 iscriptOffset = image->GetIScriptOffset();
 		GetData(&opcode, iscriptOffset, sizeof(opcode));
 		iscriptOffset += sizeof(opcode);
 
-		switch ((IScriptOpcode)opcode)
+		switch ((eScriptCode)opcode)
 		{
-		case IScriptOpcode::PLAYFRAM:
+		case eScriptCode::PlayFram:
 		{
 			uint16 frame;
 			GetData(&frame, iscriptOffset, sizeof(frame));
@@ -140,7 +140,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "PLAYFRAM");
 		}
 		break;
-		case IScriptOpcode::PLAYFRAMTILE:
+		case eScriptCode::PlayFramTile:
 		{
 			uint16 frame;
 			GetData(&frame, iscriptOffset, sizeof(frame));
@@ -151,7 +151,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "PLAYFRAMTILE");
 		}
 		break;
-		case IScriptOpcode::SETHORPOS:
+		case eScriptCode::SetHorPos:
 		{
 			uint8 x;
 			GetData(&x, iscriptOffset, sizeof(x));
@@ -159,7 +159,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			iscriptOffset += sizeof(x);
 		}
 		break;
-		case IScriptOpcode::SETVERTPOS:
+		case eScriptCode::SetVertPos:
 		{
 			uint8 y;
 			GetData(&y, iscriptOffset, sizeof(y));
@@ -169,7 +169,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "SETVERTPOS");
 		}
 		break;
-		case IScriptOpcode::SETPOS:
+		case eScriptCode::SetPos:
 		{
 			uint8 x;
 			uint8 y;
@@ -182,7 +182,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "SETPOS");
 		}
 		break;
-		case IScriptOpcode::WAIT:
+		case eScriptCode::Wait:
 		{
 			uint8 gameTicks;
 			GetData(&gameTicks, iscriptOffset, sizeof(gameTicks));
@@ -197,7 +197,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			//OutputDebugStringA(buffer);
 		}
 		break;
-		case IScriptOpcode::WAITRAND:
+		case eScriptCode::WaitRand:
 		{
 			uint8 gameTicks1;
 			uint8 gameTicks2;
@@ -212,7 +212,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "WAITRAND");
 		}
 		break;
-		case IScriptOpcode::GOTO:
+		case eScriptCode::Goto:
 		{
 			uint16 fileOffset;
 			GetData(&fileOffset, iscriptOffset, sizeof(fileOffset));
@@ -223,7 +223,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "GOTO");
 		}
 		break;
-		case IScriptOpcode::IMGOL:
+		case eScriptCode::ImgOl:
 		{
 			uint16 imageID;
 			uint8 x;
@@ -239,10 +239,10 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 #if 1
 			Sprite* parent = image->GetParent();
 			Image* child = new Image();
-			child->Initialize((BW::ImageNumber)imageID, parent);
+			child->Initialize((eImage)imageID, parent);
 			child->SetOffsets({ x, y });
-			BW::IScriptAnimation anim = image->GetAnim();
-			//BW::IScriptAnimation anim = BW::IScriptAnimation::Init;
+			eAnim anim = image->GetAnim();
+			//IScriptAnimation anim = IScriptAnimation::Init;
 			child->SetAnim(anim);
 			//parent->AddBefore(child);
 			parent->AddAffter(child);
@@ -251,7 +251,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "IMGOL");
 		}
 		break;
-		case IScriptOpcode::IMGUL:
+		case eScriptCode::ImgUl:
 		{
 			uint16 imageID;
 			uint8 x;
@@ -267,16 +267,16 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 #if 0
 			Sprite* parent = image->GetParent();
 			Image* child = new Image();
-			child->Initialize((BW::ImageNumber)imageID, parent);
+			child->Initialize((ImageNumber)imageID, parent);
 			child->SetOffsets({ x, y });
-			BW::IScriptAnimation anim = image->GetAnim();
+			IScriptAnimation anim = image->GetAnim();
 			child->SetAnim(anim);
 			parent->AddAffter(child);
 #endif
 			printOpcode(imageNumber, "IMGUL");
 		}
 		break;
-		case IScriptOpcode::IMGOLORIG:
+		case eScriptCode::ImgOlOrig:
 		{
 			uint16 imageID;
 			GetData(&imageID, iscriptOffset, sizeof(imageID));
@@ -285,7 +285,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "IMGOLORIG");
 		}
 		break;
-		case IScriptOpcode::SWITCHUL:
+		case eScriptCode::SwitchUl:
 		{
 			uint16 imageID;
 			GetData(&imageID, iscriptOffset, sizeof(imageID));
@@ -294,10 +294,10 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "SWITCHUL");
 		}
 		break;
-		case IScriptOpcode::__0C:
+		case eScriptCode::_0C:
 			printOpcode(imageNumber, "__0C");
 			break;
-		case IScriptOpcode::IMGOLUSELO:
+		case eScriptCode::ImgOlUseLo:
 		{
 			uint16 imageID;
 			uint8 x;
@@ -312,7 +312,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "IMGOLUSELO");
 		}
 		break;
-		case IScriptOpcode::IMGULUSELO:
+		case eScriptCode::ImgUlUseLo:
 		{
 			uint16 imageID;
 			uint8 x;
@@ -327,7 +327,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "IMGULUSELO");
 		}
 		break;
-		case IScriptOpcode::SPROL:
+		case eScriptCode::SprOl:
 		{
 			uint16 spriteID;
 			uint8 x;
@@ -340,7 +340,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			iscriptOffset += sizeof(y);
 
 			Thingy* newThingy = new Thingy();
-			newThingy->Initialize(0, (BW::SpriteNumber)spriteID);
+			newThingy->Initialize(0, (eSprite)spriteID);
 			Sprite* sprite = newThingy->GetSprite();
 			Sprite* parent = image->GetParent();
 			IntVector2 position = parent->GetPosition();
@@ -352,7 +352,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "SPROL");
 		}
 		break;
-		case IScriptOpcode::HIGHSPROL:
+		case eScriptCode::HighSprOl:
 		{
 			uint16 spriteID;
 			uint8 x;
@@ -367,7 +367,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "HIGHSPROL");
 		}
 		break;
-		case IScriptOpcode::LOWSPRUL:
+		case eScriptCode::LowSprUl:
 		{
 			uint16 spriteID;
 			uint8 x;
@@ -380,7 +380,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			iscriptOffset += sizeof(y);
 
 			Thingy* newThingy = new Thingy();
-			newThingy->Initialize(0, (BW::SpriteNumber)spriteID);
+			newThingy->Initialize(0, (eSprite)spriteID);
 			Sprite* sprite = newThingy->GetSprite();
 			Sprite* parent = image->GetParent();
 			IntVector2 position = parent->GetPosition();
@@ -392,7 +392,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "LOWSPRUL");
 		}
 		break;
-		case IScriptOpcode::UFLUNSTABLE:
+		case eScriptCode::UfLUnstable:
 		{
 			uint16 flingyID;
 			GetData(&flingyID, iscriptOffset, sizeof(flingyID));
@@ -401,7 +401,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "UFLUNSTABLE");
 		}
 		break;
-		case IScriptOpcode::SPRULUSELO:
+		case eScriptCode::SprUlUseLo:
 		{
 			uint16 spriteID;
 			GetData(&spriteID, iscriptOffset, sizeof(spriteID));
@@ -410,7 +410,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "SPRULUSELO");
 		}
 		break;
-		case IScriptOpcode::SPRUL:
+		case eScriptCode::SprUl:
 		{
 			uint16 spriteID;
 			uint8 x;
@@ -425,7 +425,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "SPRUL");
 		}
 		break;
-		case IScriptOpcode::SPROLUSELO:
+		case eScriptCode::SprOlUseLo:
 		{
 			uint16 spriteID;
 			uint8 overlay;
@@ -437,7 +437,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "SPROLUSELO");
 		}
 		break;
-		case IScriptOpcode::END:
+		case eScriptCode::End:
 		{
 			Sprite* parent = image->GetParent();
 			parent->RemoveImage(image);
@@ -461,7 +461,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			goto LB_RETURN;
 		}
 		break;
-		case IScriptOpcode::SETFLIPSTATE:
+		case eScriptCode::SetFlipState:
 		{
 			uint8 flipState;
 			GetData(&flipState, iscriptOffset, sizeof(flipState));
@@ -470,7 +470,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "SETFLIPSTATE");
 		}
 		break;
-		case IScriptOpcode::PLAYSND:
+		case eScriptCode::PlaySnd:
 		{
 			uint16 soundID;
 			GetData(&soundID, iscriptOffset, sizeof(soundID));
@@ -479,7 +479,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "PLAYSND");
 		}
 		break;
-		case IScriptOpcode::PLAYSNDRAND:
+		case eScriptCode::PlaySndRand:
 		{
 			uint8 ofSounds;
 			uint16 soundID;
@@ -495,7 +495,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "PLAYSNDRAND");
 		}
 		break;
-		case IScriptOpcode::PLAYSNDBTWN:
+		case eScriptCode::PlaySndBtwn:
 		{
 			uint16 soundID;
 			uint16 soundID2;
@@ -507,10 +507,10 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "PLAYSNDBTWN");
 		}
 		break;
-		case IScriptOpcode::DOMISSILEDMG:
+		case eScriptCode::DoMissileDmg:
 			printOpcode(imageNumber, "DOMISSILEDMG");
 			break;
-		case IScriptOpcode::ATTACKMELEE:
+		case eScriptCode::AttackMelee:
 		{
 			uint8 ofSounds;
 			uint16 soundID;
@@ -525,7 +525,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "ATTACKMELEE");
 		}
 		break;
-		case IScriptOpcode::FOLLOWMAINGRAPHIC:
+		case eScriptCode::FollowMainGraphic:
 		{
 			Sprite* parent = image->GetParent();
 			const Image* primaryImage = parent->GetPrimaryImage();
@@ -548,7 +548,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "FOLLOWMAINGRAPHIC");
 		}
 		break;
-		case IScriptOpcode::RANDCONDJMP:
+		case eScriptCode::RandCondJmp:
 		{
 			uint8 chance;
 			uint16 fileOffset;
@@ -570,7 +570,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			//OutputDebugStringA(buffer);
 		}
 		break;
-		case IScriptOpcode::TURNCCWISE:
+		case eScriptCode::TurnCCWise:
 		{
 			uint8 amount;
 			GetData(&amount, iscriptOffset, sizeof(amount));
@@ -589,7 +589,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "TURNCCWISE");
 		}
 		break;
-		case IScriptOpcode::TURNCWISE:
+		case eScriptCode::TurnCWise:
 		{
 			uint8 amount;
 			GetData(&amount, iscriptOffset, sizeof(amount));
@@ -608,7 +608,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "TURNCWISE");
 		}
 		break;
-		case IScriptOpcode::TURN1CWISE:
+		case eScriptCode::Turn1CWise:
 		{
 			uint8 direction = image->GetDirection();
 			uint8 d = (direction + 1) % 32;
@@ -623,7 +623,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "TURN1CWISE");
 		}
 		break;
-		case IScriptOpcode::TURNRAND:
+		case eScriptCode::TurnRand:
 		{
 			uint8 amount;
 			GetData(&amount, iscriptOffset, sizeof(amount));
@@ -651,7 +651,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "TURNRAND");
 		}
 		break;
-		case IScriptOpcode::SETSPAWNFRAME:
+		case eScriptCode::SetSpawnFrame:
 		{
 			uint16 direction;
 			GetData(&direction, iscriptOffset, sizeof(direction));
@@ -660,7 +660,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "SETSPAWNFRAME");
 		}
 		break;
-		case IScriptOpcode::SIGORDER:
+		case eScriptCode::SigOrder:
 		{
 			uint8 signal;
 			GetData(&signal, iscriptOffset, sizeof(signal));
@@ -669,7 +669,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "SIGORDER");
 		}
 		break;
-		case IScriptOpcode::ATTACKWITH:
+		case eScriptCode::AttackWith:
 		{
 			uint8 weaponType;
 			GetData(&weaponType, iscriptOffset, sizeof(weaponType));
@@ -678,13 +678,13 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "ATTACKWITH");
 		}
 		break;
-		case IScriptOpcode::ATTACK:
+		case eScriptCode::Attack:
 			printOpcode(imageNumber, "ATTACK");
 			break;
-		case IScriptOpcode::CASTSPELL:
+		case eScriptCode::CastSpell:
 			printOpcode(imageNumber, "CASTSPELL");
 			break;
-		case IScriptOpcode::USEWEAPON:
+		case eScriptCode::UseWeapon:
 		{
 			uint8 weaponID;
 			GetData(&weaponID, iscriptOffset, sizeof(weaponID));
@@ -693,7 +693,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "USEWEAPON");
 		}
 		break;
-		case IScriptOpcode::MOVE:
+		case eScriptCode::Move:
 		{
 			uint8 pixels;
 			GetData(&pixels, iscriptOffset, sizeof(pixels));
@@ -702,7 +702,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "MOVE");
 		}
 		break;
-		case IScriptOpcode::GOTOREPEATATTK:
+		case eScriptCode::GotoRepeatAttk:
 		{
 			if (thingy != nullptr)
 			{
@@ -713,7 +713,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "GOTOREPEATATTK");
 		}
 		break;
-		case IScriptOpcode::ENGFRAME:
+		case eScriptCode::EngFrame:
 		{
 			uint8 frame;
 			GetData(&frame, iscriptOffset, sizeof(frame));
@@ -722,7 +722,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "ENGFRAME");
 		}
 		break;
-		case IScriptOpcode::ENGSET:
+		case eScriptCode::EngSet:
 		{
 			uint8 frame;
 			GetData(&frame, iscriptOffset, sizeof(frame));
@@ -734,13 +734,13 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "ENGSET");
 		}
 		break;
-		case IScriptOpcode::__2D:
+		case eScriptCode::_2D:
 		{
 			image->SetHidden(true);
 			printOpcode(imageNumber, "__2D");
 		}
 		break;
-		case IScriptOpcode::NOBRKCODESTART:
+		case eScriptCode::NoBrkCodeStart:
 		{
 			if (thingy != nullptr)
 			{
@@ -750,7 +750,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "NOBRKCODESTART");
 		}
 		break;
-		case IScriptOpcode::NOBRKCODEEND:
+		case eScriptCode::NoBrkCodeEnd:
 		{
 			if (thingy != nullptr)
 			{
@@ -760,29 +760,29 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "NOBRKCODEEND");
 		}
 		break;
-		case IScriptOpcode::IGNOREREST:
+		case eScriptCode::IgnoreRest:
 		{
 			iscriptOffset -= sizeof(opcode);
 			printOpcode(imageNumber, "IGNOREREST");
 			goto LB_OUTER_LOOP;
 		}
 		break;
-		case IScriptOpcode::ATTKSHIFTPROJ:
+		case eScriptCode::AttkShiftProj:
 			printOpcode(imageNumber, "ATTKSHIFTPROJ");
 			break;
-		case IScriptOpcode::TMPRMGRAPHICSTART:
+		case eScriptCode::TmpRmGraphicStart:
 		{
 			image->SetHidden(true);
 			printOpcode(imageNumber, "TMPRMGRAPHICSTART");
 		}
 		break;
-		case IScriptOpcode::TMPRMGRAPHICEND:
+		case eScriptCode::TmpRmGraphicEnd:
 		{
 			image->SetHidden(false);
 			printOpcode(imageNumber, "TMPRMGRAPHICEND");
 		}
 		break;
-		case IScriptOpcode::SETFLDIRECT:
+		case eScriptCode::SetFlDirect:
 		{
 			uint8 direction;
 			GetData(&direction, iscriptOffset, sizeof(direction));
@@ -799,7 +799,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "SETFLDIRECT");
 		}
 		break;
-		case IScriptOpcode::CALL:
+		case eScriptCode::Call:
 		{
 			uint16 fileOffset;
 			GetData(&fileOffset, iscriptOffset, sizeof(fileOffset));
@@ -808,10 +808,10 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "CALL");
 		}
 		break;
-		case IScriptOpcode::RETURN:
+		case eScriptCode::Return:
 			printOpcode(imageNumber, "RETURN");
 			break;
-		case IScriptOpcode::SETFLSPEED:
+		case eScriptCode::SetFlSpeed:
 		{
 			uint16 speed;
 			GetData(&speed, iscriptOffset, sizeof(speed));
@@ -820,7 +820,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "SETFLSPEED");
 		}
 		break;
-		case IScriptOpcode::CREATEGASOVERLAYS:
+		case eScriptCode::CreateGasOverlays:
 		{
 			uint8 overlay;
 			GetData(&overlay, iscriptOffset, sizeof(overlay));
@@ -829,7 +829,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "CREATEGASOVERLAYS");
 		}
 		break;
-		case IScriptOpcode::PWRUPCONDJMP:
+		case eScriptCode::PwrUpCondJmp:
 		{
 			uint16 fileOffset;
 			GetData(&fileOffset, iscriptOffset, sizeof(fileOffset));
@@ -838,7 +838,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "PWRUPCONDJMP");
 		}
 		break;
-		case IScriptOpcode::TRGTRANGECONDJMP:
+		case eScriptCode::TrgtRangeCondJmp:
 		{
 			uint16 distance;
 			uint16 fileOffset;
@@ -850,7 +850,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "TRGTRANGECONDJMP");
 		}
 		break;
-		case IScriptOpcode::TRGTARCCONDJMP:
+		case eScriptCode::TrgtArcCondJmp:
 		{
 			uint16 angle1;
 			uint16 angle2;
@@ -865,7 +865,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "TRGTARCCONDJMP");
 		}
 		break;
-		case IScriptOpcode::CURDIRECTCONDJMP:
+		case eScriptCode::CurDirectCondJmp:
 		{
 			uint16 angle1;
 			uint16 angle2;
@@ -880,7 +880,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "CURDIRECTCONDJMP");
 		}
 		break;
-		case IScriptOpcode::IMGULNEXTID:
+		case eScriptCode::ImgUlNextId:
 		{
 			uint8 x;
 			uint8 y;
@@ -892,10 +892,10 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "IMGULNEXTID");
 		}
 		break;
-		case IScriptOpcode::__3E:
+		case eScriptCode::_3E:
 			printOpcode(imageNumber, "__3E");
 			break;
-		case IScriptOpcode::LIFTOFFCONDJMP:
+		case eScriptCode::LiftOffCondJmp:
 		{
 			uint16 fileOffset;
 			GetData(&fileOffset, iscriptOffset, sizeof(fileOffset));
@@ -904,7 +904,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "LIFTOFFCONDJMP");
 		}
 		break;
-		case IScriptOpcode::WARPOVERLAY:
+		case eScriptCode::WarpOverlay:
 		{
 			uint16 frame;
 			GetData(&frame, iscriptOffset, sizeof(frame));
@@ -913,7 +913,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "WARPOVERLAY");
 		}
 		break;
-		case IScriptOpcode::ORDERDONE:
+		case eScriptCode::OrderDone:
 		{
 			uint8 signal;
 			GetData(&signal, iscriptOffset, sizeof(signal));
@@ -922,7 +922,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "ORDERDONE");
 		}
 		break;
-		case IScriptOpcode::GRDSPROL:
+		case eScriptCode::GrdSprOl:
 		{
 			uint16 spriteID;
 			uint8 x;
@@ -937,10 +937,10 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			printOpcode(imageNumber, "GRDSPROL");
 		}
 		break;
-		case IScriptOpcode::__43:
+		case eScriptCode::_43:
 			printOpcode(imageNumber, "__43");
 			break;
-		case IScriptOpcode::DOGRDDAMAGE:
+		case eScriptCode::DoGrdDamage:
 			printOpcode(imageNumber, "DOGRDDAMAGE");
 			break;
 		default:
@@ -971,7 +971,7 @@ uint16 AnimationController::GetIScriptHeader(uint32 entryNumber) const
 	return mIScriptEntries[entryNumber].Header;
 }
 
-uint16 AnimationController::GetIScriptOffset(uint16 headerOffset, BW::IScriptAnimation animation) const
+uint16 AnimationController::GetIScriptOffset(uint16 headerOffset, eAnim animation) const
 {
 	uint16* offsets = (uint16*)(mData + headerOffset + 8);
 	return offsets[(uint32)animation];

@@ -4,7 +4,7 @@
 #include "BWFile.h"
 #include "Sprite.h"
 #include "Image.h"
-#include "../BWLib/ImageNumber.h"
+#include "../BWLib/ImageType.h"
 #include "Game.h"
 
 Flingy::~Flingy()
@@ -12,7 +12,7 @@ Flingy::~Flingy()
 	Cleanup();
 }
 
-bool Flingy::Initialize(int32 hp, BW::FlingyType flingyType)
+bool Flingy::Initialize(int32 hp, eFlingyType flingyType)
 {
 	bool bResult = false;
 	mFlingyType = flingyType;
@@ -22,7 +22,7 @@ bool Flingy::Initialize(int32 hp, BW::FlingyType flingyType)
 	mFlingyTopSpeed = flingyData->Speeds[flingyID];
 	mCurrentSpeed = (mFlingyTopSpeed == 1) ? 4.f : (mFlingyTopSpeed / 256.f);
 
-	BW::SpriteNumber spriteNumber = (BW::SpriteNumber)flingyData->Sprites[flingyID];
+	eSprite spriteNumber = (eSprite)flingyData->Sprites[flingyID];
 
 	Thingy::Initialize(hp, spriteNumber);
 
@@ -49,7 +49,7 @@ void Flingy::Update()
 	const std::list<Image*>* images = sprite->GetImages();
 	for (Image* image : *images)
 	{
-		BW::ImageNumber imageID = image->GetImageID();
+		eImage imageID = image->GetImageID();
 		image->SetDirection(mFacingDirection);
 		image->UpdateGraphicData();
 	}

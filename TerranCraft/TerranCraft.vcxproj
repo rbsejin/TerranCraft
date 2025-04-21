@@ -137,15 +137,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\BWLib\ButtonsetType.h" />
     <ClInclude Include="..\BWLib\FlingyType.h" />
-    <ClInclude Include="..\BWLib\ImageNumber.h" />
-    <ClInclude Include="..\BWLib\IScriptAnimation.h" />
-    <ClInclude Include="..\BWLib\IScriptEntryNumber.h" />
+    <ClInclude Include="..\BWLib\ImageType.h" />
+    <ClInclude Include="..\BWLib\AnimType.h" />
+    <ClInclude Include="..\BWLib\ScriptType.h" />
     <ClInclude Include="..\BWLib\MovementFlags.h" />
     <ClInclude Include="..\BWLib\OrderType.h" />
     <ClInclude Include="..\BWLib\ResourceType.h" />
     <ClInclude Include="..\BWLib\RLEType.h" />
-    <ClInclude Include="..\BWLib\SpriteNumber.h" />
+    <ClInclude Include="..\BWLib\SpriteType.h" />
     <ClInclude Include="..\BWLib\TechType.h" />
     <ClInclude Include="..\BWLib\UnitType.h" />
     <ClInclude Include="..\BWLib\UpgradeType.h" />
@@ -163,12 +164,11 @@
     <ClInclude Include="Bullet.h" />
     <ClInclude Include="BWFile.h" />
     <ClInclude Include="Camera.h" />
-    <ClInclude Include="CommandIcon.h" />
     <ClInclude Include="Flingy.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="Image.h" />
-    <ClInclude Include="IScriptCode.h" />
+    <ClInclude Include="ScriptCodeType.h" />
     <ClInclude Include="Map.h" />
     <ClInclude Include="MovementFlags.h" />
     <ClInclude Include="PathFinder.h" />

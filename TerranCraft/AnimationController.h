@@ -1,8 +1,8 @@
 #pragma once
 
 #include "../Common/typedef.h"
-#include "../BWLib/IScriptEntryNumber.h"
-#include "../BWLib/IScriptAnimation.h"
+#include "../BWLib/Animtype.h"
+#include "../BWLib/Animtype.h"
 
 class Thingy;
 class Image;
@@ -31,7 +31,7 @@ public:
 	void UpdateImageFrame(Thingy* thingy, Image* image) const;
 
 	uint16 GetIScriptHeader(uint32 entryNumber) const;
-	uint16 GetIScriptOffset(uint16 headerOffset, BW::IScriptAnimation animation) const;
+	uint16 GetIScriptOffset(uint16 headerOffset, eAnim animation) const;
 	void GetData(void* dest, uint16 offset, uint32 size) const;
 
 private:

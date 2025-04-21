@@ -127,7 +127,7 @@ bool Game::Initalize(HWND hWnd)
 #pragma region CursorMarker
 	{
 		mCursorMarkerSprite = new Sprite();
-		mCursorMarkerSprite->Initalize(BW::SpriteNumber::Cursor_Marker);
+		mCursorMarkerSprite->Initalize(eSprite::CursorMarker);
 		Image* primaryImage = mCursorMarkerSprite->GetPrimaryImage();
 		primaryImage->SetHidden(true);
 	}
@@ -135,11 +135,11 @@ bool Game::Initalize(HWND hWnd)
 
 #pragma endregion
 
-	BW::UnitType unitTypes[4] = {
-		BW::UnitType::Terran_SCV,
-		BW::UnitType::Terran_Marine,
-		BW::UnitType::Terran_Vulture,
-		BW::UnitType::Terran_Command_Center
+	eUnit unitTypes[4] = {
+		eUnit::TerranSCV,
+		eUnit::TerranMarine,
+		eUnit::TerranVulture,
+		eUnit::TerranCommandCenter
 	};
 
 	for (int32 j = 0; j < 4; j++)
@@ -163,7 +163,7 @@ bool Game::Initalize(HWND hWnd)
 
 	for (int32 i = 0; i < SELECTION_CIRCLE_IMAGE_COUNT; i++)
 	{
-		BW::ImageNumber selectionCircle = (BW::ImageNumber)((uint16)BW::ImageNumber::IMG_SELECT_022 + i);
+		eImage selectionCircle = (eImage)((uint16)eImage::IMGSELECT022 + i);
 
 		Image* selectionCircleImage = new Image();
 		if (!selectionCircleImage->Initialize(selectionCircle, nullptr))
@@ -361,25 +361,25 @@ void Game::OnKeyDown(unsigned int vkCode, unsigned int scanCode)
 		//	break;
 #endif // _DEBUG
 	case 'B':
-		if (mCurrentButtonset == eButtonset::Terran_Structure_Construction)
+		if (mCurrentButtonset == eButtonset::TerranStructureConstruction)
 		{
 			delete mBuildingPreview;
 			mBuildingPreview = new Image();
-			mBuildingPreview->Initialize(BW::ImageNumber::Barracks, nullptr);
-			mCreatedUnitType = BW::UnitType::Terran_Barracks;
+			mBuildingPreview->Initialize(eImage::Barracks, nullptr);
+			mCreatedUnitType = eUnit::TerranBarracks;
 		}
 		else
 		{
-			mCurrentButtonset = eButtonset::Terran_Structure_Construction;
+			mCurrentButtonset = eButtonset::TerranStructureConstruction;
 		}
 		break;
 	case 'C':
-		if (mCurrentButtonset == eButtonset::Terran_Structure_Construction)
+		if (mCurrentButtonset == eButtonset::TerranStructureConstruction)
 		{
 			delete mBuildingPreview;
 			mBuildingPreview = new Image();
-			mBuildingPreview->Initialize(BW::ImageNumber::Command_Center, nullptr);
-			mCreatedUnitType = BW::UnitType::Terran_Command_Center;
+			mBuildingPreview->Initialize(eImage::CommandCenter, nullptr);
+			mCreatedUnitType = eUnit::TerranCommandCenter;
 		}
 		break;
 	case 'S':
@@ -390,17 +390,17 @@ void Game::OnKeyDown(unsigned int vkCode, unsigned int scanCode)
 
 		IntVector2 scvPosition = { (int32)position.X - countourBounds.Left, (int32)position.Y + countourBounds.Bottom };
 		Unit* scv = new Unit();
-		scv->Initialize(BW::UnitType::Terran_SCV);
+		scv->Initialize(UnitType::Terran_SCV);
 		scv->SetPosition({ (float)scvPosition.X, (float)scvPosition.Y });
 		mUnits.push_back(scv);
 #endif
 
-		if (mCurrentButtonset == eButtonset::Terran_Structure_Construction)
+		if (mCurrentButtonset == eButtonset::TerranStructureConstruction)
 		{
 			delete mBuildingPreview;
 			mBuildingPreview = new Image();
-			mBuildingPreview->Initialize(BW::ImageNumber::Supply_Depot, nullptr);
-			mCreatedUnitType = BW::UnitType::Terran_Supply_Depot;
+			mBuildingPreview->Initialize(eImage::SupplyDepot, nullptr);
+			mCreatedUnitType = eUnit::TerranSupplyDepot;
 		}
 		else
 		{
@@ -410,7 +410,7 @@ void Game::OnKeyDown(unsigned int vkCode, unsigned int scanCode)
 				unit->SetStandby();
 				unit->ClearOrders();
 				Order* order = new Order();
-				order->OrderType = BW::OrderType::Stop;
+				order->OrderType = eOrder::Stop;
 				unit->AddOrder(order);
 			}
 		}
@@ -715,7 +715,7 @@ void Game::markCursor()
 	Image* primaryImage = sprite->GetPrimaryImage();
 	primaryImage->SetHidden(false);
 
-	BW::IScriptAnimation anim = BW::IScriptAnimation::GndAttkInit;
+	eAnim anim = eAnim::GndAttkInit;
 	primaryImage->SetAnim(anim);
 	uint16 iscriptHeader = primaryImage->GetIScriptHeader();
 	uint16 iscriptOffset = mAnimationController->GetIScriptOffset(iscriptHeader, anim);
@@ -725,7 +725,7 @@ void Game::markCursor()
 
 void Game::updateWireframePalette(const Unit* unit)
 {
-	BW::UnitType unitType = unit->GetUnitType();
+	eUnit unitType = unit->GetUnitType();
 	int32 hp = unit->GetHP();
 	int32 maxHP = unit->GetMaxHP();
 	int32 lostHP = maxHP - hp;
@@ -775,7 +775,7 @@ void Game::move(Target target)
 		unit->SetStandby();
 		unit->ClearOrders();
 		Order* order = new Order();
-		order->OrderType = BW::OrderType::Move;
+		order->OrderType = eOrder::Move;
 		order->Target.Position.X = (int32)targetPosition.X;
 		order->Target.Position.Y = (int32)targetPosition.Y;
 		unit->AddOrder(order);
@@ -800,11 +800,11 @@ void Game::attack(Target target)
 		Order* order = new Order();
 		if (target.Unit != nullptr)
 		{
-			order->OrderType = BW::OrderType::AttackUnit;
+			order->OrderType = eOrder::AttackUnit;
 		}
 		else
 		{
-			order->OrderType = BW::OrderType::AttackMove;
+			order->OrderType = eOrder::AttackMove;
 		}
 		order->Target = target;
 		unit->AddOrder(order);
@@ -816,7 +816,7 @@ void Game::build()
 	Unit* scv = SelectedUnits[0];
 	scv->ClearOrders();
 	Order* order = new Order();
-	order->OrderType = BW::OrderType::PlaceBuilding;
+	order->OrderType = eOrder::PlaceBuilding;
 	scv->AddOrder(order);
 
 	Unit* unit = new Unit();
@@ -826,7 +826,7 @@ void Game::build()
 	unit->SetPosition({ (float)position.X, (float)position.Y });
 
 	order = new Order();
-	order->OrderType = BW::OrderType::ConstructingBuilding;
+	order->OrderType = eOrder::ConstructingBuilding;
 	unit->AddOrder(order);
 
 	Units.push_back(unit);
@@ -912,7 +912,7 @@ void Game::onGameFrame(ULONGLONG currentTick)
 		unit->SetStandby();
 		unit->ClearOrders();
 		Order* order = new Order();
-		order->OrderType = BW::OrderType::Die;
+		order->OrderType = eOrder::Die;
 		unit->AddOrder(order);
 	}
 
@@ -1165,11 +1165,11 @@ void Game::drawScene()
 			int32 x = mConsoleX + 508;
 			int32 y = mConsoleY + 358;
 
-			auto buttonList = mButtonset->ButtonLists[(uint32)mCurrentButtonset];
+			auto buttonList = mButtonset->Buttonsets[(uint32)mCurrentButtonset];
 
 			for (uint32 i = 0; i < buttonList->ButtonCount; i++)
 			{
-				ButtonSet::ButtonList::ButtonInfo buttonInfo = buttonList->ButtonInfos[i];
+				ButtonsetData::Buttonset::ButtonInfo buttonInfo = buttonList->ButtonInfos[i];
 				int location = buttonInfo.Location;
 				int32 frameIndex = (int32)buttonList->ButtonInfos[i].Icon;
 				GRPFrame* frame = mButtonsGRP->Frames + frameIndex;
@@ -1188,7 +1188,7 @@ void Game::drawScene()
 		if (SelectedUnits.size() == 1)
 		{
 			Unit* unit = SelectedUnits[0];
-			BW::UnitType unitType = unit->GetUnitType();
+			eUnit unitType = unit->GetUnitType();
 			int32 index = (uint32)unitType;
 
 			{
@@ -1226,14 +1226,14 @@ void Game::drawScene()
 				}
 
 				int32 groundWeaponIndex = unitData->GroundWeapons[index];
-				if (groundWeaponIndex != (int32)BW::WeaponType::None)
+				if (groundWeaponIndex != (int32)eWeapon::None)
 				{
 					int32 groundWeaponIconIndex = weaponData->Icons[groundWeaponIndex];
 					icons[upgradeCount++] = groundWeaponIconIndex;
 				}
 
 				int32 airWeaponIndex = unitData->AirWeapons[index];
-				if (airWeaponIndex != (int32)BW::WeaponType::None && groundWeaponIndex != airWeaponIndex)
+				if (airWeaponIndex != (int32)eWeapon::None && groundWeaponIndex != airWeaponIndex)
 				{
 					int32 airWeaponIconIndex = weaponData->Icons[airWeaponIndex];
 					icons[upgradeCount++] = airWeaponIconIndex;
@@ -1267,7 +1267,7 @@ void Game::drawScene()
 			for (int32 i = 0; i < SelectedUnits.size(); i++)
 			{
 				Unit* unit = SelectedUnits[i];
-				BW::UnitType unitType = unit->GetUnitType();
+				eUnit unitType = unit->GetUnitType();
 				int32 index = (uint32)unitType;
 
 				{

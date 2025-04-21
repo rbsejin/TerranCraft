@@ -69,13 +69,13 @@
     <ClInclude Include="Image.h">
       <Filter>Game</Filter>
     </ClInclude>
-    <ClInclude Include="..\BWLib\ImageNumber.h">
+    <ClInclude Include="..\BWLib\ImageType.h">
       <Filter>BWLib</Filter>
     </ClInclude>
-    <ClInclude Include="..\BWLib\IScriptAnimation.h">
+    <ClInclude Include="..\BWLib\AnimType.h">
       <Filter>BWLib</Filter>
     </ClInclude>
-    <ClInclude Include="..\BWLib\IScriptEntryNumber.h">
+    <ClInclude Include="..\BWLib\ScriptType.h">
       <Filter>BWLib</Filter>
     </ClInclude>
     <ClInclude Include="..\BWLib\OrderType.h">
@@ -87,7 +87,7 @@
     <ClInclude Include="..\BWLib\RLEType.h">
       <Filter>BWLib</Filter>
     </ClInclude>
-    <ClInclude Include="..\BWLib\SpriteNumber.h">
+    <ClInclude Include="..\BWLib\SpriteType.h">
       <Filter>BWLib</Filter>
     </ClInclude>
     <ClInclude Include="..\BWLib\TechType.h">
@@ -117,9 +117,6 @@
     <ClInclude Include="Map.h">
       <Filter>Game</Filter>
     </ClInclude>
-    <ClInclude Include="CommandIcon.h">
-      <Filter>Game</Filter>
-    </ClInclude>
     <ClInclude Include="Camera.h">
       <Filter>Game</Filter>
     </ClInclude>
@@ -132,7 +129,7 @@
     <ClInclude Include="AnimationController.h">
       <Filter>Game</Filter>
     </ClInclude>
-    <ClInclude Include="IScriptCode.h">
+    <ClInclude Include="ScriptCodeType.h">
       <Filter>BWLib</Filter>
     </ClInclude>
     <ClInclude Include="Arrangement.h">
@@ -164,6 +161,9 @@
     </ClInclude>
     <ClInclude Include="MovementFlags.h">
       <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BWLib\ButtonsetType.h">
+      <Filter>BWLib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

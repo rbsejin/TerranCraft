@@ -1,9 +1,9 @@
 #pragma once
 
 #include "../Common/typedef.h"
-#include "../BWLib/ImageNumber.h"
-#include "../BWLib/IScriptAnimation.h"
-#include "../BWLib/SpriteNumber.h"
+#include "../BWLib/ImageType.h"
+#include "../BWLib/AnimType.h"
+#include "../BWLib/SpriteType.h"
 #include "../BWLib/RLEType.h"
 //#include "../BWLib/RLEType.h"
 
@@ -19,7 +19,7 @@ public:
 	Image() = default;
 	~Image() = default;
 
-	bool Initialize(BW::ImageNumber imageID, Sprite* parent);
+	bool Initialize(eImage imageID, Sprite* parent);
 
 	void UpdateGraphicData();
 
@@ -31,8 +31,8 @@ public:
 	IntVector2 GetMapPosition() const { return mMapPosition; }
 	IntVector2 GetScreenPosition() const { return mScreenPosition; }
 
-	BW::ImageNumber GetImageID() const { return mImageID; }
-	BW::RLEType GetRLE() const { return mRLE; }
+	eImage GetImageID() const { return mImageID; }
+	eRLET GetRLE() const { return mRLE; }
 	uint8 GetRemapping() const { return mRemapping; }
 	uint8 GetDirection() const { return mDirection; }
 	void SetDirection(uint8 direction);
@@ -44,8 +44,8 @@ public:
 	uint16 GetIScriptHeader() const { return mIScriptHeader; }
 	uint16 GetIScriptOffset() const { return mIScriptOffset; }
 	void SetIScriptOffset(uint16 offset) { mIScriptOffset = offset; }
-	void SetAnim(BW::IScriptAnimation anim) { mAnim = anim; }
-	BW::IScriptAnimation GetAnim() const { return mAnim; }
+	void SetAnim(eAnim anim) { mAnim = anim; }
+	eAnim GetAnim() const { return mAnim; }
 	uint8 GetSleep() const { return mSleep; }
 	void SetSleep(uint32 sleep) { mSleep = sleep; }
 	uint16 GetFrameSet() const { return mFrameSet; }
@@ -62,8 +62,8 @@ public:
 	bool IsClickable() const { return mFlags & 0x0020; }
 
 private:
-	BW::ImageNumber mImageID = BW::ImageNumber::None;
-	BW::RLEType mRLE = BW::RLEType::Normal;
+	eImage mImageID = eImage::None;
+	eRLET mRLE = eRLET::Normal;
 	uint8 mRemapping = 0;
 	uint8 mDirection = 0; // 0 ~ 31
 	/* flags
@@ -80,7 +80,7 @@ private:
 	IntVector2 mOffset = { 0, };
 	uint16 mIScriptHeader = 0;
 	uint16 mIScriptOffset = 0;
-	BW::IScriptAnimation mAnim = BW::IScriptAnimation::Init;
+	eAnim mAnim = eAnim::Init;
 	uint8 mSleep = 0;
 	uint16 mFrameSet = 0;
 	uint16 mFrameIndex = 0;

@@ -11,7 +11,7 @@ Sprite::~Sprite()
 	Cleanup();
 }
 
-bool Sprite::Initalize(BW::SpriteNumber spriteID)
+bool Sprite::Initalize(eSprite spriteID)
 {
 	bool bResult = false;
 
@@ -21,7 +21,7 @@ bool Sprite::Initalize(BW::SpriteNumber spriteID)
 
 	Arrangement* arrangement = gGame->GetArrangement();
 	const SpriteData* spriteData = arrangement->GetSpriteData();
-	BW::ImageNumber imageNumber = (BW::ImageNumber)spriteData->ImageFiles[(int32)spriteID];
+	eImage imageNumber = (eImage)spriteData->ImageFiles[(int32)spriteID];
 
 	if (!mImagePrimary->Initialize(imageNumber, this))
 	{
@@ -34,7 +34,7 @@ bool Sprite::Initalize(BW::SpriteNumber spriteID)
 
 #if 1
 	uint8 selectionCircleIndex = spriteData->SelectionCircleImages[(int32)spriteID - 130];
-	BW::ImageNumber selectionCircle = (BW::ImageNumber)((uint16)BW::ImageNumber::IMG_SELECT_022 + selectionCircleIndex);
+	eImage selectionCircle = (eImage)((uint16)eImage::IMGSELECT022 + selectionCircleIndex);
 
 	mSelectionCircleImage = new Image();
 	if (!mSelectionCircleImage->Initialize(selectionCircle, this))

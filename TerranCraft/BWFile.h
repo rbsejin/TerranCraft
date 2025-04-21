@@ -3,61 +3,6 @@
 #include "../Common/typedef.h"
 
 #pragma pack(push, 1)
-struct ImageData
-{
-	enum { IMAGE_COUNT = 999 };
-	uint32 GRPFiles[IMAGE_COUNT];
-	uint8 GfxTurns[IMAGE_COUNT];
-	uint8 Clickables[IMAGE_COUNT];
-	uint8 UseFullIscripts[IMAGE_COUNT];
-	uint8 DrawIfCloakeds[IMAGE_COUNT];
-	uint8 DrawFunctions[IMAGE_COUNT];
-	uint8 Remappings[IMAGE_COUNT];
-	uint32 IscriptIDs[IMAGE_COUNT];
-	uint32 ShieldOverlays[IMAGE_COUNT];
-	uint32 AttackOverlays[IMAGE_COUNT];
-	uint32 DamageOverlays[IMAGE_COUNT];
-	uint32 SpecialOverlays[IMAGE_COUNT];
-	uint32 LandingDustOverlays[IMAGE_COUNT];
-	uint32 LiftOffDustOverlays[IMAGE_COUNT];
-};
-#pragma pack(pop)
-
-static_assert(sizeof(ImageData) == 37962, "ImageData size is invalid");
-
-#pragma pack(push, 1)
-struct SpriteData
-{
-	enum { SPRITE_COUNT = 517 };
-	enum { HEALTH_BAR_COUNT = 387 };
-	uint16 ImageFiles[SPRITE_COUNT];
-	uint8 HealthBars[HEALTH_BAR_COUNT];
-	uint8 Unknown[SPRITE_COUNT];
-	uint8 IsVisibles[SPRITE_COUNT];
-	uint8 SelectionCircleImages[HEALTH_BAR_COUNT];
-	uint8 SelectionCircleOffsets[HEALTH_BAR_COUNT]; // Vert. Position
-};
-#pragma pack(pop)
-
-static_assert(sizeof(SpriteData) == 3229, "SpriteData size is invalid");
-
-#pragma pack(push, 1)
-struct FlingyData
-{
-	enum { FLINGY_COUNT = 209 };
-	uint16 Sprites[FLINGY_COUNT];
-	int32 Speeds[FLINGY_COUNT];
-	uint16 Accelerations[FLINGY_COUNT];
-	uint32 HaltDistances[FLINGY_COUNT];
-	uint8 TurnRadiuses[FLINGY_COUNT];
-	uint8 Unuseds[FLINGY_COUNT];
-	uint8 MovementControls[FLINGY_COUNT];
-};
-#pragma pack(pop)
-
-//static_assert(sizeof(FlingyData) == 16, "FlingyData size is invalid");
-
-#pragma pack(push, 1)
 struct UnitData
 {
 	enum { UNIT_COUNT = 228 };
@@ -137,7 +82,7 @@ struct UnitData
 	0x40: Independent Unit
 	0x80: neutral
 	*/
-	uint8 StarEditGroupFlags[UNIT_COUNT]; 	
+	uint8 StarEditGroupFlags[UNIT_COUNT];
 	// 0x4210
 	uint8 SupplyProvideds[UNIT_COUNT];
 	uint8 SupplyRequireds[UNIT_COUNT];
@@ -152,8 +97,6 @@ struct UnitData
 	uint16 StarEditAvailabilityFlags[UNIT_COUNT];
 };
 #pragma pack(pop)
-
-//static_assert(sizeof(UnitData) == 19876, "UnitData size is invalid");
 
 #pragma pack(push, 1)
 struct WeaponData
@@ -187,6 +130,59 @@ struct WeaponData
 #pragma pack(pop)
 
 #pragma pack(push, 1)
+struct FlingyData
+{
+	enum { FLINGY_COUNT = 209 };
+	uint16 Sprites[FLINGY_COUNT];
+	int32 Speeds[FLINGY_COUNT];
+	uint16 Accelerations[FLINGY_COUNT];
+	uint32 HaltDistances[FLINGY_COUNT];
+	uint8 TurnRadiuses[FLINGY_COUNT];
+	uint8 Unuseds[FLINGY_COUNT];
+	uint8 MovementControls[FLINGY_COUNT];
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+struct SpriteData
+{
+	enum { SPRITE_COUNT = 517 };
+	enum { HEALTH_BAR_COUNT = 387 };
+	uint16 ImageFiles[SPRITE_COUNT];
+	uint8 HealthBars[HEALTH_BAR_COUNT];
+	uint8 Unknown[SPRITE_COUNT];
+	uint8 IsVisibles[SPRITE_COUNT];
+	uint8 SelectionCircleImages[HEALTH_BAR_COUNT];
+	uint8 SelectionCircleOffsets[HEALTH_BAR_COUNT]; // Vert. Position
+};
+#pragma pack(pop)
+
+static_assert(sizeof(SpriteData) == 3229, "SpriteData size is invalid");
+
+#pragma pack(push, 1)
+struct ImageData
+{
+	enum { IMAGE_COUNT = 999 };
+	uint32 GRPFiles[IMAGE_COUNT];
+	uint8 GfxTurns[IMAGE_COUNT];
+	uint8 Clickables[IMAGE_COUNT];
+	uint8 UseFullIscripts[IMAGE_COUNT];
+	uint8 DrawIfCloakeds[IMAGE_COUNT];
+	uint8 DrawFunctions[IMAGE_COUNT];
+	uint8 Remappings[IMAGE_COUNT];
+	uint32 IscriptIDs[IMAGE_COUNT];
+	uint32 ShieldOverlays[IMAGE_COUNT];
+	uint32 AttackOverlays[IMAGE_COUNT];
+	uint32 DamageOverlays[IMAGE_COUNT];
+	uint32 SpecialOverlays[IMAGE_COUNT];
+	uint32 LandingDustOverlays[IMAGE_COUNT];
+	uint32 LiftOffDustOverlays[IMAGE_COUNT];
+};
+#pragma pack(pop)
+
+static_assert(sizeof(ImageData) == 37962, "ImageData size is invalid");
+
+#pragma pack(push, 1)
 struct UpgradeData
 {
 	enum { UPGRADE_COUNT = 61 };
@@ -205,10 +201,86 @@ struct UpgradeData
 };
 #pragma pack(pop)
 
-struct ButtonSet
+#pragma pack(push, 1)
+struct TechData
+{
+	enum { TECH_COUNT = 44 };
+	uint16 MineralCosts[TECH_COUNT];
+	uint16 VespeneCosts[TECH_COUNT];
+	uint16 ResearchTimes[TECH_COUNT];
+	uint16 EnergyRequireds[TECH_COUNT];
+	uint32 Unkowns[TECH_COUNT];
+	uint16 Icons[TECH_COUNT];
+	uint16 Labels[TECH_COUNT];
+	uint8 Races[TECH_COUNT];
+	uint8 Unuseds[TECH_COUNT];
+	uint8 BroodwarOnlys[TECH_COUNT];
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+// sfxData
+struct SoundData
+{
+	enum { SOUND_COUNT = 1144 };
+	uint32 SoundFiles[SOUND_COUNT];
+	uint8 Unknown1s[SOUND_COUNT];
+	uint8 Unknown2s[SOUND_COUNT];
+	uint8 Unknown3s[SOUND_COUNT];
+	uint8 Unknown4s[SOUND_COUNT];
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+struct PortraitData
+{
+	enum { PORTRAIT_COUNT = 220 };
+	//PortraitFiles
+	//SMKChanges
+	//Unknowns
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+// metadata
+struct CampaignData
+{
+	enum { CAMPAIGN_COUNT = 65 };
+	//MapFiles
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+struct OrderData
+{
+	enum { ORDER_COUNT = 189 };
+	uint16 Labels[ORDER_COUNT];
+	uint8 UseWeaponTargetings[ORDER_COUNT];
+	uint8 Unknown1s[ORDER_COUNT];
+	uint8 MainOrSecondarys[ORDER_COUNT];
+	uint8 Unknown3s[ORDER_COUNT];
+	uint8 Unknown4s[ORDER_COUNT];
+	uint8 Interruptables[ORDER_COUNT];
+	uint8 Unknown5s[ORDER_COUNT];
+	uint8 Queueables[ORDER_COUNT];
+	uint8 Unknown6s[ORDER_COUNT];
+	uint8 Unknown7s[ORDER_COUNT];
+	uint8 Unknown8s[ORDER_COUNT];
+	uint8 Unknown9s[ORDER_COUNT];
+	uint8 Targetings[ORDER_COUNT];
+	uint8 Energys[ORDER_COUNT];
+	uint8 Animations[ORDER_COUNT];
+	uint16 Highlights[ORDER_COUNT];
+	uint16 Unknown10s[ORDER_COUNT];
+	uint8 ObscuredOrders[ORDER_COUNT];
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+struct ButtonsetData
 {
 	enum { BUTTON_SET_COUNT = 250 };
-	struct ButtonList
+	struct Buttonset
 	{
 		uint32 ButtonCount;
 		uint32 Unknown1;
@@ -225,5 +297,6 @@ struct ButtonSet
 		};
 		ButtonInfo ButtonInfos[1];
 	};
-	ButtonList* ButtonLists[BUTTON_SET_COUNT];
+	Buttonset* Buttonsets[BUTTON_SET_COUNT];
 };
+#pragma pack(pop)

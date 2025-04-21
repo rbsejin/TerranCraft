@@ -14,7 +14,7 @@ Bullet::~Bullet()
 	Cleanup();
 }
 
-bool Bullet::Initialize(BW::WeaponType weaponType, Unit* sourceUnit)
+bool Bullet::Initialize(eWeapon weaponType, Unit* sourceUnit)
 {
 	bool bResult = false;
 
@@ -25,8 +25,8 @@ bool Bullet::Initialize(BW::WeaponType weaponType, Unit* sourceUnit)
 	const WeaponData* weaponData = arrangement->GetWeaponData();
 	uint16 flingyID = (uint16)weaponData->Graphics[(uint32)weaponType];
 	const FlingyData* flingyData = arrangement->GetFlingyData();
-	BW::SpriteNumber spriteNumber = (BW::SpriteNumber)flingyData->Sprites[flingyID];
-	Flingy::Initialize(0, (BW::FlingyType)flingyID);
+	eSprite spriteNumber = (eSprite)flingyData->Sprites[flingyID];
+	Flingy::Initialize(0, (eFlingyType)flingyID);
 
 	mTimeRemaining = weaponData->WeaponCooldowns[(uint32)weaponType];
 
@@ -53,7 +53,7 @@ bool Bullet::Initialize(BW::WeaponType weaponType, Unit* sourceUnit)
 		std::list<Image*>* images = sprite->GetImages();
 		for (Image* image : *images)
 		{
-			BW::IScriptAnimation anim = BW::IScriptAnimation::Init;
+			eAnim anim = eAnim::Init;
 			image->SetAnim(anim);
 			uint16 iscriptHeader = image->GetIScriptHeader();
 			AnimationController* animationController = gGame->GetAnimationController();
@@ -105,7 +105,7 @@ void Bullet::Update()
 		std::list<Image*>* images = sprite->GetImages();
 		for (Image* image : *images)
 		{
-			BW::IScriptAnimation anim = BW::IScriptAnimation::Death;
+			eAnim anim = eAnim::Death;
 			image->SetAnim(anim);
 			uint16 iscriptHeader = image->GetIScriptHeader();
 			AnimationController* animationController = gGame->GetAnimationController();

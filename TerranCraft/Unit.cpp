@@ -2,7 +2,7 @@
 #include "Unit.h"
 #include "Sprite.h"
 #include "Image.h"
-#include "CommandIcon.h"
+#include "../BWLib/ButtonsetType.h"
 #include "Arrangement.h"
 #include "BWFile.h"
 #include "AnimationController.h"
@@ -16,7 +16,7 @@ Unit::~Unit()
 	Cleanup();
 }
 
-bool Unit::Initialize(BW::UnitType unitType)
+bool Unit::Initialize(eUnit unitType)
 {
 	bool bResult = false;
 
@@ -42,7 +42,7 @@ bool Unit::Initialize(BW::UnitType unitType)
 	int32 hp = GetMaxHP();
 	uint8 flingyID = GetFlingyID();
 
-	Flingy::Initialize(hp, (BW::FlingyType)flingyID);
+	Flingy::Initialize(hp, (eFlingyType)flingyID);
 
 	mBuildTime = unitData->BuildTimes[(uint32)unitType];
 	mRemainingBuildTime = mBuildTime;
@@ -67,28 +67,28 @@ void Unit::Update()
 {
 	switch (mOrderType)
 	{
-	case BW::OrderType::None:
+	case eOrder::None:
 	{
 		PerformOrder();
 		break;
 	}
-	case BW::OrderType::Move:
+	case eOrder::Move:
 	{
 		move();
 		break;
 	}
-	case BW::OrderType::AttackUnit:
+	case eOrder::AttackUnit:
 	{
 		attackUnit();
 		break;
 	}
-	case BW::OrderType::AttackMove:
+	case eOrder::AttackMove:
 	{
 		// TODO: 추후 attackMove() 함수 구현해서 대체할 것...
 		move();
 		break;
 	}
-	case BW::OrderType::ConstructingBuilding:
+	case eOrder::ConstructingBuilding:
 		build();
 		break;
 	default:
@@ -102,7 +102,7 @@ void Unit::Update()
 	const std::list<Image*>* images = sprite->GetImages();
 	for (Image* image : *images)
 	{
-		BW::ImageNumber imageID = image->GetImageID();
+		eImage imageID = image->GetImageID();
 		if (image->HasRotationFrames())
 		{
 			image->SetDirection(mFacingDirection);
@@ -149,19 +149,19 @@ void Unit::PerformOrder()
 	}
 
 #pragma region Order
-	BW::OrderType orderType = order->OrderType;
+	eOrder orderType = order->OrderType;
 	mOrderTarget = order->Target;
 	mOrderType = orderType;
 
 	switch (orderType)
 	{
-	case BW::OrderType::Die:
+	case eOrder::Die:
 	{
 		Sprite* sprite = GetSprite();
 		std::list<Image*>* images = sprite->GetImages();
 		for (Image* image : *images)
 		{
-			BW::IScriptAnimation anim = BW::IScriptAnimation::Death;
+			eAnim anim = eAnim::Death;
 			image->SetAnim(anim);
 			uint16 iscriptHeader = image->GetIScriptHeader();
 			AnimationController* animationController = gGame->GetAnimationController();
@@ -174,77 +174,77 @@ void Unit::PerformOrder()
 		gGame->SelectedUnits.erase(std::remove(gGame->SelectedUnits.begin(), gGame->SelectedUnits.end(), this), gGame->SelectedUnits.end());
 		break;
 	}
-	case BW::OrderType::Stop:
+	case eOrder::Stop:
 	{
 		Sprite* sprite = GetSprite();
 
 		const std::list<Image*>* images = sprite->GetImages();
 		for (Image* image : *images)
 		{
-			BW::IScriptAnimation anim = image->GetAnim();
+			eAnim anim = image->GetAnim();
 
 			switch (anim)
 			{
-			case BW::IScriptAnimation::Init:
+			case eAnim::Init:
 				break;
-			case BW::IScriptAnimation::Death:
+			case eAnim::Death:
 				break;
-			case BW::IScriptAnimation::GndAttkInit:
-				anim = BW::IScriptAnimation::GndAttkToIdle;
+			case eAnim::GndAttkInit:
+				anim = eAnim::GndAttkToIdle;
 				break;
-			case BW::IScriptAnimation::AirAttkInit:
-				anim = BW::IScriptAnimation::AirAttkToIdle;
+			case eAnim::AirAttkInit:
+				anim = eAnim::AirAttkToIdle;
 				break;
-			case BW::IScriptAnimation::Unused1:
+			case eAnim::Unused1:
 				break;
-			case BW::IScriptAnimation::GndAttkRpt:
-				anim = BW::IScriptAnimation::GndAttkToIdle;
+			case eAnim::GndAttkRpt:
+				anim = eAnim::GndAttkToIdle;
 				break;
-			case BW::IScriptAnimation::AirAttkRpt:
-				anim = BW::IScriptAnimation::AirAttkToIdle;
+			case eAnim::AirAttkRpt:
+				anim = eAnim::AirAttkToIdle;
 				break;
-			case BW::IScriptAnimation::CastSpell:
+			case eAnim::CastSpell:
 				break;
-			case BW::IScriptAnimation::GndAttkToIdle:
+			case eAnim::GndAttkToIdle:
 				break;
-			case BW::IScriptAnimation::AirAttkToIdle:
+			case eAnim::AirAttkToIdle:
 				break;
-			case BW::IScriptAnimation::Unused2:
+			case eAnim::Unused2:
 				break;
-			case BW::IScriptAnimation::Walking:
-				anim = BW::IScriptAnimation::WalkingToIdle;
+			case eAnim::Walking:
+				anim = eAnim::WalkingToIdle;
 				break;
-			case BW::IScriptAnimation::WalkingToIdle:
+			case eAnim::WalkingToIdle:
 				break;
-			case BW::IScriptAnimation::SpecialState1:
+			case eAnim::SpecialState1:
 				break;
-			case BW::IScriptAnimation::SpecialState2:
+			case eAnim::SpecialState2:
 				break;
-			case BW::IScriptAnimation::AlmostBuilt:
+			case eAnim::AlmostBuilt:
 				break;
-			case BW::IScriptAnimation::Built:
+			case eAnim::Built:
 				break;
-			case BW::IScriptAnimation::Landing:
+			case eAnim::Landing:
 				break;
-			case BW::IScriptAnimation::LiftOff:
+			case eAnim::LiftOff:
 				break;
-			case BW::IScriptAnimation::IsWorking:
+			case eAnim::IsWorking:
 				break;
-			case BW::IScriptAnimation::WorkingToIdle:
+			case eAnim::WorkingToIdle:
 				break;
-			case BW::IScriptAnimation::WarpIn:
+			case eAnim::WarpIn:
 				break;
-			case BW::IScriptAnimation::Unused3:
+			case eAnim::Unused3:
 				break;
-			case BW::IScriptAnimation::StarEditInit:
+			case eAnim::StarEditInit:
 				break;
-			case BW::IScriptAnimation::Disable:
+			case eAnim::Disable:
 				break;
-			case BW::IScriptAnimation::Burrow:
+			case eAnim::Burrow:
 				break;
-			case BW::IScriptAnimation::UnBurrow:
+			case eAnim::UnBurrow:
 				break;
-			case BW::IScriptAnimation::Enable:
+			case eAnim::Enable:
 				break;
 			default:
 				break;
@@ -260,29 +260,29 @@ void Unit::PerformOrder()
 
 		mCoolTime = 0;
 		SetRepeatAttackable(true);
-		mOrderType = BW::OrderType::None;
+		mOrderType = eOrder::None;
 		break;
 	}
-	case BW::OrderType::Move:
+	case eOrder::Move:
 	{
 		startMove();
 		break;
 	}
-	case BW::OrderType::Attack1:
+	case eOrder::Attack1:
 		break;
-	case BW::OrderType::AttackUnit:
+	case eOrder::AttackUnit:
 	{
 		startAttackUnit();
 		break;
 	}
-	case BW::OrderType::AttackMove:
+	case eOrder::AttackMove:
 		// TODO: 추후 startAttackMove() 함수 구현해서 대체할 것...
 		startMove();
 		break;
-	case BW::OrderType::ConstructingBuilding:
+	case eOrder::ConstructingBuilding:
 		startBuilding();
 		break;
-	case BW::OrderType::Nothing:
+	case eOrder::Nothing:
 		break;
 	default:
 		break;
@@ -294,25 +294,25 @@ void Unit::PerformOrder()
 	delete order;
 }
 
-BW::IScriptAnimation Unit::GetAnimation() const
+eAnim Unit::GetAnimation() const
 {
 	Sprite* sprite = GetSprite();
 	Image* primaryImage = sprite->GetPrimaryImage();
-	BW::IScriptAnimation anim = primaryImage->GetAnim();
+	eAnim anim = primaryImage->GetAnim();
 	return anim;
 }
 
 bool Unit::IsMoving() const
 {
-	BW::IScriptAnimation anim = GetAnimation();
-	return anim == BW::IScriptAnimation::Walking || anim == BW::IScriptAnimation::WalkingToIdle;
+	eAnim anim = GetAnimation();
+	return anim == eAnim::Walking || anim == eAnim::WalkingToIdle;
 }
 
 bool Unit::IsAttacking() const
 {
-	BW::IScriptAnimation anim = GetAnimation();
-	return anim == BW::IScriptAnimation::GndAttkInit || anim == BW::IScriptAnimation::GndAttkRpt
-		|| anim == BW::IScriptAnimation::AirAttkInit || anim == BW::IScriptAnimation::AirAttkRpt;
+	eAnim anim = GetAnimation();
+	return anim == eAnim::GndAttkInit || anim == eAnim::GndAttkRpt
+		|| anim == eAnim::AirAttkInit || anim == eAnim::AirAttkRpt;
 }
 
 void Unit::ClearOrders()
@@ -385,7 +385,7 @@ void Unit::startMove()
 
 	for (Image* image : *images)
 	{
-		BW::IScriptAnimation anim = BW::IScriptAnimation::Walking;
+		eAnim anim = eAnim::Walking;
 		image->SetAnim(anim);
 		uint16 iscriptHeader = image->GetIScriptHeader();
 		AnimationController* animationController = gGame->GetAnimationController();
@@ -436,7 +436,7 @@ void Unit::move()
 		else
 		{
 			// WalkingToIdle Animation
-			BW::IScriptAnimation anim = BW::IScriptAnimation::WalkingToIdle;
+			eAnim anim = eAnim::WalkingToIdle;
 			Sprite* sprite = GetSprite();
 
 			const std::list<Image*>* images = sprite->GetImages();
@@ -450,7 +450,7 @@ void Unit::move()
 				image->SetSleep(0);
 			}
 
-			mOrderType = BW::OrderType::None;
+			mOrderType = eOrder::None;
 		}
 	}
 }
@@ -465,7 +465,7 @@ void Unit::startAttackUnit()
 	std::list<Image*>* images = sprite->GetImages();
 	for (Image* image : *images)
 	{
-		BW::IScriptAnimation anim = BW::IScriptAnimation::GndAttkInit;
+		eAnim anim = eAnim::GndAttkInit;
 		image->SetAnim(anim);
 		uint16 iscriptHeader = image->GetIScriptHeader();
 		AnimationController* animationController = gGame->GetAnimationController();
@@ -489,7 +489,7 @@ void Unit::attackUnit()
 		Unit* dealer = this;
 		Arrangement* arrangement = gGame->GetArrangement();
 		const UnitData* dealerUnitData = arrangement->GetUnitData();
-		BW::UnitType dealerUnitType = dealer->GetUnitType();
+		eUnit dealerUnitType = dealer->GetUnitType();
 		uint8 weaponID = dealerUnitData->GroundWeapons[(uint32)dealerUnitType];
 		const WeaponData* weaponData = arrangement->GetWeaponData();
 		uint16 amount = weaponData->DamageAmounts[weaponID];
@@ -502,7 +502,7 @@ void Unit::attackUnit()
 			__debugbreak();
 		}
 #endif
-		BW::UnitType targetUnitType = targetUnit->GetUnitType();
+		eUnit targetUnitType = targetUnit->GetUnitType();
 		uint8 armor = targetUnitData->Armors[(uint32)targetUnitType];
 		int32 damage = amount - armor;
 
@@ -521,7 +521,7 @@ void Unit::attackUnit()
 			std::list<Image*>* images = sprite->GetImages();
 			for (Image* image : *images)
 			{
-				BW::IScriptAnimation anim = BW::IScriptAnimation::GndAttkToIdle;
+				eAnim anim = eAnim::GndAttkToIdle;
 				image->SetAnim(anim);
 				uint16 iscriptHeader = image->GetIScriptHeader();
 				AnimationController* animationController = gGame->GetAnimationController();
@@ -534,7 +534,7 @@ void Unit::attackUnit()
 
 			mCoolTime = 0;
 
-			mOrderType = BW::OrderType::None;
+			mOrderType = eOrder::None;
 		}
 		else
 		{
@@ -545,7 +545,7 @@ void Unit::attackUnit()
 
 				uint16 iscriptHeader = image->GetIScriptHeader();
 				AnimationController* animationController = gGame->GetAnimationController();
-				uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, BW::IScriptAnimation::GndAttkRpt);
+				uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, eAnim::GndAttkRpt);
 				image->SetIScriptOffset(iscriptOffset);
 				image->SetSleep(0);
 			}
@@ -559,11 +559,11 @@ void Unit::attackUnit()
 		// Bullet
 		Bullet* bullet = new Bullet();
 		const UnitData* unitData = arrangement->GetUnitData();
-		BW::WeaponType weaponType = (BW::WeaponType)unitData->GroundWeapons[(uint32)mUnitType];
+		eWeapon weaponType = (eWeapon)unitData->GroundWeapons[(uint32)mUnitType];
 		bullet->Initialize(weaponType, this);
 		//FloatVector2 position = targetUnit->GetPosition();
 		FloatVector2 position = targetPosition;
-		if (mUnitType == BW::UnitType::Terran_Vulture)
+		if (mUnitType == eUnit::TerranVulture)
 		{
 			position = mPosition;
 		}
@@ -595,8 +595,8 @@ void Unit::startBuilding()
 		}
 
 		mConstructionImage = new Image();
-		mConstructionImage->Initialize((BW::ImageNumber)constructionAnimation, sprite);
-		mConstructionImage->SetAnim(BW::IScriptAnimation::Init);
+		mConstructionImage->Initialize((eImage)constructionAnimation, sprite);
+		mConstructionImage->SetAnim(eAnim::Init);
 		sprite->AddAffter(mConstructionImage);
 	}
 }
@@ -613,7 +613,7 @@ void Unit::build()
 		std::list<Image*>* images = sprite->GetImages();
 		for (Image* image : *images)
 		{
-			BW::IScriptAnimation anim = BW::IScriptAnimation::Built;
+			eAnim anim = eAnim::Built;
 			image->SetAnim(anim);
 			uint16 iscriptHeader = image->GetIScriptHeader();
 			AnimationController* animationController = gGame->GetAnimationController();
@@ -622,7 +622,7 @@ void Unit::build()
 			image->SetSleep(0);
 		}
 
-		mOrderType = BW::OrderType::None;
+		mOrderType = eOrder::None;
 	}
 	else if (percent >= 0.57f)
 	{
@@ -640,7 +640,7 @@ void Unit::build()
 			}
 			else
 			{
-				BW::IScriptAnimation anim = BW::IScriptAnimation::AlmostBuilt;
+				eAnim anim = eAnim::AlmostBuilt;
 				image->SetAnim(anim);
 				image->SetHidden(false);
 				uint16 iscriptHeader = image->GetIScriptHeader();
@@ -657,7 +657,7 @@ void Unit::build()
 	{
 		Sprite* sprite = GetSprite();
 		Image* image = mConstructionImage;
-		BW::IScriptAnimation anim = BW::IScriptAnimation::SpecialState2;
+		eAnim anim = eAnim::SpecialState2;
 		image->SetAnim(anim);
 		uint16 iscriptHeader = image->GetIScriptHeader();
 		AnimationController* animationController = gGame->GetAnimationController();
@@ -669,7 +669,7 @@ void Unit::build()
 	{
 		Sprite* sprite = GetSprite();
 		Image* image = mConstructionImage;
-		BW::IScriptAnimation anim = BW::IScriptAnimation::SpecialState1;
+		eAnim anim = eAnim::SpecialState1;
 		image->SetAnim(anim);
 		uint16 iscriptHeader = image->GetIScriptHeader();
 		AnimationController* animationController = gGame->GetAnimationController();

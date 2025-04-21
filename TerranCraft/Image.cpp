@@ -4,7 +4,7 @@
 #include "Sprite.h"
 #include "Image.h"
 #include "Camera.h"
-#include "../BWLib/IScriptEntryNumber.h"
+#include "../BWLib/ScriptType.h"
 #include "AnimationController.h"
 #include "BWFile.h"
 #include "Arrangement.h"
@@ -13,7 +13,7 @@
 #include "../ImageData/Palette.h"
 #include "Game.h"
 
-bool Image::Initialize(BW::ImageNumber imageID, Sprite* parent)
+bool Image::Initialize(eImage imageID, Sprite* parent)
 {
 	bool bResult = false;
 

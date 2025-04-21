@@ -8,6 +8,6 @@ class Unit;
 class Order
 {
 public:
-	BW::OrderType OrderType = BW::OrderType::None;
+	eOrder OrderType = eOrder::None;
 	Target Target = { 0, };
 };

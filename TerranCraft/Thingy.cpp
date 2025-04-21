@@ -8,7 +8,7 @@ Thingy::~Thingy()
 	Cleanup();
 }
 
-bool Thingy::Initialize(int32 hp, BW::SpriteNumber spriteNumber)
+bool Thingy::Initialize(int32 hp, eSprite spriteNumber)
 {
 	bool bResult = false;
 

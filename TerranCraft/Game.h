@@ -3,8 +3,8 @@
 #include "../Common/typedef.h"
 #include "../ImageData/Graphic.h"
 #include "../BWLib/UnitType.h"
-#include "../BWLib/ImageNumber.h"
-#include "CommandIcon.h"
+#include "../BWLib/ImageType.h"
+#include "../BWLib/ButtonsetType.h"
 #include <vector>
 #include <list>
 #include "Order.h"
@@ -23,7 +23,7 @@ struct Chunk;
 struct ImageData;
 struct SpriteData;
 struct UnitData;
-struct ButtonSet;
+struct ButtonsetData;
 
 enum class PlayerOrder
 {
@@ -107,7 +107,7 @@ public:
 	std::list<IntVector2> CellPath;
 
 	// GRP Images
-	enum { IMAGE_COUNT = BW::ImageNumber::None };
+	enum { IMAGE_COUNT = eImage::None };
 	GRPHeader* GRPFiles[IMAGE_COUNT];
 	uint32 mImageCount = 0;
 
@@ -152,7 +152,7 @@ private:
 
 	// UI
 	GRPHeader* mButtonsGRP = nullptr;
-	const ButtonSet* mButtonset = nullptr;
+	const ButtonsetData* mButtonset = nullptr;
 	eButtonset mCurrentButtonset = eButtonset::None;
 	GRPHeader* mTCmdBtnsGRP = nullptr;
 	// wireframe
@@ -177,7 +177,7 @@ private:
 	enum { SELECTION_CIRCLE_IMAGE_COUNT = 10 };
 	Image* mSelectionCircleImages[SELECTION_CIRCLE_IMAGE_COUNT];
 
-	BW::UnitType mCreatedUnitType = BW::UnitType::None;
+	eUnit mCreatedUnitType = eUnit::None;
 };
 
 extern Game* gGame;

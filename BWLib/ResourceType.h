@@ -1,12 +1,10 @@
 #pragma once
 #include "../Common/typedef.h"
 
-namespace BW
+enum class eResource : uint8
 {
-  enum class ResourceType : uint8
-  {
-    None,
-    Gas,
-    Ore
-  };
-}
+	None,
+	Gas,
+	Ore
+};
+

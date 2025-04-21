@@ -1,6 +1,6 @@
 #pragma once
 
-namespace BW
+
 {
     /** Definition of Flags specifying movement type - used in BW#Unit#movementFlags */
     namespace MovementFlags
