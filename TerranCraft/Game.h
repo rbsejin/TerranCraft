@@ -10,6 +10,7 @@
 #include "Order.h"
 
 class DDrawDevice;
+class Camera;
 class Image;
 class Thingy;
 class Unit;
@@ -74,6 +75,8 @@ public:
 	void OnUpdateWindowSize();
 	void OnUpdateWindowPos();
 
+	Camera* GetCamera() { return mCamera; }
+
 private:
 	void onGameFrame(ULONGLONG currentTick);
 	void drawScene();
@@ -88,25 +91,29 @@ private:
 
 	void move(Target target);
 	void attack(Target target);
+	void build();
 	void markUnit();
 	void markCursor();
 	void updateWireframePalette(const Unit* unit);
 	void pcxToPaletteEntries(PCXImage* pcx, PALETTEENTRY* pDest);
 
 public:
-	static std::list<Thingy*> sThingies;
-	static std::list<Unit*> sUnits;
-	static std::list<Bullet*> sBullets;
-	static std::vector<Unit*> sSelectedUnits;
-	static std::list<IntVector2> sCellPath;
+	std::list<Thingy*> Thingies;
+	std::list<Unit*> Units;
+	std::list<Bullet*> Bullets;
+	std::vector<Unit*> SelectedUnits;
+	std::list<IntVector2> CellPath;
 
 	// GRP Images
 	enum { IMAGE_COUNT = BW::ImageNumber::None };
-	static GRPHeader* sGRPFiles[IMAGE_COUNT];
+	GRPHeader* GRPFiles[IMAGE_COUNT];
+	uint32 mImageCount = 0;
 
 private:
 	DDrawDevice* mDDrawDevice = nullptr;
 	HWND mhWnd = nullptr;
+
+	Camera* mCamera = nullptr;
 
 	enum { DEFAULT_GAME_FPS = 24 };
 	uint32 mGameFPS = DEFAULT_GAME_FPS;
@@ -133,6 +140,8 @@ private:
 
 	// PCX
 	PCXImage* mTConsolePCX = nullptr;
+	int32 mConsoleX = 0;
+	int32 mConsoleY = 0;
 	PCXImage* mTUnitPCX = nullptr;
 	PCXImage* mTSelectPCX = nullptr;
 	PCXImage* mTWirePCX = nullptr;
@@ -163,6 +172,8 @@ private:
 	std::list<Order> mUnitOrders;
 	enum { SELECTION_CIRCLE_IMAGE_COUNT = 10 };
 	Image* mSelectionCircleImages[SELECTION_CIRCLE_IMAGE_COUNT];
+
+	BW::UnitType mCreatedUnitType = BW::UnitType::None;
 };
 
 extern Game* gGame;

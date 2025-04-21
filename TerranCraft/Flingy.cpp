@@ -11,7 +11,7 @@ Flingy::~Flingy()
 	Cleanup();
 }
 
-bool Flingy::Initialize(BW::FlingyType flingyType)
+bool Flingy::Initialize(int32 hp, BW::FlingyType flingyType)
 {
 	bool bResult = false;
 	mFlingyType = flingyType;
@@ -19,6 +19,10 @@ bool Flingy::Initialize(BW::FlingyType flingyType)
 	uint32 flingyID = (uint32)flingyType;
 	mFlingyTopSpeed = flingyData->Speeds[flingyID];
 	mCurrentSpeed = (mFlingyTopSpeed == 1) ? 4.f : (mFlingyTopSpeed / 256.f);
+
+	BW::SpriteNumber spriteNumber = (BW::SpriteNumber)flingyData->Sprites[flingyID];
+
+	Thingy::Initialize(hp, spriteNumber);
 
 	// TODO: Implement the following
 	//Accelerations[flingyID];

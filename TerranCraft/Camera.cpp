@@ -2,8 +2,6 @@
 #include "Camera.h"
 #include "PathFinder.h"
 
-Camera Camera::Instance;
-
 void Camera::MoveViewPort(int32 dx, int32 dy)
 {
 	mPosition.X += dx;

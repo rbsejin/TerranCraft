@@ -78,7 +78,7 @@ struct UnitData
 	// 0xc53
 	uint32 HitPoints[UNIT_COUNT]; // Hit Points of unit, note that the displayed value in broodwar is ceil(hitPoints/256)
 	// Set to 1 to indicate existence for non-units. Official.
-// 0xfe4
+	// 0xfe4
 	uint8 ElevationLevels[UNIT_COUNT];
 	uint8 Unknowns[UNIT_COUNT];
 	uint8 Sublabels[UNIT_COUNT];
@@ -127,7 +127,17 @@ struct UnitData
 	// 0x3f64
 	uint16 Unknown1s[UNIT_COUNT];
 	// 0x412c
-	uint8 StarEditGroupFlags[UNIT_COUNT];
+	/*
+	0x01: Zerg
+	0x02: Terran
+	0x04: Protoss
+	0x08: Men
+	0x10: Building
+	0x20: Produces Units
+	0x40: Independent Unit
+	0x80: neutral
+	*/
+	uint8 StarEditGroupFlags[UNIT_COUNT]; 	
 	// 0x4210
 	uint8 SupplyProvideds[UNIT_COUNT];
 	uint8 SupplyRequireds[UNIT_COUNT];

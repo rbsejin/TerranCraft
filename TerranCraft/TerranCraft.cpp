@@ -133,23 +133,14 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
 	hInst = hInstance; // Store instance handle in our global variable
 
-	constexpr int WINDOW_POS_X = 0;
-	constexpr int WINDOW_POS_Y = 0;
-
-	//constexpr int CLIENT_WIDTH = 1920;
-	//constexpr int CLIENT_HEIGHT = 1080;
-
-	constexpr int CLIENT_WIDTH = 640 * 2;
-	constexpr int CLIENT_HEIGHT = 480 * 2;
-
-	RECT rect = { 0, 0, CLIENT_WIDTH, CLIENT_HEIGHT };
+	RECT rect = { 0, 0, DEFAULT_CLIENT_WIDTH, DEFAULT_CLIENT_HEIGHT };
 	AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, TRUE);
 
 	const int windowWidth = rect.right - rect.left;
 	const int windowHeight = rect.bottom - rect.top;
 
 	HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-		WINDOW_POS_X, WINDOW_POS_Y, windowWidth, windowHeight, nullptr, nullptr, hInstance, nullptr);
+		DEFAULT_WINDOW_POS_X, DEFAULT_WINDOW_POS_Y, windowWidth, windowHeight, nullptr, nullptr, hInstance, nullptr);
 
 	if (!hWnd)
 	{

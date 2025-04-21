@@ -25,8 +25,7 @@ bool Bullet::Initialize(BW::WeaponType weaponType, Unit* sourceUnit)
 	uint16 flingyID = (uint16)weaponData->Graphics[(uint32)weaponType];
 	const FlingyData* flingyData = Arrangement::Instance.GetFlingyData();
 	BW::SpriteNumber spriteNumber = (BW::SpriteNumber)flingyData->Sprites[flingyID];
-	Thingy::Initialize(1, spriteNumber);
-	Flingy::Initialize((BW::FlingyType)flingyID);
+	Flingy::Initialize(0, (BW::FlingyType)flingyID);
 
 	mTimeRemaining = weaponData->WeaponCooldowns[(uint32)weaponType];
 
@@ -112,7 +111,7 @@ void Bullet::Update()
 			image->SetSleep(0);
 		}
 
-		Game::sBullets.erase(std::remove(Game::sBullets.begin(), Game::sBullets.end(), this), Game::sBullets.end());
+		gGame->Bullets.erase(std::remove(gGame->Bullets.begin(), gGame->Bullets.end(), this), gGame->Bullets.end());
 
 		mTimeRemaining = 0;
 	}

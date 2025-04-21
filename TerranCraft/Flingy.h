@@ -11,7 +11,7 @@ class Flingy : public Thingy
 public:
 	Flingy() = default;
 	virtual ~Flingy();
-	bool Initialize(BW::FlingyType flingyType);
+	bool Initialize(int32 hp, BW::FlingyType flingyType);
 	void Cleanup();
 
 	virtual void Update();

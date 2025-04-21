@@ -22,7 +22,7 @@ bool Image::Initialize(BW::ImageNumber imageID, Sprite* parent)
 
 	const ImageData* imageData = Arrangement::Instance.GetImageData();
 	int32 index = imageData->GRPFiles[(int32)imageID] - 1;
-	mGRPFile = Game::sGRPFiles[index];
+	mGRPFile = gGame->GRPFiles[index];
 
 	uint32 IscriptID = imageData->IscriptIDs[(int32)imageID];
 
@@ -30,6 +30,21 @@ bool Image::Initialize(BW::ImageNumber imageID, Sprite* parent)
 
 	mIScriptHeader = AnimationController::Instance.GetIScriptHeader(IscriptID);
 	mIScriptOffset = AnimationController::Instance.GetIScriptOffset(mIScriptHeader, mAnim);
+
+	if (imageData->GfxTurns[(int32)imageID] != 0)
+	{
+		mFlags |= 0x08;
+	}
+
+	if (imageData->UseFullIscripts[(int32)imageID] != 0)
+	{
+		mFlags |= 0x10;
+	}
+
+	if (imageData->Clickables[(int32)imageID] != 0)
+	{
+		mFlags |= 0x20;
+	}
 
 	bResult = true;
 
@@ -52,7 +67,8 @@ void Image::UpdateGraphicData()
 
 	mMapPosition.Y = position.Y - mGRPFile->Height / 2 + frame->Y;
 
-	IntVector2 cameraPosition = Camera::Instance.GetPosition();
+	Camera* camera = gGame->GetCamera();
+	IntVector2 cameraPosition = camera->GetPosition();
 	IntVector2 screen = mMapPosition;
 	screen.X -= cameraPosition.X;
 	screen.Y -= cameraPosition.Y;
@@ -73,7 +89,7 @@ void Image::UpdateGraphicData()
 		screen.Y = 0;
 	}
 
-	IntVector2 cameraSize = Camera::Instance.GetSize();
+	IntVector2 cameraSize = camera->GetSize();
 	bounds.Right = std::min<int>(bounds.Right, cameraSize.X - screen.X);
 	bounds.Bottom = std::min<int>(bounds.Bottom, cameraSize.Y - screen.Y);
 

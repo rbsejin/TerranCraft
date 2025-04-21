@@ -22,15 +22,6 @@ bool Unit::Initialize(BW::UnitType unitType)
 
 	mUnitType = unitType;
 
-	uint8 flingyID = GetFlingyID();
-	const FlingyData* flingyData = Arrangement::Instance.GetFlingyData();
-	BW::SpriteNumber spriteNumber = (BW::SpriteNumber)flingyData->Sprites[flingyID];
-
-	int32 hp = GetMaxHP();
-	Thingy::Initialize(hp, spriteNumber);
-
-	//mCurrentSpeed = flingyData->Speeds[flingyID];
-
 	mCurrentButtonset = (eButtonset)unitType;
 
 	const UnitData* unitData = Arrangement::Instance.GetUnitData();
@@ -40,11 +31,20 @@ bool Unit::Initialize(BW::UnitType unitType)
 	mContourBounds.Right = (int32)contourBounds.Right;
 	mContourBounds.Bottom = (int32)contourBounds.Bottom;
 
+	mSpecialAbilityFlags = unitData->SpecialAbilityFlags[(uint32)unitType];
+	mMovementFlags = unitData->Unknowns[(uint32)unitType];
+
 	// Weapon
 	const WeaponData* weaponData = Arrangement::Instance.GetWeaponData();
 	mGroundWeaponCooldown = weaponData->WeaponCooldowns[(uint32)unitType];
 
-	Flingy::Initialize((BW::FlingyType)flingyID);
+	int32 hp = GetMaxHP();
+	uint8 flingyID = GetFlingyID();
+
+	Flingy::Initialize(hp, (BW::FlingyType)flingyID);
+
+	mBuildTime = unitData->BuildTimes[(uint32)unitType];
+	mRemainingBuildTime = mBuildTime;
 
 	bResult = true;
 
@@ -87,21 +87,25 @@ void Unit::Update()
 		move();
 		break;
 	}
-	case BW::OrderType::Die:
+	case BW::OrderType::ConstructingBuilding:
+		build();
 		break;
 	default:
 		break;
 	}
 
-	IntVector2 spritePosition = { (int32)mPosition.X, (int32)mPosition.Y };
 	Sprite* sprite = GetSprite();
+	IntVector2 spritePosition = { (int32)mPosition.X, (int32)mPosition.Y };
 	sprite->SetPosition(spritePosition);
 
 	const std::list<Image*>* images = sprite->GetImages();
 	for (Image* image : *images)
 	{
 		BW::ImageNumber imageID = image->GetImageID();
-		image->SetDirection(mFacingDirection);
+		if (image->HasRotationFrames())
+		{
+			image->SetDirection(mFacingDirection);
+		}
 		image->UpdateGraphicData();
 	}
 
@@ -136,8 +140,8 @@ void Unit::PerformOrder()
 	// 명령의 타깃이 유닛 리스트에 없을 경우 처리... (예: 유닛이 죽었을 경우)
 	if (order->Target.Unit != nullptr)
 	{
-		auto iter = std::find(Game::sThingies.begin(), Game::sThingies.end(), order->Target.Unit);
-		if (iter == Game::sThingies.end())
+		auto iter = std::find(gGame->Thingies.begin(), gGame->Thingies.end(), order->Target.Unit);
+		if (iter == gGame->Thingies.end())
 		{
 			goto LB_RETURN;
 		}
@@ -164,8 +168,8 @@ void Unit::PerformOrder()
 			image->SetSleep(0);
 		}
 
-		Game::sUnits.erase(std::remove(Game::sUnits.begin(), Game::sUnits.end(), this));
-		Game::sSelectedUnits.erase(std::remove(Game::sSelectedUnits.begin(), Game::sSelectedUnits.end(), this), Game::sSelectedUnits.end());
+		gGame->Units.erase(std::remove(gGame->Units.begin(), gGame->Units.end(), this));
+		gGame->SelectedUnits.erase(std::remove(gGame->SelectedUnits.begin(), gGame->SelectedUnits.end(), this), gGame->SelectedUnits.end());
 		break;
 	}
 	case BW::OrderType::Stop:
@@ -272,6 +276,9 @@ void Unit::PerformOrder()
 		// TODO: 추후 startAttackMove() 함수 구현해서 대체할 것...
 		startMove();
 		break;
+	case BW::OrderType::ConstructingBuilding:
+		startBuilding();
+		break;
 	case BW::OrderType::Nothing:
 		break;
 	default:
@@ -338,9 +345,9 @@ void Unit::startMove()
 	IntVector2 currentCell = { (int32)(position.X / CELL_SIZE), (int32)(position.Y / CELL_SIZE) };
 	IntVector2 targetCell = { x / CELL_SIZE, y / CELL_SIZE };
 
-	Game::sCellPath.clear();
+	gGame->CellPath.clear();
 	IntRect countourBounds = GetContourBounds();
-	int32 length = FindPathWithUnitSize(&Game::sCellPath, (const uint8*)gMiniTiles, currentCell, targetCell, countourBounds);
+	int32 length = FindPathWithUnitSize(&gGame->CellPath, (const uint8*)gMiniTiles, currentCell, targetCell, countourBounds);
 
 	if (length <= 0)
 	{
@@ -350,7 +357,7 @@ void Unit::startMove()
 	std::list<IntVector2>* path = GetPath();
 	path->clear();
 
-	for (IntVector2& cell : Game::sCellPath)
+	for (IntVector2& cell : gGame->CellPath)
 	{
 		IntVector2 pos = { cell.X * CELL_SIZE + CELL_SIZE / 2, cell.Y * CELL_SIZE + CELL_SIZE / 2 };
 		path->push_back(pos);
@@ -551,8 +558,8 @@ void Unit::attackUnit()
 		}
 
 		bullet->SetPosition(position);
-		Game::sBullets.push_back(bullet);
-		Game::sThingies.push_back(bullet);
+		gGame->Bullets.push_back(bullet);
+		gGame->Thingies.push_back(bullet);
 	}
 
 	mCoolTime--;
@@ -560,6 +567,106 @@ void Unit::attackUnit()
 	char buf[256];
 	sprintf_s(buf, "Cooldown: %d\n", mCoolTime);
 	//OutputDebugStringA(buf);
+}
+
+void Unit::startBuilding()
+{
+	const UnitData* unitData = Arrangement::Instance.GetUnitData();
+	int32 constructionAnimation = unitData->ConstructionAnimations[(uint32)mUnitType];
+	if (constructionAnimation != 0)
+	{
+		Sprite* sprite = GetSprite();
+		std::list<Image*>* images = sprite->GetImages();
+		for (Image* image : *images)
+		{
+			image->SetHidden(true);
+		}
+
+		mConstructionImage = new Image();
+		mConstructionImage->Initialize((BW::ImageNumber)constructionAnimation, sprite);
+		mConstructionImage->SetAnim(BW::IScriptAnimation::Init);
+		sprite->AddAffter(mConstructionImage);
+	}
+}
+
+void Unit::build()
+{
+	// 걸린 시간
+	float elapsedTime = mBuildTime - mRemainingBuildTime;
+	float percent = elapsedTime / mBuildTime;
+
+	if (percent >= 1.f)
+	{
+		Sprite* sprite = GetSprite();
+		std::list<Image*>* images = sprite->GetImages();
+		for (Image* image : *images)
+		{
+			BW::IScriptAnimation anim = BW::IScriptAnimation::Built;
+			image->SetAnim(anim);
+			uint16 iscriptHeader = image->GetIScriptHeader();
+			uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+			image->SetIScriptOffset(iscriptOffset);
+			image->SetSleep(0);
+		}
+
+		mOrderType = BW::OrderType::None;
+	}
+	else if (percent >= 0.57f)
+	{
+		Sprite* sprite = GetSprite();
+		std::list<Image*>* images = sprite->GetImages();
+		auto iter = images->begin();
+		while (iter != images->end())
+		{
+			Image* image = *iter;
+			if (image == mConstructionImage)
+			{
+				iter = images->erase(iter);
+				delete mConstructionImage;
+				mConstructionImage = nullptr;
+			}
+			else
+			{
+				BW::IScriptAnimation anim = BW::IScriptAnimation::AlmostBuilt;
+				image->SetAnim(anim);
+				image->SetHidden(false);
+				uint16 iscriptHeader = image->GetIScriptHeader();
+				uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+				image->SetIScriptOffset(iscriptOffset);
+				image->SetSleep(0);
+
+				iter++;
+			}
+		}
+	}
+	else if (percent >= 0.34f)
+	{
+		Sprite* sprite = GetSprite();
+		Image* image = mConstructionImage;
+		BW::IScriptAnimation anim = BW::IScriptAnimation::SpecialState2;
+		image->SetAnim(anim);
+		uint16 iscriptHeader = image->GetIScriptHeader();
+		uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+		image->SetIScriptOffset(iscriptOffset);
+		image->SetSleep(0);
+	}
+	else if (percent >= 0.13f)
+	{
+		Sprite* sprite = GetSprite();
+		Image* image = mConstructionImage;
+		BW::IScriptAnimation anim = BW::IScriptAnimation::SpecialState1;
+		image->SetAnim(anim);
+		uint16 iscriptHeader = image->GetIScriptHeader();
+		uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+		image->SetIScriptOffset(iscriptOffset);
+		image->SetSleep(0);
+	}
+
+	mRemainingBuildTime -= 10;
+	if ((int32)mRemainingBuildTime < 0)
+	{
+		mRemainingBuildTime = 0;
+	}
 }
 
 void Unit::lookAt(FloatVector2 targetPosition)

@@ -50,11 +50,15 @@ public:
 	uint8 GetFlingyID() const;
 	Target GetOrderTarget() const { return mOrderTarget; }
 
+	bool IsBuilding() const { return mSpecialAbilityFlags & 0x0001; }
+
 private:
 	void startMove();
 	void move();
 	void startAttackUnit();
 	void attackUnit();
+	void startBuilding();
+	void build();
 	void lookAt(FloatVector2 targetPosition);
 
 private:
@@ -65,9 +69,16 @@ private:
 	BW::UnitType mUnitType = BW::UnitType::None;
 	IntRect mContourBounds = { 0, };
 	eButtonset mCurrentButtonset = eButtonset::Terran_Marine;
+	uint16 mHPGain = 0;
+	uint16 mBuildTime = 0;
+	uint16 mRemainingBuildTime = 0;
+	Image* mConstructionImage = nullptr;
 
 	std::list<IntVector2> mPath;
 	std::list<Order*> mOrderQueue;
 	BW::OrderType mOrderType = BW::OrderType::None;
 	Target mOrderTarget = { 0, };
+
+	uint32 mSpecialAbilityFlags = 0;
+	uint8 mMovementFlags = 0;
 };

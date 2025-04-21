@@ -13,13 +13,6 @@ public:
 	void SetSize(IntVector2 size) { mSize = size; }
 
 private:
-	Camera() = default;
-	~Camera() = default;
-
-public:
-	static Camera Instance;
-
-private:
 	IntVector2 mPosition = { 0, 0 };
-	IntVector2 mSize = { 1920, 1080 };
+	IntVector2 mSize = { 0, };
 };

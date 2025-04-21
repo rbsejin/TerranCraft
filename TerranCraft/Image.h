@@ -57,16 +57,24 @@ public:
 	const Sprite* GetParent() const { return mParent; }
 	Sprite* GetParent() { return mParent; }
 
+	bool HasRotationFrames() const { return mFlags & 0x0008; }
+	bool IsFullIScript() const { return mFlags & 0x0010; }
+	bool IsClickable() const { return mFlags & 0x0020; }
+
 private:
 	BW::ImageNumber mImageID = BW::ImageNumber::None;
 	BW::RLEType mRLE = BW::RLEType::Normal;
 	uint8 mRemapping = 0;
 	uint8 mDirection = 0; // 0 ~ 31
-	/*  0x0001  - Redraw
-		0x0002  - Flipped/Mirrored
-		0x0008  - Has rotation frames
-		0x0020  - Clickable
-		0x0040  - Hidden/Invisible (don't draw)
+	/* flags
+	 0x0001  - Redraw
+	 0x0002  - Flipped/Mirrored
+	 0x0004  - FreezeY
+	 0x0008  - Has rotation frames
+	 0x0010  - FullIScript
+	 0x0020  - Clickable
+	 0x0040  - Hidden/Invisible (don't draw)
+	 0x0080  - UseParentLO
 	*/
 	uint8 mFlags = 0;
 	IntVector2 mOffset = { 0, };

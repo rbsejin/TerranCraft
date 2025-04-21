@@ -133,7 +133,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 
 			uint8 direction = image->GetDirection();
 			uint8 d = frame % 0x11;
-			if (d != 0)
+			if (frame == 0 || d != 0)
 			{
 				direction = d;
 			}
@@ -244,8 +244,10 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			child->Initialize((BW::ImageNumber)imageID, parent);
 			child->SetOffsets({ x, y });
 			BW::IScriptAnimation anim = image->GetAnim();
+			//BW::IScriptAnimation anim = BW::IScriptAnimation::Init;
 			child->SetAnim(anim);
-			parent->AddBefore(child);
+			//parent->AddBefore(child);
+			parent->AddAffter(child);
 #endif
 
 			printOpcode(imageNumber, "IMGOL");
@@ -340,14 +342,14 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			iscriptOffset += sizeof(y);
 
 			Thingy* newThingy = new Thingy();
-			newThingy->Initialize(1, (BW::SpriteNumber)spriteID);
+			newThingy->Initialize(0, (BW::SpriteNumber)spriteID);
 			Sprite* sprite = newThingy->GetSprite();
 			Sprite* parent = image->GetParent();
 			IntVector2 position = parent->GetPosition();
 			position.X += x;
 			position.Y += y;
 			sprite->SetPosition(position);
-			Game::sThingies.push_back(newThingy);
+			gGame->Thingies.push_back(newThingy);
 
 			printOpcode(imageNumber, "SPROL");
 		}
@@ -380,14 +382,14 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			iscriptOffset += sizeof(y);
 
 			Thingy* newThingy = new Thingy();
-			newThingy->Initialize(1, (BW::SpriteNumber)spriteID);
+			newThingy->Initialize(0, (BW::SpriteNumber)spriteID);
 			Sprite* sprite = newThingy->GetSprite();
 			Sprite* parent = image->GetParent();
 			IntVector2 position = parent->GetPosition();
 			position.X += x;
 			position.Y += y;
 			sprite->SetPosition(position);
-			Game::sThingies.push_back(newThingy);
+			gGame->Thingies.push_back(newThingy);
 
 			printOpcode(imageNumber, "LOWSPRUL");
 		}

@@ -6,6 +6,7 @@
 #include "../ImageData/Graphic.h"
 #include "../ImageData/Palette.h"
 #include "../TerranCraft/Camera.h"
+#include "../TerranCraft/Game.h"
 
 DDrawDevice::DDrawDevice()
 {
@@ -74,12 +75,11 @@ bool DDrawDevice::Initialize(HWND hWnd)
 
 	OnUpdateWindowPos();
 
-	//uint32 width = mWindowRect.right - mWindowRect.left;
-	//uint32 height = mWindowRect.bottom - mWindowRect.top;
-	uint32 width = 640;
-	uint32 height = 480;
+	uint32 width = mWindowRect.right - mWindowRect.left;
+	uint32 height = mWindowRect.bottom - mWindowRect.top;
 
-	Camera::Instance.SetSize({ (int32)width, (int32)height });
+	Camera* camera = gGame->GetCamera();
+	camera->SetSize({ (int32)width, (int32)height });
 
 	if (!createBackSurface(width, height))
 	{
@@ -272,8 +272,9 @@ void DDrawDevice::DrawMap(int32 gridSize, int32 rowCount, int32 colCount, const 
 	}
 #endif
 
-	IntVector2 cameraPosition = Camera::Instance.GetPosition();
-	IntVector2 cameraSize = Camera::Instance.GetSize();
+	Camera* camera = gGame->GetCamera();
+	IntVector2 cameraPosition = camera->GetPosition();
+	IntVector2 cameraSize = camera->GetSize();
 
 	int32 cameraX = cameraPosition.X;
 	int32 cameraY = cameraPosition.Y;
@@ -420,8 +421,9 @@ void DDrawDevice::DrawPath(const std::list<IntVector2>& path, int32 cellSize, In
 	for (IntVector2 pos : path)
 	{
 		IntVector2 unitPos = { pos.X * cellSize + cellSize / 2, pos.Y * cellSize + cellSize / 2 };
-		unitPos.X -= Camera::Instance.GetPosition().X;
-		unitPos.Y -= Camera::Instance.GetPosition().Y;
+		Camera* camera = gGame->GetCamera();
+		unitPos.X -= camera->GetPosition().X;
+		unitPos.Y -= camera->GetPosition().Y;
 		IntRect unitBound = { unitPos.X - countourBounds.Left, unitPos.Y - countourBounds.Top, unitPos.X + countourBounds.Right, unitPos.Y + countourBounds.Bottom };
 		DrawBound(unitBound, color);
 	}
@@ -436,8 +438,9 @@ void DDrawDevice::DrawGrid(int32 gridSize, int32 rowCount, int32 colCount, uint3
 	}
 #endif
 
-	IntVector2 cameraPosition = Camera::Instance.GetPosition();
-	IntVector2 cameraSize = Camera::Instance.GetSize();
+	Camera* camera = gGame->GetCamera();
+	IntVector2 cameraPosition = camera->GetPosition();
+	IntVector2 cameraSize = camera->GetSize();
 
 	int32 cameraX = cameraPosition.X;
 	int32 cameraY = cameraPosition.Y;
@@ -1338,10 +1341,11 @@ void DDrawDevice::OnUpdateWindowSize()
 
 	OnUpdateWindowPos();
 
-	//uint32 width = mWindowRect.right - mWindowRect.left;
-	//uint32 height = mWindowRect.bottom - mWindowRect.top;
-	uint32 width = 640;
-	uint32 height = 480;
+	uint32 width = mWindowRect.right - mWindowRect.left;
+	uint32 height = mWindowRect.bottom - mWindowRect.top;
+
+	Camera* camera = gGame->GetCamera();
+	camera->SetSize({ (int32)width, (int32)height });
 
 	createBackSurface(width, height);
 
