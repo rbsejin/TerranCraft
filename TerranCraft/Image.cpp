@@ -20,7 +20,8 @@ bool Image::Initialize(BW::ImageNumber imageID, Sprite* parent)
 	mImageID = imageID;
 	mParent = parent;
 
-	const ImageData* imageData = Arrangement::Instance.GetImageData();
+	Arrangement* arrangement = gGame->GetArrangement();
+	const ImageData* imageData = arrangement->GetImageData();
 	int32 index = imageData->GRPFiles[(int32)imageID] - 1;
 	mGRPFile = gGame->GRPFiles[index];
 
@@ -28,8 +29,9 @@ bool Image::Initialize(BW::ImageNumber imageID, Sprite* parent)
 
 	mRemapping = imageData->Remappings[(int32)imageID];
 
-	mIScriptHeader = AnimationController::Instance.GetIScriptHeader(IscriptID);
-	mIScriptOffset = AnimationController::Instance.GetIScriptOffset(mIScriptHeader, mAnim);
+	AnimationController* animationController = gGame->GetAnimationController();
+	mIScriptHeader = animationController->GetIScriptHeader(IscriptID);
+	mIScriptOffset = animationController->GetIScriptOffset(mIScriptHeader, mAnim);
 
 	if (imageData->GfxTurns[(int32)imageID] != 0)
 	{

@@ -2,8 +2,6 @@
 #include "Arrangement.h"
 #include "BWFile.h"
 
-Arrangement Arrangement::Instance;
-
 Arrangement::~Arrangement()
 {
 	Destroy();

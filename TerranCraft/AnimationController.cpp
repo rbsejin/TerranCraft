@@ -7,8 +7,6 @@
 #include "IScriptCode.h"
 #include "Game.h"
 
-AnimationController AnimationController::Instance;
-
 AnimationController::~AnimationController()
 {
 	Destroy();

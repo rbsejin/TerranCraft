@@ -24,7 +24,8 @@ bool Unit::Initialize(BW::UnitType unitType)
 
 	mCurrentButtonset = (eButtonset)unitType;
 
-	const UnitData* unitData = Arrangement::Instance.GetUnitData();
+	Arrangement* arrangement = gGame->GetArrangement();
+	const UnitData* unitData = arrangement->GetUnitData();
 	Int16Rect contourBounds = unitData->UnitDimensions[(uint32)unitType];
 	mContourBounds.Left = (int32)contourBounds.Left;
 	mContourBounds.Top = (int32)contourBounds.Top;
@@ -35,7 +36,7 @@ bool Unit::Initialize(BW::UnitType unitType)
 	mMovementFlags = unitData->Unknowns[(uint32)unitType];
 
 	// Weapon
-	const WeaponData* weaponData = Arrangement::Instance.GetWeaponData();
+	const WeaponData* weaponData = arrangement->GetWeaponData();
 	mGroundWeaponCooldown = weaponData->WeaponCooldowns[(uint32)unitType];
 
 	int32 hp = GetMaxHP();
@@ -163,7 +164,8 @@ void Unit::PerformOrder()
 			BW::IScriptAnimation anim = BW::IScriptAnimation::Death;
 			image->SetAnim(anim);
 			uint16 iscriptHeader = image->GetIScriptHeader();
-			uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+			AnimationController* animationController = gGame->GetAnimationController();
+			uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
 			image->SetIScriptOffset(iscriptOffset);
 			image->SetSleep(0);
 		}
@@ -250,7 +252,8 @@ void Unit::PerformOrder()
 
 			image->SetAnim(anim);
 			uint16 iscriptHeader = image->GetIScriptHeader();
-			uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+			AnimationController* animationController = gGame->GetAnimationController();
+			uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
 			image->SetIScriptOffset(iscriptOffset);
 			image->SetSleep(0);
 		}
@@ -323,13 +326,15 @@ void Unit::ClearOrders()
 
 int32 Unit::GetMaxHP() const
 {
-	const UnitData* unitData = Arrangement::Instance.GetUnitData();
+	Arrangement* arrangement = gGame->GetArrangement();
+	const UnitData* unitData = arrangement->GetUnitData();
 	return unitData->HitPoints[(uint32)mUnitType] >> 8;
 }
 
 uint8 Unit::GetFlingyID() const
 {
-	const UnitData* unitData = Arrangement::Instance.GetUnitData();
+	Arrangement* arrangement = gGame->GetArrangement();
+	const UnitData* unitData = arrangement->GetUnitData();
 	return unitData->Graphics[(uint32)mUnitType];
 }
 
@@ -383,7 +388,8 @@ void Unit::startMove()
 		BW::IScriptAnimation anim = BW::IScriptAnimation::Walking;
 		image->SetAnim(anim);
 		uint16 iscriptHeader = image->GetIScriptHeader();
-		uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+		AnimationController* animationController = gGame->GetAnimationController();
+		uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
 		image->SetIScriptOffset(iscriptOffset);
 		image->SetSleep(0);
 	}
@@ -438,7 +444,8 @@ void Unit::move()
 			{
 				image->SetAnim(anim);
 				uint16 iscriptHeader = image->GetIScriptHeader();
-				uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+				AnimationController* animationController = gGame->GetAnimationController();
+				uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
 				image->SetIScriptOffset(iscriptOffset);
 				image->SetSleep(0);
 			}
@@ -461,7 +468,8 @@ void Unit::startAttackUnit()
 		BW::IScriptAnimation anim = BW::IScriptAnimation::GndAttkInit;
 		image->SetAnim(anim);
 		uint16 iscriptHeader = image->GetIScriptHeader();
-		uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+		AnimationController* animationController = gGame->GetAnimationController();
+		uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
 		image->SetIScriptOffset(iscriptOffset);
 		image->SetSleep(0);
 		mbRepeatAttackable = true;
@@ -479,13 +487,14 @@ void Unit::attackUnit()
 		lookAt(targetPosition);
 
 		Unit* dealer = this;
-		const UnitData* dealerUnitData = Arrangement::Instance.GetUnitData();
+		Arrangement* arrangement = gGame->GetArrangement();
+		const UnitData* dealerUnitData = arrangement->GetUnitData();
 		BW::UnitType dealerUnitType = dealer->GetUnitType();
 		uint8 weaponID = dealerUnitData->GroundWeapons[(uint32)dealerUnitType];
-		const WeaponData* weaponData = Arrangement::Instance.GetWeaponData();
+		const WeaponData* weaponData = arrangement->GetWeaponData();
 		uint16 amount = weaponData->DamageAmounts[weaponID];
 
-		const UnitData* targetUnitData = Arrangement::Instance.GetUnitData();
+		const UnitData* targetUnitData = arrangement->GetUnitData();
 
 #ifdef _DEBUG
 		if (targetUnit == nullptr)
@@ -515,7 +524,8 @@ void Unit::attackUnit()
 				BW::IScriptAnimation anim = BW::IScriptAnimation::GndAttkToIdle;
 				image->SetAnim(anim);
 				uint16 iscriptHeader = image->GetIScriptHeader();
-				uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+				AnimationController* animationController = gGame->GetAnimationController();
+				uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
 				image->SetIScriptOffset(iscriptOffset);
 				image->SetSleep(0);
 			}
@@ -534,7 +544,8 @@ void Unit::attackUnit()
 			{
 
 				uint16 iscriptHeader = image->GetIScriptHeader();
-				uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, BW::IScriptAnimation::GndAttkRpt);
+				AnimationController* animationController = gGame->GetAnimationController();
+				uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, BW::IScriptAnimation::GndAttkRpt);
 				image->SetIScriptOffset(iscriptOffset);
 				image->SetSleep(0);
 			}
@@ -547,7 +558,7 @@ void Unit::attackUnit()
 
 		// Bullet
 		Bullet* bullet = new Bullet();
-		const UnitData* unitData = Arrangement::Instance.GetUnitData();
+		const UnitData* unitData = arrangement->GetUnitData();
 		BW::WeaponType weaponType = (BW::WeaponType)unitData->GroundWeapons[(uint32)mUnitType];
 		bullet->Initialize(weaponType, this);
 		//FloatVector2 position = targetUnit->GetPosition();
@@ -571,7 +582,8 @@ void Unit::attackUnit()
 
 void Unit::startBuilding()
 {
-	const UnitData* unitData = Arrangement::Instance.GetUnitData();
+	Arrangement* arrangement = gGame->GetArrangement();
+	const UnitData* unitData = arrangement->GetUnitData();
 	int32 constructionAnimation = unitData->ConstructionAnimations[(uint32)mUnitType];
 	if (constructionAnimation != 0)
 	{
@@ -592,7 +604,7 @@ void Unit::startBuilding()
 void Unit::build()
 {
 	// 걸린 시간
-	float elapsedTime = mBuildTime - mRemainingBuildTime;
+	float elapsedTime = (float)(mBuildTime - mRemainingBuildTime);
 	float percent = elapsedTime / mBuildTime;
 
 	if (percent >= 1.f)
@@ -604,7 +616,8 @@ void Unit::build()
 			BW::IScriptAnimation anim = BW::IScriptAnimation::Built;
 			image->SetAnim(anim);
 			uint16 iscriptHeader = image->GetIScriptHeader();
-			uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+			AnimationController* animationController = gGame->GetAnimationController();
+			uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
 			image->SetIScriptOffset(iscriptOffset);
 			image->SetSleep(0);
 		}
@@ -631,7 +644,8 @@ void Unit::build()
 				image->SetAnim(anim);
 				image->SetHidden(false);
 				uint16 iscriptHeader = image->GetIScriptHeader();
-				uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+				AnimationController* animationController = gGame->GetAnimationController();
+				uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
 				image->SetIScriptOffset(iscriptOffset);
 				image->SetSleep(0);
 
@@ -646,7 +660,8 @@ void Unit::build()
 		BW::IScriptAnimation anim = BW::IScriptAnimation::SpecialState2;
 		image->SetAnim(anim);
 		uint16 iscriptHeader = image->GetIScriptHeader();
-		uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+		AnimationController* animationController = gGame->GetAnimationController();
+		uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
 		image->SetIScriptOffset(iscriptOffset);
 		image->SetSleep(0);
 	}
@@ -657,7 +672,8 @@ void Unit::build()
 		BW::IScriptAnimation anim = BW::IScriptAnimation::SpecialState1;
 		image->SetAnim(anim);
 		uint16 iscriptHeader = image->GetIScriptHeader();
-		uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+		AnimationController* animationController = gGame->GetAnimationController();
+		uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
 		image->SetIScriptOffset(iscriptOffset);
 		image->SetSleep(0);
 	}

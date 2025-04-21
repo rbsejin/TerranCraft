@@ -4,6 +4,7 @@
 #include "BWFile.h"
 #include "Arrangement.h"
 #include "../DDrawLib/DDrawDevice.h"
+#include "Game.h"
 
 Sprite::~Sprite()
 {
@@ -18,7 +19,8 @@ bool Sprite::Initalize(BW::SpriteNumber spriteID)
 
 	mImagePrimary = new Image();
 
-	const SpriteData* spriteData = Arrangement::Instance.GetSpriteData();
+	Arrangement* arrangement = gGame->GetArrangement();
+	const SpriteData* spriteData = arrangement->GetSpriteData();
 	BW::ImageNumber imageNumber = (BW::ImageNumber)spriteData->ImageFiles[(int32)spriteID];
 
 	if (!mImagePrimary->Initialize(imageNumber, this))

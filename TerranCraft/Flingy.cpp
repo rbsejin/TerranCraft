@@ -5,6 +5,7 @@
 #include "Sprite.h"
 #include "Image.h"
 #include "../BWLib/ImageNumber.h"
+#include "Game.h"
 
 Flingy::~Flingy()
 {
@@ -15,7 +16,8 @@ bool Flingy::Initialize(int32 hp, BW::FlingyType flingyType)
 {
 	bool bResult = false;
 	mFlingyType = flingyType;
-	const FlingyData* flingyData = Arrangement::Instance.GetFlingyData();
+	Arrangement* arrangement = gGame->GetArrangement();
+	const FlingyData* flingyData = arrangement->GetFlingyData();
 	uint32 flingyID = (uint32)flingyType;
 	mFlingyTopSpeed = flingyData->Speeds[flingyID];
 	mCurrentSpeed = (mFlingyTopSpeed == 1) ? 4.f : (mFlingyTopSpeed / 256.f);

@@ -48,9 +48,11 @@ bool Game::Initalize(HWND hWnd)
 	}
 
 #pragma region Load Resources
-	Arrangement::Instance.Load();
+	mArrangement = new Arrangement();
+	mArrangement->Load();
 	loadImages();
-	AnimationController::Instance.Load("../data/STARDAT/scripts/iscript.bin");
+	mAnimationController = new AnimationController();
+	mAnimationController->Load("../data/STARDAT/scripts/iscript.bin");
 
 	loadMap();
 	loadGRP(&mButtonsGRP, "../data/STARDAT/unit/cmdbtns/cmdicons.grp");
@@ -157,7 +159,7 @@ bool Game::Initalize(HWND hWnd)
 		}
 	}
 
-	mButtonset = Arrangement::Instance.GetButtonSet();
+	mButtonset = mArrangement->GetButtonSet();
 
 	for (int32 i = 0; i < SELECTION_CIRCLE_IMAGE_COUNT; i++)
 	{
@@ -236,7 +238,7 @@ void Game::Cleanup()
 	delete mCursorMarkerSprite;
 	mCursorMarkerSprite = nullptr;
 
-	AnimationController::Instance.Destroy();
+	mAnimationController->Destroy();
 
 	for (int i = 0; i < CURSOR_IMAGE_COUNT; i++)
 	{
@@ -274,6 +276,12 @@ void Game::Cleanup()
 
 	delete mDDrawDevice;
 	mDDrawDevice = nullptr;
+
+	delete mArrangement;
+	mArrangement = nullptr;
+
+	delete mAnimationController;
+	mAnimationController = nullptr;
 
 	delete mCamera;
 	mCamera = nullptr;
@@ -710,7 +718,7 @@ void Game::markCursor()
 	BW::IScriptAnimation anim = BW::IScriptAnimation::GndAttkInit;
 	primaryImage->SetAnim(anim);
 	uint16 iscriptHeader = primaryImage->GetIScriptHeader();
-	uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+	uint16 iscriptOffset = mAnimationController->GetIScriptOffset(iscriptHeader, anim);
 	primaryImage->SetIScriptOffset(iscriptOffset);
 	primaryImage->SetSleep(0);
 }
@@ -922,7 +930,7 @@ void Game::onGameFrame(ULONGLONG currentTick)
 		std::list<Image*> tempImages = *images;
 		for (Image* image : tempImages)
 		{
-			AnimationController::Instance.UpdateImageFrame(thingy, image);
+			mAnimationController->UpdateImageFrame(thingy, image);
 		}
 	}
 
@@ -1042,7 +1050,7 @@ void Game::onGameFrame(ULONGLONG currentTick)
 	IntVector2 cameraPosition = mCamera->GetPosition();
 	mCursorMarkerSprite->SetPosition({ cameraPosition.X + mCursorScreenPos.X, cameraPosition.Y + mCursorScreenPos.Y });
 	Image* cursorMarkerImage = mCursorMarkerSprite->GetPrimaryImage();
-	AnimationController::Instance.UpdateImageFrame(nullptr, cursorMarkerImage);
+	mAnimationController->UpdateImageFrame(nullptr, cursorMarkerImage);
 	cursorMarkerImage->UpdateGraphicData();
 
 	if (mBuildingPreview != nullptr)
@@ -1109,7 +1117,7 @@ void Game::drawScene()
 				int32 width = grpBound.Right;
 				int32 height = grpBound.Bottom;
 
-				const SpriteData* spriteData = Arrangement::Instance.GetSpriteData();
+				const SpriteData* spriteData = mArrangement->GetSpriteData();
 				int32 healthBarIndex = (int32)spriteID - (SpriteData::SPRITE_COUNT - SpriteData::HEALTH_BAR_COUNT);
 				int32 healthBar = spriteData->HealthBars[healthBarIndex];
 				{
@@ -1202,9 +1210,9 @@ void Game::drawScene()
 				int32 x = mConsoleX + 240;
 				int32 y = mConsoleY + 440;
 
-				const UnitData* unitData = Arrangement::Instance.GetUnitData();
-				const UpgradeData* upgardeData = Arrangement::Instance.GetUpgradeData();
-				const WeaponData* weaponData = Arrangement::Instance.GetWeaponData();
+				const UnitData* unitData = mArrangement->GetUnitData();
+				const UpgradeData* upgardeData = mArrangement->GetUpgradeData();
+				const WeaponData* weaponData = mArrangement->GetWeaponData();
 				int32 armorUpgradeIndex = unitData->ArmorUpgrades[index];
 				int32 armorIconIndex = upgardeData->Icons[armorUpgradeIndex];
 				if (armorIconIndex != 0)
@@ -1597,12 +1605,12 @@ bool Game::loadImages()
 		char buffer[BUFFER_SIZE] = { 0, };
 		int index = 0;
 
-		mImageCount = (uint32)Arrangement::Instance.GetImageCount();
+		mImageCount = (uint32)mArrangement->GetImageCount();
 
 		for (uint32 i = 0; i < mImageCount; i++)
 		{
-			const ImageData* imageData = Arrangement::Instance.GetImageData();
-			const char* grpFilename = Arrangement::Instance.GetImageName(i);
+			const ImageData* imageData = mArrangement->GetImageData();
+			const char* grpFilename = mArrangement->GetImageName(i);
 			char grpListFilename[MAX_PATH] = { 0, };
 			sprintf(grpListFilename, "%s/%s", "../data/STARDAT/unit/", grpFilename);
 

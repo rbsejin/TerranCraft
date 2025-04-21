@@ -21,9 +21,10 @@ bool Bullet::Initialize(BW::WeaponType weaponType, Unit* sourceUnit)
 	mWeaponType = weaponType;
 	mSourceUnit = sourceUnit;
 
-	const WeaponData* weaponData = Arrangement::Instance.GetWeaponData();
+	Arrangement* arrangement = gGame->GetArrangement();
+	const WeaponData* weaponData = arrangement->GetWeaponData();
 	uint16 flingyID = (uint16)weaponData->Graphics[(uint32)weaponType];
-	const FlingyData* flingyData = Arrangement::Instance.GetFlingyData();
+	const FlingyData* flingyData = arrangement->GetFlingyData();
 	BW::SpriteNumber spriteNumber = (BW::SpriteNumber)flingyData->Sprites[flingyID];
 	Flingy::Initialize(0, (BW::FlingyType)flingyID);
 
@@ -55,7 +56,8 @@ bool Bullet::Initialize(BW::WeaponType weaponType, Unit* sourceUnit)
 			BW::IScriptAnimation anim = BW::IScriptAnimation::Init;
 			image->SetAnim(anim);
 			uint16 iscriptHeader = image->GetIScriptHeader();
-			uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+			AnimationController* animationController = gGame->GetAnimationController();
+			uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
 			image->SetIScriptOffset(iscriptOffset);
 			image->SetSleep(0);
 		}
@@ -106,7 +108,8 @@ void Bullet::Update()
 			BW::IScriptAnimation anim = BW::IScriptAnimation::Death;
 			image->SetAnim(anim);
 			uint16 iscriptHeader = image->GetIScriptHeader();
-			uint16 iscriptOffset = AnimationController::Instance.GetIScriptOffset(iscriptHeader, anim);
+			AnimationController* animationController = gGame->GetAnimationController();
+			uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
 			image->SetIScriptOffset(iscriptOffset);
 			image->SetSleep(0);
 		}

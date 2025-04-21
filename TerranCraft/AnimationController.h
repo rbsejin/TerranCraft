@@ -23,6 +23,9 @@ struct IScriptEntry
 class AnimationController final
 {
 public:
+	AnimationController() = default;
+	~AnimationController();
+
 	bool Load(const char* filename);
 	void Destroy();
 	void UpdateImageFrame(Thingy* thingy, Image* image) const;
@@ -31,12 +34,6 @@ public:
 	uint16 GetIScriptOffset(uint16 headerOffset, BW::IScriptAnimation animation) const;
 	void GetData(void* dest, uint16 offset, uint32 size) const;
 
-private:
-	AnimationController() = default;
-	~AnimationController();
-
-public:
-	static AnimationController Instance;
 private:
 	constexpr static uint32 sHeaderOffsetCounts[] =
 	{

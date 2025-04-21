@@ -11,15 +11,15 @@
 
 class DDrawDevice;
 class Camera;
-class Image;
 class Thingy;
 class Unit;
 class Bullet;
-struct Chunk;
-
-
 class Sprite;
 class Image;
+class AnimationController;
+class Arrangement;
+
+struct Chunk;
 struct ImageData;
 struct SpriteData;
 struct UnitData;
@@ -76,6 +76,8 @@ public:
 	void OnUpdateWindowPos();
 
 	Camera* GetCamera() { return mCamera; }
+	AnimationController* GetAnimationController() { return mAnimationController; }
+	Arrangement* GetArrangement() { return mArrangement; }
 
 private:
 	void onGameFrame(ULONGLONG currentTick);
@@ -114,6 +116,8 @@ private:
 	HWND mhWnd = nullptr;
 
 	Camera* mCamera = nullptr;
+	AnimationController* mAnimationController = nullptr;
+	Arrangement* mArrangement = nullptr;
 
 	enum { DEFAULT_GAME_FPS = 24 };
 	uint32 mGameFPS = DEFAULT_GAME_FPS;

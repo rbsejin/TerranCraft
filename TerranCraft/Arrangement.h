@@ -13,6 +13,9 @@ struct UpgradeData;
 class Arrangement
 {
 public:
+	Arrangement() = default;
+	~Arrangement();
+
 	bool Load();
 	void Destroy();
 
@@ -26,11 +29,7 @@ public:
 	const WeaponData* GetWeaponData() const { return mWeaponData; }
 	const UpgradeData* GetUpgradeData() const { return mUpgradeData; }
 	const ButtonSet* GetButtonSet() const { return mButtonSet; }
-private:
-	Arrangement() = default;
-	~Arrangement();
-public:
-	static Arrangement Instance;
+
 private:
 	uint8* mImageTBLData = nullptr;
 	ImageData* mImageData = nullptr;
