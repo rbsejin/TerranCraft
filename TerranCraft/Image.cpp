@@ -126,8 +126,8 @@ void Image::DrawImage(DDrawDevice* ddrawDevice) const
 	case 3:
 		palette = paletteManager->BfireData;
 		break;
-	case 4:
-		palette = paletteManager->BexplData;
+	//case 4:
+	//	palette = paletteManager->BexplData;
 	default:
 		break;
 	}

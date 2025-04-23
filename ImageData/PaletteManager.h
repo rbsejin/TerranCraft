@@ -1,5 +1,7 @@
 #pragma once
 
+struct PCXImage;
+
 class PaletteManager final
 {
 public:
@@ -7,6 +9,7 @@ public:
 	void SetEntries(PALETTEENTRY* palette, int32 startIndex, int32 count, const PALETTEENTRY* colors);
 
 	void LoadPal(PALETTEENTRY* data, const char* filename);
+	void pcxToPaletteEntries(const PCXImage* pcx, PALETTEENTRY* pDest);
 
 public:
 #define RGBRESERVE {0x23, 0x23, 0xff}
@@ -50,7 +53,7 @@ public:
 	PALETTEENTRY OfireData[256] = { 0, };
 	PALETTEENTRY GfireData[256] = { 0, };
 	PALETTEENTRY BfireData[256] = { 0, };
-	PALETTEENTRY BexplData[256] = { 0, };
+	//PALETTEENTRY BexplData[256] = { 0, };
 
 	PALETTEENTRY IconData[16] =
 	{

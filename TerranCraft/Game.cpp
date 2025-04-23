@@ -64,17 +64,18 @@ bool Game::Initalize(HWND hWnd)
 #pragma endregion
 
 	const PCXImage* tunitPCX = mResourceManager->GetTUnitPCX();
-	const PCXImage* tselectPCX = mResourceManager->GetTSelectPCX();
-	const PCXImage* twirePCX = mResourceManager->GetTWirePCX();
+	mPaletteManager->pcxToPaletteEntries(tunitPCX, mPaletteManager->TUnitPaletteEntries);
 
-	pcxToPaletteEntries(tunitPCX, mPaletteManager->TUnitPaletteEntries);
-	pcxToPaletteEntries(tselectPCX, mPaletteManager->TSelectPaletteEntries);
-	pcxToPaletteEntries(twirePCX, mPaletteManager->TWirePaletteEntries);
+	const PCXImage* tselectPCX = mResourceManager->GetTSelectPCX();
+	mPaletteManager->pcxToPaletteEntries(tselectPCX, mPaletteManager->TSelectPaletteEntries);
+
+	const PCXImage* twirePCX = mResourceManager->GetTWirePCX();
+	mPaletteManager->pcxToPaletteEntries(twirePCX, mPaletteManager->TWirePaletteEntries);
 
 	mPaletteManager->LoadPal(mPaletteManager->OfireData, "../data/Palettes/ofire.pal");
 	mPaletteManager->LoadPal(mPaletteManager->GfireData, "../data/Palettes/gfire.pal");
 	mPaletteManager->LoadPal(mPaletteManager->BfireData, "../data/Palettes/bfire.pal");
-	//Palette::LoadPal(Palette::sBexplData, "../data/Palettes/bexpl.pal");
+	//mPaletteManager->LoadPal(mPaletteManager->sBexplData, "../data/Palettes/bexpl.pal");
 
 	eUnit unitTypes[4] = {
 		eUnit::TerranSCV,
@@ -123,42 +124,6 @@ bool Game::Initalize(HWND hWnd)
 
 LB_RETURN:
 	return bResult;
-}
-
-void Game::pcxToPaletteEntries(const PCXImage* pcx, PALETTEENTRY* pDest)
-{
-	const PALETTEENTRY* palette = pcx->PaletteData;
-
-	const uint8* buffer = pcx->Data;
-	int32 width = pcx->Width;
-	int32 x = 0;
-
-	while (x < width)
-	{
-		uint8 byte = *buffer++;
-		if ((byte & 0xc0) == 0xc0)
-		{
-			int32 count = byte & 0x3f;
-			uint8 index = *buffer++;
-			PALETTEENTRY color = pcx->PaletteData[index];
-
-			if (*(uint32*)&color != 0x00000000)
-			{
-				for (int32 i = 0; i < count; i++)
-				{
-					*(pDest + (x + i)) = color;
-				}
-			}
-
-			x += count;
-		}
-		else
-		{
-			PALETTEENTRY color = pcx->PaletteData[byte];
-			*(pDest + x) = color;
-			x++;
-		}
-	}
 }
 
 void Game::Cleanup()

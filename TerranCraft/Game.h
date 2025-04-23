@@ -90,7 +90,6 @@ private:
 	void markUnit();
 	void markCursor();
 	void updateWireframePalette(const Unit* unit);
-	void pcxToPaletteEntries(const PCXImage* pcx, PALETTEENTRY* pDest);
 
 public:
 	std::list<Thingy*> Thingies;

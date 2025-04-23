@@ -5,6 +5,7 @@
 
 #include "../Common/typedef.h"
 #include "PaletteManager.h"
+#include "../ImageData/Graphic.h"
 
 uint32 PaletteManager::GetColor(const PALETTEENTRY* palette, uint8 index)
 {
@@ -36,4 +37,40 @@ void PaletteManager::LoadPal(PALETTEENTRY* data, const char* filename)
 	}
 
 	free(buffer);
+}
+
+void PaletteManager::pcxToPaletteEntries(const PCXImage* pcx, PALETTEENTRY* pDest)
+{
+	const PALETTEENTRY* palette = pcx->PaletteData;
+
+	const uint8* buffer = pcx->Data;
+	int32 width = pcx->Width;
+	int32 x = 0;
+
+	while (x < width)
+	{
+		uint8 byte = *buffer++;
+		if ((byte & 0xc0) == 0xc0)
+		{
+			int32 count = byte & 0x3f;
+			uint8 index = *buffer++;
+			PALETTEENTRY color = pcx->PaletteData[index];
+
+			if (*(uint32*)&color != 0x00000000)
+			{
+				for (int32 i = 0; i < count; i++)
+				{
+					*(pDest + (x + i)) = color;
+				}
+			}
+
+			x += count;
+		}
+		else
+		{
+			PALETTEENTRY color = pcx->PaletteData[byte];
+			*(pDest + x) = color;
+			x++;
+		}
+	}
 }
