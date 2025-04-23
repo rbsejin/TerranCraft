@@ -84,9 +84,9 @@ bool Game::Initalize(HWND hWnd)
 		eUnit::TerranCommandCenter
 	};
 
-	for (int32 j = 0; j < 4; j++)
+	for (int32 j = 0; j < 1; j++)
 	{
-		for (int32 i = 0; i < 6; i++)
+		for (int32 i = 0; i < 1; i++)
 		{
 			Unit* unit = new Unit();
 
@@ -302,12 +302,12 @@ void Game::OnKeyDown(unsigned int vkCode, unsigned int scanCode)
 		break;
 	case 'A':
 	{
-		mPlayerOrder = PlayerOrder::Attack;
+		mPlayerOrder = ePlayerOrder::Attack;
 	}
 	break;
 	case 'M':
 	{
-		mPlayerOrder = PlayerOrder::Move;
+		mPlayerOrder = ePlayerOrder::Move;
 	}
 	break;
 	case 'T':
@@ -489,7 +489,7 @@ void Game::OnLButtonDown(unsigned int nFlags, int x, int y)
 {
 	bDrawing = true;
 
-	if (mPlayerOrder != PlayerOrder::None)
+	if (mPlayerOrder != ePlayerOrder::None)
 	{
 		Int32Vector2 cameraPosition = mCamera->GetPosition();
 		x += cameraPosition.X;
@@ -497,7 +497,7 @@ void Game::OnLButtonDown(unsigned int nFlags, int x, int y)
 
 		switch (mPlayerOrder)
 		{
-		case PlayerOrder::Attack:
+		case ePlayerOrder::Attack:
 		{
 			Target target;
 			target.Unit = mHoveredUnit;
@@ -505,7 +505,7 @@ void Game::OnLButtonDown(unsigned int nFlags, int x, int y)
 			attack(target);
 		}
 		break;
-		case PlayerOrder::Move:
+		case ePlayerOrder::Move:
 		{
 			Target target;
 			target.Unit = mHoveredUnit;
@@ -513,26 +513,26 @@ void Game::OnLButtonDown(unsigned int nFlags, int x, int y)
 			move(target);
 			break;
 		}
-		case PlayerOrder::HoldPosition:
+		case ePlayerOrder::HoldPosition:
 			break;
-		case PlayerOrder::Patrol:
+		case ePlayerOrder::Patrol:
 			break;
-		case PlayerOrder::Stop:
+		case ePlayerOrder::Stop:
 			break;
-		case PlayerOrder::Harvest:
+		case ePlayerOrder::Harvest:
 			break;
-		case PlayerOrder::ReturnCargo:
+		case ePlayerOrder::ReturnCargo:
 			break;
-		case PlayerOrder::Repair:
+		case ePlayerOrder::Repair:
 			break;
-		case PlayerOrder::None:
+		case ePlayerOrder::None:
 			break;
 		default:
 			break;
 		}
 
 		mCursorIndex = 0;
-		mPlayerOrder = PlayerOrder::None;
+		mPlayerOrder = ePlayerOrder::None;
 		if (mHoveredUnit != nullptr)
 		{
 			markUnit();
@@ -579,7 +579,7 @@ void Game::OnRButtonDown(unsigned int nFlags, int x, int y)
 	move(target);
 
 	mCursorIndex = 0;
-	mPlayerOrder = PlayerOrder::None;
+	mPlayerOrder = ePlayerOrder::None;
 	if (mHoveredUnit != nullptr)
 	{
 		markUnit();
@@ -878,7 +878,7 @@ void Game::onGameFrame(ULONGLONG currentTick)
 
 	if (mHoveredUnit == nullptr)
 	{
-		if (mPlayerOrder == PlayerOrder::None)
+		if (mPlayerOrder == ePlayerOrder::None)
 		{
 			mCursorIndex = 0;
 		}
@@ -889,7 +889,7 @@ void Game::onGameFrame(ULONGLONG currentTick)
 	}
 	else
 	{
-		if (mPlayerOrder == PlayerOrder::None)
+		if (mPlayerOrder == ePlayerOrder::None)
 		{
 			mCursorIndex = 3;
 		}

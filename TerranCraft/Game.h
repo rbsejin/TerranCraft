@@ -25,7 +25,7 @@ struct SpriteData;
 struct UnitData;
 struct ButtonsetData;
 
-enum class PlayerOrder
+enum class ePlayerOrder
 {
 	Attack,
 	Move,
@@ -38,7 +38,7 @@ enum class PlayerOrder
 	None
 };
 
-enum class CursorType
+enum class eCursor
 {
 	Arrow,
 	Drag,
@@ -47,11 +47,22 @@ enum class CursorType
 	Target
 };
 
-enum class CursorTargetType
+enum class eCursorTarget
 {
 	Green, // Ally
 	Red, // Enemy
 	Yellow // Neutral
+};
+
+enum class eGameSpeed
+{
+	Slowest = 6,
+	Slower = 9,
+	Slow = 12,
+	Normal = 15,
+	Fast = 18,
+	Faster = 21,
+	Fastest = 24
 };
 
 class Game final
@@ -107,9 +118,8 @@ private:
 	ResourceManager* mResourceManager = nullptr;
 	PaletteManager* mPaletteManager = nullptr;
 
-	enum { DEFAULT_GAME_FPS = 24 };
-	uint32 mGameFPS = DEFAULT_GAME_FPS;
-	float mTicksPerFrame = 1000.0f / mGameFPS;
+	eGameSpeed mGameSpeed = eGameSpeed::Fastest;
+	float mTicksPerFrame = 1000.0f / (uint32)mGameSpeed;
 
 	LARGE_INTEGER mFrequency;
 	LARGE_INTEGER mPrevCounter;
@@ -122,7 +132,6 @@ private:
 	bool mbPressedRight = false;
 	bool mbPressedUp = false;
 	bool mbPressedDown = false;
-
 	bool mbPressedShift = false;
 
 	// UI
@@ -136,7 +145,7 @@ private:
 	Int32Vector2 mCursorScreenPos = { 0, };
 	Int32Rect mCursorBounds = { 0, };
 	Sprite* mCursorMarkerSprite = nullptr;
-	PlayerOrder mPlayerOrder = PlayerOrder::None;
+	ePlayerOrder mPlayerOrder = ePlayerOrder::None;
 	bool mbSelectable = true;
 	
 	Image* mBuildingPreview = nullptr;

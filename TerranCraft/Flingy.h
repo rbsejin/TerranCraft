@@ -11,7 +11,7 @@ class Flingy : public Thingy
 public:
 	Flingy() = default;
 	virtual ~Flingy();
-	bool Initialize(int32 hp, eFlingyType flingyType);
+	bool Initialize(int32 hp, eFlingy flingyType);
 	void Cleanup();
 
 	virtual void Update();
@@ -36,7 +36,7 @@ public:
 	void SetRepeatAttackable(bool value) { mbRepeatAttackable = value; }
 
 protected:
-	eFlingyType mFlingyType = eFlingyType::None;
+	eFlingy mFlingyType = eFlingy::None;
 	Target mMoveTarget = { 0, };
 	Int32Vector2 mNextMovementWaypoint = { 0, };
 	uint8 mMovementFlags = 0;

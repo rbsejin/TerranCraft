@@ -2,7 +2,7 @@
 
 #include "../Common/typedef.h"
 
-enum class eFlingyType : uint16
+enum class eFlingy : uint16
 {
 	Scourge,
 	Broodling,

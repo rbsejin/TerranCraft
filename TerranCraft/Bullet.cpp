@@ -26,7 +26,7 @@ bool Bullet::Initialize(eWeapon weaponType, Unit* sourceUnit)
 	uint16 flingyID = (uint16)weaponData->Graphics[(uint32)weaponType];
 	const FlingyData* flingyData = resourceManager->GetFlingyData();
 	eSprite spriteNumber = (eSprite)flingyData->Sprites[flingyID];
-	Flingy::Initialize(0, (eFlingyType)flingyID);
+	Flingy::Initialize(0, (eFlingy)flingyID);
 
 	mTimeRemaining = weaponData->WeaponCooldowns[(uint32)weaponType];
 

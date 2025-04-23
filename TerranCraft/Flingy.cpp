@@ -12,7 +12,7 @@ Flingy::~Flingy()
 	Cleanup();
 }
 
-bool Flingy::Initialize(int32 hp, eFlingyType flingyType)
+bool Flingy::Initialize(int32 hp, eFlingy flingyType)
 {
 	bool bResult = false;
 	mFlingyType = flingyType;

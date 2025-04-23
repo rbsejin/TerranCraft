@@ -42,7 +42,7 @@ bool Unit::Initialize(eUnit unitType)
 	int32 hp = GetMaxHP();
 	uint8 flingyID = GetFlingyID();
 
-	Flingy::Initialize(hp, (eFlingyType)flingyID);
+	Flingy::Initialize(hp, (eFlingy)flingyID);
 
 	mBuildTime = unitData->BuildTimes[(uint32)unitType];
 	mRemainingBuildTime = mBuildTime;
