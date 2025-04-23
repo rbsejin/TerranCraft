@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Util.h"
 
-bool IsCollisonRectVsRect(const IntRect& rect1, const IntRect& rect2)
+bool IsCollisonRectVsRect(const Int32Rect& rect1, const Int32Rect& rect2)
 {
 	if (rect1.Left > rect2.Right || rect1.Right < rect2.Left)
 	{
@@ -16,9 +16,9 @@ bool IsCollisonRectVsRect(const IntRect& rect1, const IntRect& rect2)
 	return true;
 }
 
-bool IsCollisonRectVsPoint(const IntRect& rect, const IntVector2& point)
+bool IsCollisonRectVsPoint(const Int32Rect& rect, const Int32Vector2& point)
 {
-	IntRect tempRect = rect;
+	Int32Rect tempRect = rect;
 
 	if (rect.Left > rect.Right)
 	{

@@ -12,7 +12,7 @@ typedef uint16_t uint16;
 typedef uint32_t uint32;
 typedef uint64_t uint64;
 
-struct IntRect
+struct Int32Rect
 {
 	int32 Left;
 	int32 Top;
@@ -20,7 +20,7 @@ struct IntRect
 	int32 Bottom;
 };
 
-static_assert(sizeof(IntRect) == 16, "Rect size is invalid");
+static_assert(sizeof(Int32Rect) == 16, "Rect size is invalid");
 
 struct Int16Rect
 {
@@ -30,7 +30,7 @@ struct Int16Rect
 	int16 Bottom;
 };
 
-struct IntVector2
+struct Int32Vector2
 {
 	int32 X;
 	int32 Y;
@@ -48,4 +48,4 @@ struct FloatVector2
 	float Y;
 };
 
-static_assert(sizeof(IntVector2) == 8, "IntVector2 size is invalid");
+static_assert(sizeof(Int32Vector2) == 8, "IntVector2 size is invalid");

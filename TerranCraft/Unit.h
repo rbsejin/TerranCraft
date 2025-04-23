@@ -30,10 +30,10 @@ public:
 	eUnit GetUnitType() const { return mUnitType; }
 	uint8 GetGroundWeaponCooldown() const { return mGroundWeaponCooldown; }
 	void SetGroundWeaponCooldown(uint8 groundWeaponCooldown) { mGroundWeaponCooldown = groundWeaponCooldown; }
-	IntRect GetContourBounds() const { return mContourBounds; }
+	Int32Rect GetContourBounds() const { return mContourBounds; }
 	eButtonset GetCurrentButtonset() const { return mCurrentButtonset; }
 
-	std::list<IntVector2>* GetPath() { return &mPath; }
+	std::list<Int32Vector2>* GetPath() { return &mPath; }
 
 	eAnim GetAnimation() const;
 	bool IsMoving() const;
@@ -67,14 +67,14 @@ private:
 
 	// Unit
 	eUnit mUnitType = eUnit::None;
-	IntRect mContourBounds = { 0, };
+	Int32Rect mContourBounds = { 0, };
 	eButtonset mCurrentButtonset = eButtonset::TerranMarine;
 	uint16 mHPGain = 0;
 	uint16 mBuildTime = 0;
 	uint16 mRemainingBuildTime = 0;
 	Image* mConstructionImage = nullptr;
 
-	std::list<IntVector2> mPath;
+	std::list<Int32Vector2> mPath;
 	std::list<Order*> mOrderQueue;
 	eOrder mOrderType = eOrder::None;
 	Target mOrderTarget = { 0, };

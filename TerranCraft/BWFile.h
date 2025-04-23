@@ -224,10 +224,10 @@ struct SoundData
 {
 	enum { SOUND_COUNT = 1144 };
 	uint32 SoundFiles[SOUND_COUNT];
-	uint8 Unknown1s[SOUND_COUNT];
-	uint8 Unknown2s[SOUND_COUNT];
-	uint8 Unknown3s[SOUND_COUNT];
-	uint8 Unknown4s[SOUND_COUNT];
+	uint8 Unknown1s[SOUND_COUNT]; // Unknown1
+	uint8 Unknown2s[SOUND_COUNT]; // Flags
+	uint16 Unknown3s[SOUND_COUNT]; // Race
+	uint8 Unknown4s[SOUND_COUNT]; // Volume
 };
 #pragma pack(pop)
 
@@ -277,26 +277,32 @@ struct OrderData
 #pragma pack(pop)
 
 #pragma pack(push, 1)
+struct ButtonInfo
+{
+	uint16 Location;
+	uint16 Icon;
+	uint32 Condition;
+	uint32 Action;
+	uint16 ConditionValue;
+	uint16 ActionValue;
+	uint16 Enable;
+	uint16 Disable;
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+struct Buttonset
+{
+	uint32 ButtonCount;
+	uint32 Unknown1;
+	ButtonInfo ButtonInfos[1];
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
 struct ButtonsetData
 {
 	enum { BUTTON_SET_COUNT = 250 };
-	struct Buttonset
-	{
-		uint32 ButtonCount;
-		uint32 Unknown1;
-		struct ButtonInfo
-		{
-			uint16 Location;
-			uint16 Icon;
-			uint32 Condition;
-			uint32 Action;
-			uint16 ConditionValue;
-			uint16 ActionValue;
-			uint16 Enable;
-			uint16 Disable;
-		};
-		ButtonInfo ButtonInfos[1];
-	};
 	Buttonset* Buttonsets[BUTTON_SET_COUNT];
 };
 #pragma pack(pop)

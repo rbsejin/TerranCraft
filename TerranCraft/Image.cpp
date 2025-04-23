@@ -7,10 +7,10 @@
 #include "../BWLib/ScriptType.h"
 #include "AnimationController.h"
 #include "BWFile.h"
-#include "Arrangement.h"
+#include "ResourceManager.h"
 
 #include "../DDrawLib/DDrawDevice.h"
-#include "../ImageData/Palette.h"
+#include "../ImageData/PaletteManager.h"
 #include "Game.h"
 
 bool Image::Initialize(eImage imageID, Sprite* parent)
@@ -20,10 +20,10 @@ bool Image::Initialize(eImage imageID, Sprite* parent)
 	mImageID = imageID;
 	mParent = parent;
 
-	Arrangement* arrangement = gGame->GetArrangement();
-	const ImageData* imageData = arrangement->GetImageData();
+	ResourceManager* resourceManager = gGame->GetResourceManager();
+	const ImageData* imageData = resourceManager->GetImageData();
 	int32 index = imageData->GRPFiles[(int32)imageID] - 1;
-	mGRPFile = gGame->GRPFiles[index];
+	mGRPFile = resourceManager->GetGRPFile(index);
 
 	uint32 IscriptID = imageData->IscriptIDs[(int32)imageID];
 
@@ -55,7 +55,7 @@ bool Image::Initialize(eImage imageID, Sprite* parent)
 
 void Image::UpdateGraphicData()
 {
-	IntVector2 position = GetPosition();
+	Int32Vector2 position = GetPosition();
 	const GRPFrame* frame = GetCurrentFrame();
 
 	if (!(mFlags & 0x02))
@@ -70,12 +70,12 @@ void Image::UpdateGraphicData()
 	mMapPosition.Y = position.Y - mGRPFile->Height / 2 + frame->Y;
 
 	Camera* camera = gGame->GetCamera();
-	IntVector2 cameraPosition = camera->GetPosition();
-	IntVector2 screen = mMapPosition;
+	Int32Vector2 cameraPosition = camera->GetPosition();
+	Int32Vector2 screen = mMapPosition;
 	screen.X -= cameraPosition.X;
 	screen.Y -= cameraPosition.Y;
 
-	IntRect bounds = { 0, 0, frame->Width, frame->Height };
+	Int32Rect bounds = { 0, 0, frame->Width, frame->Height };
 
 	if (screen.X < 0)
 	{
@@ -91,7 +91,7 @@ void Image::UpdateGraphicData()
 		screen.Y = 0;
 	}
 
-	IntVector2 cameraSize = camera->GetSize();
+	Int32Vector2 cameraSize = camera->GetSize();
 	bounds.Right = std::min<int>(bounds.Right, cameraSize.X - screen.X);
 	bounds.Bottom = std::min<int>(bounds.Bottom, cameraSize.Y - screen.Y);
 
@@ -109,24 +109,25 @@ void Image::DrawImage(DDrawDevice* ddrawDevice) const
 	const GRPFrame* frame = GetCurrentFrame();
 	const uint8* compressedImage = GetCompressedImage();
 
+	PaletteManager* paletteManager = gGame->GetPaletteManager();
 	PALETTEENTRY* palette = nullptr;
 	
 	switch (mRemapping)
 	{
 	case 0:
-		palette = Palette::sData;
+		palette = paletteManager->Data;
 		break;
 	case 1:
-		palette = Palette::sOfireData;
+		palette = paletteManager->OfireData;
 		break;
 	case 2:
-		palette = Palette::sGfireData;
+		palette = paletteManager->GfireData;
 		break;
 	case 3:
-		palette = Palette::sBfireData;
+		palette = paletteManager->BfireData;
 		break;
 	case 4:
-		palette = Palette::sBexplData;
+		palette = paletteManager->BexplData;
 	default:
 		break;
 	}
@@ -163,9 +164,9 @@ const uint8* Image::GetCompressedImage() const
 	return (uint8*)mGRPFile + frame->DataOffset;
 }
 
-IntVector2 Image::GetPosition() const
+Int32Vector2 Image::GetPosition() const
 {
-	IntVector2 position = { 0, };
+	Int32Vector2 position = { 0, };
 	if (mParent != nullptr)
 	{
 		position = mParent->GetPosition();

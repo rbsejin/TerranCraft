@@ -4,7 +4,7 @@
 #include "../Common/typedef.h"
 #include "DDrawDevice.h"
 #include "../ImageData/Graphic.h"
-#include "../ImageData/Palette.h"
+#include "../ImageData/PaletteManager.h"
 #include "../TerranCraft/Camera.h"
 #include "../TerranCraft/Game.h"
 
@@ -273,8 +273,8 @@ void DDrawDevice::DrawMap(int32 gridSize, int32 rowCount, int32 colCount, const 
 #endif
 
 	Camera* camera = gGame->GetCamera();
-	IntVector2 cameraPosition = camera->GetPosition();
-	IntVector2 cameraSize = camera->GetSize();
+	Int32Vector2 cameraPosition = camera->GetPosition();
+	Int32Vector2 cameraSize = camera->GetSize();
 
 	int32 cameraX = cameraPosition.X;
 	int32 cameraY = cameraPosition.Y;
@@ -381,7 +381,7 @@ void DDrawDevice::DrawMap(int32 gridSize, int32 rowCount, int32 colCount, const 
 #endif // _DEBUG
 }
 
-void DDrawDevice::DrawPath(const std::list<IntVector2>& path, int32 cellSize, uint32 color)
+void DDrawDevice::DrawPath(const std::list<Int32Vector2>& path, int32 cellSize, uint32 color)
 {
 #ifdef _DEBUG
 	if (mLockedBackBuffer == nullptr)
@@ -395,16 +395,16 @@ void DDrawDevice::DrawPath(const std::list<IntVector2>& path, int32 cellSize, ui
 	}
 #endif
 
-	for (const IntVector2& pos : path)
+	for (const Int32Vector2& pos : path)
 	{
-		IntVector2 RectPos = { pos.X * cellSize + 1, pos.Y * cellSize + 1 };
-		IntVector2 RectSize = { cellSize - 1, cellSize - 1 };
+		Int32Vector2 RectPos = { pos.X * cellSize + 1, pos.Y * cellSize + 1 };
+		Int32Vector2 RectSize = { cellSize - 1, cellSize - 1 };
 
 		DrawRect(RectPos.X, RectPos.Y, RectSize.X, RectSize.Y, color);
 	}
 }
 
-void DDrawDevice::DrawPath(const std::list<IntVector2>& path, int32 cellSize, IntRect countourBounds, uint32 color)
+void DDrawDevice::DrawPath(const std::list<Int32Vector2>& path, int32 cellSize, Int32Rect countourBounds, uint32 color)
 {
 #ifdef _DEBUG
 	if (mLockedBackBuffer == nullptr)
@@ -418,13 +418,13 @@ void DDrawDevice::DrawPath(const std::list<IntVector2>& path, int32 cellSize, In
 	}
 #endif
 
-	for (IntVector2 pos : path)
+	for (Int32Vector2 pos : path)
 	{
-		IntVector2 unitPos = { pos.X * cellSize + cellSize / 2, pos.Y * cellSize + cellSize / 2 };
+		Int32Vector2 unitPos = { pos.X * cellSize + cellSize / 2, pos.Y * cellSize + cellSize / 2 };
 		Camera* camera = gGame->GetCamera();
 		unitPos.X -= camera->GetPosition().X;
 		unitPos.Y -= camera->GetPosition().Y;
-		IntRect unitBound = { unitPos.X - countourBounds.Left, unitPos.Y - countourBounds.Top, unitPos.X + countourBounds.Right, unitPos.Y + countourBounds.Bottom };
+		Int32Rect unitBound = { unitPos.X - countourBounds.Left, unitPos.Y - countourBounds.Top, unitPos.X + countourBounds.Right, unitPos.Y + countourBounds.Bottom };
 		DrawBound(unitBound, color);
 	}
 }
@@ -439,8 +439,8 @@ void DDrawDevice::DrawGrid(int32 gridSize, int32 rowCount, int32 colCount, uint3
 #endif
 
 	Camera* camera = gGame->GetCamera();
-	IntVector2 cameraPosition = camera->GetPosition();
-	IntVector2 cameraSize = camera->GetSize();
+	Int32Vector2 cameraPosition = camera->GetPosition();
+	Int32Vector2 cameraSize = camera->GetSize();
 
 	int32 cameraX = cameraPosition.X;
 	int32 cameraY = cameraPosition.Y;
@@ -450,7 +450,7 @@ void DDrawDevice::DrawGrid(int32 gridSize, int32 rowCount, int32 colCount, uint3
 	int32 minGridX = (int32)ceilf((float)cameraX / gridSize);
 	int32 minGridY = (int32)ceilf((float)cameraY / gridSize);
 
-	IntVector2 startGridPos = { minGridX * gridSize - cameraX, minGridY * gridSize - cameraY };
+	Int32Vector2 startGridPos = { minGridX * gridSize - cameraX, minGridY * gridSize - cameraY };
 
 	uint8* pDest = mLockedBackBuffer;
 
@@ -501,7 +501,7 @@ void DDrawDevice::DrawRect(int32 screenX, int32 screenY, int32 width, int32 heig
 	}
 }
 
-void DDrawDevice::DrawBound(IntRect bound, uint32 color)
+void DDrawDevice::DrawBound(Int32Rect bound, uint32 color)
 {
 #ifdef _DEBUG
 	if (mLockedBackBuffer == nullptr)
@@ -627,7 +627,8 @@ bool DDrawDevice::DrawPCX(int32 screenX, int32 screenY, const uint8* buffer, int
 			{
 				int32 count = byte & 0x3f;
 				uint8 index = *buffer++;
-				uint32 color = Palette::GetColor(palette, index);
+				PaletteManager* paletteController = gGame->GetPaletteManager();
+				uint32 color = paletteController->GetColor(palette, index);
 
 				if (color != 0x00000000)
 				{
@@ -641,7 +642,8 @@ bool DDrawDevice::DrawPCX(int32 screenX, int32 screenY, const uint8* buffer, int
 			}
 			else
 			{
-				uint32 color = Palette::GetColor(palette, byte);
+				PaletteManager* paletteController = gGame->GetPaletteManager();
+				uint32 color = paletteController->GetColor(palette, byte);
 				*(uint32*)(pDest + x * 4) = color;
 				x++;
 			}
@@ -681,12 +683,12 @@ bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GRPFrame* frame, c
 
 	bool bResult = false;
 
-	IntVector2 srcStart = { 0, };
-	IntVector2 destStart = { 0, };
-	IntVector2 destSize = { 0, };
+	Int32Vector2 srcStart = { 0, };
+	Int32Vector2 destStart = { 0, };
+	Int32Vector2 destSize = { 0, };
 
-	IntVector2 imageSize = { frame->Width, frame->Height };
-	IntVector2 screenPos = { screenX, screenY };
+	Int32Vector2 imageSize = { frame->Width, frame->Height };
+	Int32Vector2 screenPos = { screenX, screenY };
 
 	if (!CalculateClipArea(&srcStart, &destStart, &destSize, screenPos, imageSize))
 	{
@@ -721,7 +723,8 @@ bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GRPFrame* frame, c
 				{
 					// 2. 0x40 <= byte < 0x80 : 다음 바이트를 (byte - 0x40)만큼 반복해서 출력
 					int32 count = opcode - 0x40;
-					uint32 pixel = Palette::GetColor(palette, *pStream++);
+					PaletteManager* paletteManager = gGame->GetPaletteManager();
+					uint32 pixel = paletteManager->GetColor(palette, *pStream++);
 					int32 pixelCount = count;
 
 					if (destX >= (int32)mWidth)
@@ -765,7 +768,8 @@ bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GRPFrame* frame, c
 
 					for (int i = 0; i < pixelCount; i++)
 					{
-						uint32 pixel = Palette::GetColor(palette, *pStream++);
+						PaletteManager* paletteManager = gGame->GetPaletteManager();
+						uint32 pixel = paletteManager->GetColor(palette, *pStream++);
 						*(uint32*)pDest = pixel;
 						pDest -= 4;
 					}
@@ -800,7 +804,8 @@ bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GRPFrame* frame, c
 				{
 					// 2. 0x40 <= byte < 0x80 : 다음 바이트를 (byte - 0x40)만큼 반복해서 출력
 					int32 count = opcode - 0x40;
-					uint32 pixel = Palette::GetColor(palette, *pStream++);
+					PaletteManager* paletteManager = gGame->GetPaletteManager();
+					uint32 pixel = paletteManager->GetColor(palette, *pStream++);
 					int32 pixelCount = count;
 
 					if (destX < 0)
@@ -844,7 +849,8 @@ bool DDrawDevice::DrawGRP(int32 screenX, int32 screenY, const GRPFrame* frame, c
 
 					for (int i = 0; i < pixelCount; i++)
 					{
-						uint32 pixel = Palette::GetColor(palette, *pStream++);
+						PaletteManager* paletteManager = gGame->GetPaletteManager();
+						uint32 pixel = paletteManager->GetColor(palette, *pStream++);
 						*(uint32*)pDest = pixel;
 						pDest += 4;
 					}
@@ -890,12 +896,12 @@ bool DDrawDevice::DrawGRPWithBlending(int32 screenX, int32 screenY, const GRPFra
 
 	float alpha = 0.2f;
 
-	IntVector2 srcStart = { 0, };
-	IntVector2 destStart = { 0, };
-	IntVector2 destSize = { 0, };
+	Int32Vector2 srcStart = { 0, };
+	Int32Vector2 destStart = { 0, };
+	Int32Vector2 destSize = { 0, };
 
-	IntVector2 imageSize = { frame->Width, frame->Height };
-	IntVector2 screenPos = { screenX, screenY };
+	Int32Vector2 imageSize = { frame->Width, frame->Height };
+	Int32Vector2 screenPos = { screenX, screenY };
 
 	if (!CalculateClipArea(&srcStart, &destStart, &destSize, screenPos, imageSize))
 	{
@@ -962,7 +968,8 @@ bool DDrawDevice::DrawGRPWithBlending(int32 screenX, int32 screenY, const GRPFra
 			{
 				// 2. 0x40 <= byte < 0x80 : 다음 바이트를 (byte - 0x40)만큼 반복해서 출력
 				int32 count = opcode - 0x40;
-				uint32 pixel = Palette::GetColor(palette, *pStream++);
+				PaletteManager* paletteManager = gGame->GetPaletteManager();
+				uint32 pixel = paletteManager->GetColor(palette, *pStream++);
 				int32 pixelCount = count;
 
 				if (destX < 0)
@@ -1021,7 +1028,8 @@ bool DDrawDevice::DrawGRPWithBlending(int32 screenX, int32 screenY, const GRPFra
 
 				for (int i = 0; i < pixelCount; i++)
 				{
-					uint32 pixel = Palette::GetColor(palette, *pStream++);
+					PaletteManager* paletteManager = gGame->GetPaletteManager();
+					uint32 pixel = paletteManager->GetColor(palette, *pStream++);
 					{
 						uint32 srcR = (*(uint32*)pDest & 0x00ff0000 >> 16);
 						uint32 srcG = (*(uint32*)pDest & 0x0000ff00 >> 8);
@@ -1053,7 +1061,7 @@ LB_RETURN:
 	return bResult;
 }
 
-bool DDrawDevice::DrawGRP2(int32 screenX, int32 screenY, const GRPFrame* frame, IntRect grpRect, const uint8* compressedImage, const PALETTEENTRY* palette)
+bool DDrawDevice::DrawGRP2(int32 screenX, int32 screenY, const GRPFrame* frame, Int32Rect grpRect, const uint8* compressedImage, const PALETTEENTRY* palette)
 {
 #ifdef _DEBUG
 	if (mLockedBackBuffer == nullptr)
@@ -1115,7 +1123,8 @@ bool DDrawDevice::DrawGRP2(int32 screenX, int32 screenY, const GRPFrame* frame, 
 				// 2. 0x40 <= byte < 0x80 : 다음 바이트를 (byte - 0x40)만큼 반복해서 출력
 				int32 count = opcode - 0x40;
 
-				uint32 pixel = Palette::GetColor(palette, *pStream++);
+				PaletteManager* paletteManager = gGame->GetPaletteManager();
+				uint32 pixel = paletteManager->GetColor(palette, *pStream++);
 
 				int32 s = max(x, grpRect.Left);
 				int32 e = min(x + count, grpRect.Left + grpRect.Right);
@@ -1138,7 +1147,8 @@ bool DDrawDevice::DrawGRP2(int32 screenX, int32 screenY, const GRPFrame* frame, 
 				{
 					if (x >= grpRect.Left && x < grpRect.Left + grpRect.Right)
 					{
-						uint32 pixel = Palette::GetColor(palette, *pStream);
+						PaletteManager* paletteManager = gGame->GetPaletteManager();
+						uint32 pixel = paletteManager->GetColor(palette, *pStream);
 						*(uint32*)pDest = pixel;
 						pDest += 4;
 					}
@@ -1157,7 +1167,7 @@ LB_RETURN:
 	return bResult;
 }
 
-bool DDrawDevice::DrawGRP2Flipped(int32 screenX, int32 screenY, const GRPFrame* frame, IntRect grpRect, const uint8* compressedImage, const PALETTEENTRY* palette)
+bool DDrawDevice::DrawGRP2Flipped(int32 screenX, int32 screenY, const GRPFrame* frame, Int32Rect grpRect, const uint8* compressedImage, const PALETTEENTRY* palette)
 {
 #ifdef _DEBUG
 	if (mLockedBackBuffer == nullptr)
@@ -1219,7 +1229,8 @@ bool DDrawDevice::DrawGRP2Flipped(int32 screenX, int32 screenY, const GRPFrame* 
 				// 2. 0x40 <= byte < 0x80 : 다음 바이트를 (byte - 0x40)만큼 반복해서 출력
 				int32 count = opcode - 0x40;
 
-				uint32 pixel = Palette::GetColor(palette, *pStream++);
+				PaletteManager* paletteManager = gGame->GetPaletteManager();
+				uint32 pixel = paletteManager->GetColor(palette, *pStream++);
 
 				int32 s = min(x, grpRect.Left + grpRect.Right - 1);
 				int32 e = max(x - count, 0);
@@ -1242,7 +1253,8 @@ bool DDrawDevice::DrawGRP2Flipped(int32 screenX, int32 screenY, const GRPFrame* 
 				{
 					if (x >= grpRect.Left && x < grpRect.Left + grpRect.Right)
 					{
-						uint32 pixel = Palette::GetColor(palette, *pStream);
+						PaletteManager* paletteManager = gGame->GetPaletteManager();
+						uint32 pixel = paletteManager->GetColor(palette, *pStream);
 						*(uint32*)pDest = pixel;
 						pDest -= 4;
 					}
@@ -1261,7 +1273,7 @@ LB_RETURN:
 	return bResult;
 }
 
-bool DDrawDevice::CalculateClipArea(IntVector2* outSrcStart, IntVector2* outDestStart, IntVector2* outDestSize, IntVector2 pos, IntVector2 size)  const
+bool DDrawDevice::CalculateClipArea(Int32Vector2* outSrcStart, Int32Vector2* outDestStart, Int32Vector2* outDestSize, Int32Vector2 pos, Int32Vector2 size)  const
 {
 #ifdef _DEBUG
 	if (outSrcStart == nullptr)
@@ -1282,7 +1294,7 @@ bool DDrawDevice::CalculateClipArea(IntVector2* outSrcStart, IntVector2* outDest
 
 	bool bResult = false;
 
-	const IntVector2 bufferSize = { (int32)mWidth, (int32)mHeight };
+	const Int32Vector2 bufferSize = { (int32)mWidth, (int32)mHeight };
 
 	if (bufferSize.X <= 0)
 	{

@@ -4,9 +4,10 @@
 
 class Unit;
 
-struct Target
+class Target
 {
+public:
 	Unit* Unit;
-	IntVector2 Position;
+	Int32Vector2 Position;
 };
 

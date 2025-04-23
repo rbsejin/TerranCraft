@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "Flingy.h"
-#include "Arrangement.h"
+#include "ResourceManager.h"
 #include "BWFile.h"
 #include "Sprite.h"
 #include "Image.h"
@@ -16,8 +16,8 @@ bool Flingy::Initialize(int32 hp, eFlingyType flingyType)
 {
 	bool bResult = false;
 	mFlingyType = flingyType;
-	Arrangement* arrangement = gGame->GetArrangement();
-	const FlingyData* flingyData = arrangement->GetFlingyData();
+	ResourceManager* resourceManager = gGame->GetResourceManager();
+	const FlingyData* flingyData = resourceManager->GetFlingyData();
 	uint32 flingyID = (uint32)flingyType;
 	mFlingyTopSpeed = flingyData->Speeds[flingyID];
 	mCurrentSpeed = (mFlingyTopSpeed == 1) ? 4.f : (mFlingyTopSpeed / 256.f);
@@ -42,7 +42,7 @@ void Flingy::Cleanup()
 
 void Flingy::Update()
 {
-	IntVector2 spritePosition = { (int32)mPosition.X, (int32)mPosition.Y };
+	Int32Vector2 spritePosition = { (int32)mPosition.X, (int32)mPosition.Y };
 	Sprite* sprite = GetSprite();
 	sprite->SetPosition(spritePosition);
 

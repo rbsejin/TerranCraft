@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "Bullet.h"
-#include "Arrangement.h"
+#include "ResourceManager.h"
 #include "BWFile.h"
 #include <list>
 #include "Image.h"
@@ -21,10 +21,10 @@ bool Bullet::Initialize(eWeapon weaponType, Unit* sourceUnit)
 	mWeaponType = weaponType;
 	mSourceUnit = sourceUnit;
 
-	Arrangement* arrangement = gGame->GetArrangement();
-	const WeaponData* weaponData = arrangement->GetWeaponData();
+	ResourceManager* resourceManager = gGame->GetResourceManager();
+	const WeaponData* weaponData = resourceManager->GetWeaponData();
 	uint16 flingyID = (uint16)weaponData->Graphics[(uint32)weaponType];
-	const FlingyData* flingyData = arrangement->GetFlingyData();
+	const FlingyData* flingyData = resourceManager->GetFlingyData();
 	eSprite spriteNumber = (eSprite)flingyData->Sprites[flingyID];
 	Flingy::Initialize(0, (eFlingyType)flingyID);
 

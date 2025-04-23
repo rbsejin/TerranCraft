@@ -17,9 +17,9 @@ class Bullet;
 class Sprite;
 class Image;
 class AnimationController;
-class Arrangement;
+class ResourceManager;
+class PaletteManager;
 
-struct Chunk;
 struct ImageData;
 struct SpriteData;
 struct UnitData;
@@ -77,19 +77,12 @@ public:
 
 	Camera* GetCamera() { return mCamera; }
 	AnimationController* GetAnimationController() { return mAnimationController; }
-	Arrangement* GetArrangement() { return mArrangement; }
+	ResourceManager* GetResourceManager() { return mResourceManager; }
+	PaletteManager* GetPaletteManager() { return mPaletteManager; }
 
 private:
 	void onGameFrame(ULONGLONG currentTick);
 	void drawScene();
-
-	void loadMap();
-	void destroyMap();
-	bool loadPCX(PCXImage** outPCXImage, const char* filepath);
-	void destroyPCX(PCXImage** pcxImage);
-	bool loadGRP(GRPHeader** outGRPHeader, const char* filepath);
-	void destroyGRP(GRPHeader** grpHeader);
-	bool loadImages();
 
 	void move(Target target);
 	void attack(Target target);
@@ -97,19 +90,14 @@ private:
 	void markUnit();
 	void markCursor();
 	void updateWireframePalette(const Unit* unit);
-	void pcxToPaletteEntries(PCXImage* pcx, PALETTEENTRY* pDest);
+	void pcxToPaletteEntries(const PCXImage* pcx, PALETTEENTRY* pDest);
 
 public:
 	std::list<Thingy*> Thingies;
 	std::list<Unit*> Units;
 	std::list<Bullet*> Bullets;
 	std::vector<Unit*> SelectedUnits;
-	std::list<IntVector2> CellPath;
-
-	// GRP Images
-	enum { IMAGE_COUNT = eImage::None };
-	GRPHeader* GRPFiles[IMAGE_COUNT];
-	uint32 mImageCount = 0;
+	std::list<Int32Vector2> CellPath;
 
 private:
 	DDrawDevice* mDDrawDevice = nullptr;
@@ -117,7 +105,8 @@ private:
 
 	Camera* mCamera = nullptr;
 	AnimationController* mAnimationController = nullptr;
-	Arrangement* mArrangement = nullptr;
+	ResourceManager* mResourceManager = nullptr;
+	PaletteManager* mPaletteManager = nullptr;
 
 	enum { DEFAULT_GAME_FPS = 24 };
 	uint32 mGameFPS = DEFAULT_GAME_FPS;
@@ -137,36 +126,16 @@ private:
 
 	bool mbPressedShift = false;
 
-	// Map
-	uint32* mMapImage = nullptr;
-	uint32 mMapImageWidth = 0;
-	uint32 mMapImageHeight = 0;
-
-	// PCX
-	PCXImage* mTConsolePCX = nullptr;
-	int32 mConsoleX = 0;
-	int32 mConsoleY = 0;
-	PCXImage* mTUnitPCX = nullptr;
-	PCXImage* mTSelectPCX = nullptr;
-	PCXImage* mTWirePCX = nullptr;
-
 	// UI
-	GRPHeader* mButtonsGRP = nullptr;
+	Int32Vector2 mConsolePos = { 0, };
 	const ButtonsetData* mButtonset = nullptr;
 	eButtonset mCurrentButtonset = eButtonset::None;
-	GRPHeader* mTCmdBtnsGRP = nullptr;
-	// wireframe
-	enum { WIRE_FRAME_COUNT = 3 };
-	GRPHeader* mWireframeGRPs[WIRE_FRAME_COUNT] = { 0, };
 
 	// Cursor
-	enum { CURSOR_IMAGE_COUNT = 19 };
-	GRPHeader* mCursorGRPs[CURSOR_IMAGE_COUNT] = { 0, };
 	int32 mCursorIndex = 0;
 	int32 mCursorFrame = 0;
-	IntVector2 mCursorScreenPos = { 0, };
-	IntRect mCursorBounds = { 0, };
-	//CursorType mCursorType = CursorType::Arrow;
+	Int32Vector2 mCursorScreenPos = { 0, };
+	Int32Rect mCursorBounds = { 0, };
 	Sprite* mCursorMarkerSprite = nullptr;
 	PlayerOrder mPlayerOrder = PlayerOrder::None;
 	bool mbSelectable = true;
@@ -175,7 +144,7 @@ private:
 
 	std::list<Order> mUnitOrders;
 	enum { SELECTION_CIRCLE_IMAGE_COUNT = 10 };
-	Image* mSelectionCircleImages[SELECTION_CIRCLE_IMAGE_COUNT];
+	Image* mSelectionCircleImages[SELECTION_CIRCLE_IMAGE_COUNT] = { 0, };
 
 	eUnit mCreatedUnitType = eUnit::None;
 };

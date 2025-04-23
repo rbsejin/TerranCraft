@@ -155,12 +155,12 @@
     <ClInclude Include="..\DDrawLib\DDrawDevice.h" />
     <ClInclude Include="..\DDrawLib\pch.h" />
     <ClInclude Include="..\ImageData\Graphic.h" />
-    <ClInclude Include="..\ImageData\Palette.h" />
+    <ClInclude Include="..\ImageData\PaletteManager.h" />
     <ClInclude Include="..\ImageData\pch.h" />
     <ClInclude Include="..\Util\pch.h" />
     <ClInclude Include="..\Util\Util.h" />
     <ClInclude Include="AnimationController.h" />
-    <ClInclude Include="Arrangement.h" />
+    <ClInclude Include="ResourceManager.h" />
     <ClInclude Include="Bullet.h" />
     <ClInclude Include="BWFile.h" />
     <ClInclude Include="Camera.h" />
@@ -170,7 +170,6 @@
     <ClInclude Include="Image.h" />
     <ClInclude Include="ScriptCodeType.h" />
     <ClInclude Include="Map.h" />
-    <ClInclude Include="MovementFlags.h" />
     <ClInclude Include="PathFinder.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
@@ -184,10 +183,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\DDrawLib\DDrawDevice.cpp" />
-    <ClCompile Include="..\ImageData\Palette.cpp" />
+    <ClCompile Include="..\ImageData\PaletteManager.cpp" />
     <ClCompile Include="..\Util\Util.cpp" />
     <ClCompile Include="AnimationController.cpp" />
-    <ClCompile Include="Arrangement.cpp" />
+    <ClCompile Include="ResourceManager.cpp" />
     <ClCompile Include="Bullet.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Flingy.cpp" />

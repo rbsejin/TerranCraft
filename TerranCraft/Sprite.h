@@ -18,8 +18,8 @@ public:
 
 	void Draw(DDrawDevice* ddrawDevice) const;
 
-	IntVector2 GetPosition() const { return mPosition; }
-	void SetPosition(IntVector2 position) { mPosition = position; }
+	Int32Vector2 GetPosition() const { return mPosition; }
+	void SetPosition(Int32Vector2 position) { mPosition = position; }
 
 	eSprite GetSpriteID() const { return mSpriteID; }
 	int32 GetSelectionIndex() const { return mSelectionIndex; }
@@ -62,7 +62,7 @@ private:
 	*/
 	//uint8 mSelectionTimer = 0;
 	//uint16 mIndex = 0;
-	IntVector2 mPosition = { 0, };
+	Int32Vector2 mPosition = { 0, };
 	Image* mImagePrimary = nullptr;
 	//Image* mImageHead = nullptr;
 	//Image* mImageTail = nullptr;

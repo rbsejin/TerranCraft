@@ -3,7 +3,7 @@
 #include "Sprite.h"
 #include "Image.h"
 #include "../BWLib/ButtonsetType.h"
-#include "Arrangement.h"
+#include "ResourceManager.h"
 #include "BWFile.h"
 #include "AnimationController.h"
 #include "Order.h"
@@ -24,8 +24,8 @@ bool Unit::Initialize(eUnit unitType)
 
 	mCurrentButtonset = (eButtonset)unitType;
 
-	Arrangement* arrangement = gGame->GetArrangement();
-	const UnitData* unitData = arrangement->GetUnitData();
+	ResourceManager* resourceManager = gGame->GetResourceManager();
+	const UnitData* unitData = resourceManager->GetUnitData();
 	Int16Rect contourBounds = unitData->UnitDimensions[(uint32)unitType];
 	mContourBounds.Left = (int32)contourBounds.Left;
 	mContourBounds.Top = (int32)contourBounds.Top;
@@ -36,7 +36,7 @@ bool Unit::Initialize(eUnit unitType)
 	mMovementFlags = unitData->Unknowns[(uint32)unitType];
 
 	// Weapon
-	const WeaponData* weaponData = arrangement->GetWeaponData();
+	const WeaponData* weaponData = resourceManager->GetWeaponData();
 	mGroundWeaponCooldown = weaponData->WeaponCooldowns[(uint32)unitType];
 
 	int32 hp = GetMaxHP();
@@ -96,7 +96,7 @@ void Unit::Update()
 	}
 
 	Sprite* sprite = GetSprite();
-	IntVector2 spritePosition = { (int32)mPosition.X, (int32)mPosition.Y };
+	Int32Vector2 spritePosition = { (int32)mPosition.X, (int32)mPosition.Y };
 	sprite->SetPosition(spritePosition);
 
 	const std::list<Image*>* images = sprite->GetImages();
@@ -326,15 +326,15 @@ void Unit::ClearOrders()
 
 int32 Unit::GetMaxHP() const
 {
-	Arrangement* arrangement = gGame->GetArrangement();
-	const UnitData* unitData = arrangement->GetUnitData();
+	ResourceManager* resourceManager = gGame->GetResourceManager();
+	const UnitData* unitData = resourceManager->GetUnitData();
 	return unitData->HitPoints[(uint32)mUnitType] >> 8;
 }
 
 uint8 Unit::GetFlingyID() const
 {
-	Arrangement* arrangement = gGame->GetArrangement();
-	const UnitData* unitData = arrangement->GetUnitData();
+	ResourceManager* resourceManager = gGame->GetResourceManager();
+	const UnitData* unitData = resourceManager->GetUnitData();
 	return unitData->Graphics[(uint32)mUnitType];
 }
 
@@ -347,11 +347,11 @@ void Unit::startMove()
 	FloatVector2 position = GetPosition();
 
 	// find path
-	IntVector2 currentCell = { (int32)(position.X / CELL_SIZE), (int32)(position.Y / CELL_SIZE) };
-	IntVector2 targetCell = { x / CELL_SIZE, y / CELL_SIZE };
+	Int32Vector2 currentCell = { (int32)(position.X / CELL_SIZE), (int32)(position.Y / CELL_SIZE) };
+	Int32Vector2 targetCell = { x / CELL_SIZE, y / CELL_SIZE };
 
 	gGame->CellPath.clear();
-	IntRect countourBounds = GetContourBounds();
+	Int32Rect countourBounds = GetContourBounds();
 	int32 length = FindPathWithUnitSize(&gGame->CellPath, (const uint8*)gMiniTiles, currentCell, targetCell, countourBounds);
 
 	if (length <= 0)
@@ -359,16 +359,16 @@ void Unit::startMove()
 		return;
 	}
 
-	std::list<IntVector2>* path = GetPath();
+	std::list<Int32Vector2>* path = GetPath();
 	path->clear();
 
-	for (IntVector2& cell : gGame->CellPath)
+	for (Int32Vector2& cell : gGame->CellPath)
 	{
-		IntVector2 pos = { cell.X * CELL_SIZE + CELL_SIZE / 2, cell.Y * CELL_SIZE + CELL_SIZE / 2 };
+		Int32Vector2 pos = { cell.X * CELL_SIZE + CELL_SIZE / 2, cell.Y * CELL_SIZE + CELL_SIZE / 2 };
 		path->push_back(pos);
 	}
 
-	IntVector2 nextMovementWaypoint = path->front();
+	Int32Vector2 nextMovementWaypoint = path->front();
 	path->pop_front();
 	SetNextMovementWaypoint(nextMovementWaypoint);
 
@@ -487,14 +487,14 @@ void Unit::attackUnit()
 		lookAt(targetPosition);
 
 		Unit* dealer = this;
-		Arrangement* arrangement = gGame->GetArrangement();
-		const UnitData* dealerUnitData = arrangement->GetUnitData();
+		ResourceManager* resourceManager = gGame->GetResourceManager();
+		const UnitData* dealerUnitData = resourceManager->GetUnitData();
 		eUnit dealerUnitType = dealer->GetUnitType();
 		uint8 weaponID = dealerUnitData->GroundWeapons[(uint32)dealerUnitType];
-		const WeaponData* weaponData = arrangement->GetWeaponData();
+		const WeaponData* weaponData = resourceManager->GetWeaponData();
 		uint16 amount = weaponData->DamageAmounts[weaponID];
 
-		const UnitData* targetUnitData = arrangement->GetUnitData();
+		const UnitData* targetUnitData = resourceManager->GetUnitData();
 
 #ifdef _DEBUG
 		if (targetUnit == nullptr)
@@ -558,7 +558,7 @@ void Unit::attackUnit()
 
 		// Bullet
 		Bullet* bullet = new Bullet();
-		const UnitData* unitData = arrangement->GetUnitData();
+		const UnitData* unitData = resourceManager->GetUnitData();
 		eWeapon weaponType = (eWeapon)unitData->GroundWeapons[(uint32)mUnitType];
 		bullet->Initialize(weaponType, this);
 		//FloatVector2 position = targetUnit->GetPosition();
@@ -582,8 +582,8 @@ void Unit::attackUnit()
 
 void Unit::startBuilding()
 {
-	Arrangement* arrangement = gGame->GetArrangement();
-	const UnitData* unitData = arrangement->GetUnitData();
+	ResourceManager* resourceManager = gGame->GetResourceManager();
+	const UnitData* unitData = resourceManager->GetUnitData();
 	int32 constructionAnimation = unitData->ConstructionAnimations[(uint32)mUnitType];
 	if (constructionAnimation != 0)
 	{

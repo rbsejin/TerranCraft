@@ -2,7 +2,7 @@
 #include "Sprite.h"
 #include "Image.h"
 #include "BWFile.h"
-#include "Arrangement.h"
+#include "ResourceManager.h"
 #include "../DDrawLib/DDrawDevice.h"
 #include "Game.h"
 
@@ -19,8 +19,8 @@ bool Sprite::Initalize(eSprite spriteID)
 
 	mImagePrimary = new Image();
 
-	Arrangement* arrangement = gGame->GetArrangement();
-	const SpriteData* spriteData = arrangement->GetSpriteData();
+	ResourceManager* resourceManager = gGame->GetResourceManager();
+	const SpriteData* spriteData = resourceManager->GetSpriteData();
 	eImage imageNumber = (eImage)spriteData->ImageFiles[(int32)spriteID];
 
 	if (!mImagePrimary->Initialize(imageNumber, this))

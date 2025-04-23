@@ -3,6 +3,7 @@
 #include <time.h>
 #include "../DDrawLib/DDrawDevice.h"
 #include "../ImageData/Graphic.h"
+#include "../ImageData/PaletteManager.h"
 #include "Game.h"
 #include "Unit.h"
 #include "Bullet.h"
@@ -11,13 +12,9 @@
 #include "PathFinder.h"
 #include "../Util/Util.h"
 #include "Camera.h"
-#include "Map.h"
 #include "AnimationController.h"
+#include "ResourceManager.h"
 #include "BWFile.h"
-#include "Arrangement.h"
-#include "../BWLib/WeaponType.h"
-#include "../BWLib/UpgradeType.h"
-#include "../ImageData/Palette.h"
 #include "Camera.h"
 
 Game* gGame = nullptr;
@@ -48,80 +45,13 @@ bool Game::Initalize(HWND hWnd)
 	}
 
 #pragma region Load Resources
-	mArrangement = new Arrangement();
-	mArrangement->Load();
-	loadImages();
+	mResourceManager = new ResourceManager();
+	mResourceManager->Load();
 	mAnimationController = new AnimationController();
 	mAnimationController->Load("../data/STARDAT/scripts/iscript.bin");
 
-	loadMap();
-	loadGRP(&mButtonsGRP, "../data/STARDAT/unit/cmdbtns/cmdicons.grp");
-	loadGRP(&mTCmdBtnsGRP, "../data/STARDAT/unit/cmdbtns/tcmdbtns.grp");
-	loadPCX(&mTConsolePCX, "../data/STARDAT/game/tconsole.pcx");
-	loadPCX(&mTUnitPCX, "../data/STARDAT/game/tunit.pcx");
-	loadPCX(&mTSelectPCX, "../data/STARDAT/game/tselect.pcx");
-	loadPCX(&mTWirePCX, "../data/STARDAT/game/twire.pcx");
+	mPaletteManager = new PaletteManager();
 
-	pcxToPaletteEntries(mTUnitPCX, Palette::sTUnitPaletteEntries);
-	pcxToPaletteEntries(mTSelectPCX, Palette::sTSelectPaletteEntries);
-	pcxToPaletteEntries(mTWirePCX, Palette::sTWirePaletteEntries);
-
-	Palette::LoadPal(Palette::sOfireData, "../data/Palettes/ofire.pal");
-	Palette::LoadPal(Palette::sGfireData, "../data/Palettes/gfire.pal");
-	Palette::LoadPal(Palette::sBfireData, "../data/Palettes/bfire.pal");
-	//Palette::LoadPal(Palette::sBexplData, "../data/Palettes/bexpl.pal");
-
-#pragma region wirefram
-	{
-		char paths[WIRE_FRAME_COUNT][MAX_PATH] = {
-			"../data/STARDAT/unit/wirefram/grpwire.grp", // multi selection wireframe
-			"../data/STARDAT/unit/wirefram/tranwire.grp", // transport wireframe
-			"../data/STARDAT/unit/wirefram/wirefram.grp" // single selection wireframe
-		};
-
-		for (int32 i = 0; i < WIRE_FRAME_COUNT; i++)
-		{
-			loadGRP(mWireframeGRPs + i, paths[i]);
-		}
-	}
-#pragma endregion
-
-#pragma region Cursor
-	FILE* cursorListFile = nullptr;
-
-	fopen_s(&cursorListFile, "../data/cursorlist.txt", "rb");
-
-	if (cursorListFile == nullptr)
-	{
-		goto LB_RETURN;
-	}
-
-	char buffer[1024] = { 0, };
-	int32 index = 0;
-	char cursorFilename[MAX_PATH] = { 0, };
-
-	while (fgets(buffer, 1024, cursorListFile) != nullptr)
-	{
-		int count = sscanf(buffer, "%d %s", &index, cursorFilename);
-		if (count != 2)
-		{
-#ifdef _DEBUG
-			__debugbreak();
-#endif // _DEBUG
-			continue;
-		}
-		if (strlen(cursorFilename) == 0)
-		{
-#ifdef _DEBUG
-			__debugbreak();
-#endif // _DEBUG
-			continue;
-		}
-
-		loadGRP(mCursorGRPs + index, cursorFilename);
-	}
-
-	fclose(cursorListFile);
 #pragma endregion
 
 #pragma region CursorMarker
@@ -133,7 +63,18 @@ bool Game::Initalize(HWND hWnd)
 	}
 #pragma endregion
 
-#pragma endregion
+	const PCXImage* tunitPCX = mResourceManager->GetTUnitPCX();
+	const PCXImage* tselectPCX = mResourceManager->GetTSelectPCX();
+	const PCXImage* twirePCX = mResourceManager->GetTWirePCX();
+
+	pcxToPaletteEntries(tunitPCX, mPaletteManager->TUnitPaletteEntries);
+	pcxToPaletteEntries(tselectPCX, mPaletteManager->TSelectPaletteEntries);
+	pcxToPaletteEntries(twirePCX, mPaletteManager->TWirePaletteEntries);
+
+	mPaletteManager->LoadPal(mPaletteManager->OfireData, "../data/Palettes/ofire.pal");
+	mPaletteManager->LoadPal(mPaletteManager->GfireData, "../data/Palettes/gfire.pal");
+	mPaletteManager->LoadPal(mPaletteManager->BfireData, "../data/Palettes/bfire.pal");
+	//Palette::LoadPal(Palette::sBexplData, "../data/Palettes/bexpl.pal");
 
 	eUnit unitTypes[4] = {
 		eUnit::TerranSCV,
@@ -159,7 +100,7 @@ bool Game::Initalize(HWND hWnd)
 		}
 	}
 
-	mButtonset = mArrangement->GetButtonSet();
+	mButtonset = mResourceManager->GetButtonSet();
 
 	for (int32 i = 0; i < SELECTION_CIRCLE_IMAGE_COUNT; i++)
 	{
@@ -184,11 +125,11 @@ LB_RETURN:
 	return bResult;
 }
 
-void Game::pcxToPaletteEntries(PCXImage* pcx, PALETTEENTRY* pDest)
+void Game::pcxToPaletteEntries(const PCXImage* pcx, PALETTEENTRY* pDest)
 {
-	PALETTEENTRY* palette = pcx->PaletteData;
+	const PALETTEENTRY* palette = pcx->PaletteData;
 
-	uint8* buffer = pcx->Data;
+	const uint8* buffer = pcx->Data;
 	int32 width = pcx->Width;
 	int32 x = 0;
 
@@ -228,36 +169,13 @@ void Game::Cleanup()
 		mSelectionCircleImages[i] = nullptr;
 	}
 
-	destroyGRP(&mTCmdBtnsGRP);
-
-	for (int32 i = 0; i < WIRE_FRAME_COUNT; i++)
-	{
-		destroyGRP(mWireframeGRPs + i);
-	}
-
 	delete mCursorMarkerSprite;
 	mCursorMarkerSprite = nullptr;
 
 	mAnimationController->Destroy();
 
-	for (int i = 0; i < CURSOR_IMAGE_COUNT; i++)
-	{
-		if (mCursorGRPs[i] != nullptr)
-		{
-			free(mCursorGRPs[i]);
-			mCursorGRPs[i] = nullptr;
-		}
-	}
-
 	delete mBuildingPreview;
 	mBuildingPreview = nullptr;
-
-	destroyGRP(&mButtonsGRP);
-	destroyPCX(&mTSelectPCX);
-	destroyPCX(&mTUnitPCX);
-	destroyPCX(&mTConsolePCX);
-	destroyPCX(&mTWirePCX);
-	destroyMap();
 
 	Bullets.clear();
 	Units.clear();
@@ -268,20 +186,17 @@ void Game::Cleanup()
 	}
 	Thingies.clear();
 
-	for (uint32 i = 0; i < mImageCount; i++)
-	{
-		free(GRPFiles[i]);
-		GRPFiles[i] = nullptr;
-	}
+	delete mPaletteManager;
+	mPaletteManager = nullptr;
 
-	delete mDDrawDevice;
-	mDDrawDevice = nullptr;
-
-	delete mArrangement;
-	mArrangement = nullptr;
+	delete mResourceManager;
+	mResourceManager = nullptr;
 
 	delete mAnimationController;
 	mAnimationController = nullptr;
+
+	delete mDDrawDevice;
+	mDDrawDevice = nullptr;
 
 	delete mCamera;
 	mCamera = nullptr;
@@ -334,32 +249,34 @@ void Game::OnKeyDown(unsigned int vkCode, unsigned int scanCode)
 	case VK_SHIFT:
 		mbPressedShift = true;
 		break;
+#if 0
 #ifdef _DEBUG
-		//case 'C':
-		//	memset(gMiniTiles, 1, (size_t)MAP_WIDTH * MAP_HEIGHT * sizeof(uint8));
-		//	break;
-		//case 'W':
-		//	cell = 0;
-		//	break;
-		//case 'E':
-		//	cell = 1;
-		//	break;
-		//case 'H':
-		//	mDDrawDevice->IsVF4On = !mDDrawDevice->IsVF4On;
-		//	break;
-		//case 'P':
-		//	mDDrawDevice->IsPathOn = !mDDrawDevice->IsPathOn;
-		//	break;
-		//case 'G':
-		//	mDDrawDevice->IsGridOn = !mDDrawDevice->IsGridOn;
-		//	break;
-		//case 'B':
-		//	mDDrawDevice->IsBoundOn = !mDDrawDevice->IsBoundOn;
-		//	break;
-		//case 'D':
-		//	bEnableDrawing = !bEnableDrawing;
-		//	break;
+	case 'C':
+		memset(gMiniTiles, 1, (size_t)MAP_WIDTH * MAP_HEIGHT * sizeof(uint8));
+		break;
+	case 'W':
+		cell = 0;
+		break;
+	case 'E':
+		cell = 1;
+		break;
+	case 'H':
+		mDDrawDevice->IsVF4On = !mDDrawDevice->IsVF4On;
+		break;
+	case 'P':
+		mDDrawDevice->IsPathOn = !mDDrawDevice->IsPathOn;
+		break;
+	case 'G':
+		mDDrawDevice->IsGridOn = !mDDrawDevice->IsGridOn;
+		break;
+	case 'B':
+		mDDrawDevice->IsBoundOn = !mDDrawDevice->IsBoundOn;
+		break;
+	case 'D':
+		bEnableDrawing = !bEnableDrawing;
+		break;
 #endif // _DEBUG
+#endif
 	case 'B':
 		if (mCurrentButtonset == eButtonset::TerranStructureConstruction)
 		{
@@ -486,11 +403,11 @@ void Game::OnMouseMove(unsigned int nFlags, int x, int y)
 	if (bDrawing && bEnableDrawing)
 	{
 		Camera* camera = gGame->GetCamera();
-		IntVector2 cameraPosition = mCamera->GetPosition();
+		Int32Vector2 cameraPosition = mCamera->GetPosition();
 		x += cameraPosition.X;
 		y += cameraPosition.Y;
 
-		IntVector2 selectedCell = { (int32)(x / CELL_SIZE), (int32)(y / CELL_SIZE) };
+		Int32Vector2 selectedCell = { (int32)(x / CELL_SIZE), (int32)(y / CELL_SIZE) };
 		gMiniTiles[selectedCell.Y][selectedCell.X] = cell;
 	}
 #endif // _DEBUG
@@ -505,7 +422,7 @@ void Game::OnMouseMove(unsigned int nFlags, int x, int y)
 
 	if (mBuildingPreview != nullptr)
 	{
-		IntVector2 cameraPosition = mCamera->GetPosition();
+		Int32Vector2 cameraPosition = mCamera->GetPosition();
 		x += cameraPosition.X;
 		y += cameraPosition.Y;
 		mBuildingPreview->SetOffsets({ x, y });
@@ -550,7 +467,7 @@ void Game::OnLButtonUp(unsigned int nFlags, int x, int y)
 		goto LB_RETURN;
 	}
 
-	IntRect bounds = mCursorBounds;
+	Int32Rect bounds = mCursorBounds;
 	bounds.Left += mCamera->GetPosition().X;
 	bounds.Top += mCamera->GetPosition().Y;
 	bounds.Right += mCamera->GetPosition().X;
@@ -569,7 +486,7 @@ void Game::OnLButtonUp(unsigned int nFlags, int x, int y)
 		}
 
 		Sprite* sprite = unit->GetSprite();
-		IntVector2 position = sprite->GetPosition();
+		Int32Vector2 position = sprite->GetPosition();
 
 		if (IsCollisonRectVsPoint(bounds, position))
 		{
@@ -609,7 +526,7 @@ void Game::OnLButtonDown(unsigned int nFlags, int x, int y)
 
 	if (mPlayerOrder != PlayerOrder::None)
 	{
-		IntVector2 cameraPosition = mCamera->GetPosition();
+		Int32Vector2 cameraPosition = mCamera->GetPosition();
 		x += cameraPosition.X;
 		y += cameraPosition.Y;
 
@@ -687,7 +604,7 @@ void Game::OnRButtonDown(unsigned int nFlags, int x, int y)
 	}
 
 #if 1
-	IntVector2 cameraPosition = mCamera->GetPosition();
+	Int32Vector2 cameraPosition = mCamera->GetPosition();
 	x += cameraPosition.X;
 	y += cameraPosition.Y;
 
@@ -732,9 +649,10 @@ void Game::updateWireframePalette(const Unit* unit)
 	float percent = (float)lostHP / maxHP;
 	int32 temp = (int32)(percent * 8);
 
-	PALETTEENTRY green = Palette::sTWirePaletteEntries[1];
-	PALETTEENTRY yellow = Palette::sTWirePaletteEntries[0];
-	PALETTEENTRY red = Palette::sTWirePaletteEntries[10];
+	PaletteManager* paletteManager = gGame->GetPaletteManager();
+	PALETTEENTRY green = mPaletteManager->TWirePaletteEntries[1];
+	PALETTEENTRY yellow = mPaletteManager->TWirePaletteEntries[0];
+	PALETTEENTRY red = mPaletteManager->TWirePaletteEntries[10];
 
 	PALETTEENTRY paletteEntries[4] = { green, green, green, green };
 	for (int32 i = 0; i < 4; i++)
@@ -757,7 +675,7 @@ void Game::updateWireframePalette(const Unit* unit)
 			paletteEntries[i] = yellow;
 		}
 	}
-	Palette::SetEntries(Palette::sData, 208, 4, paletteEntries);
+	mPaletteManager->SetEntries(mPaletteManager->Data, 208, 4, paletteEntries);
 }
 
 void Game::move(Target target)
@@ -822,7 +740,7 @@ void Game::build()
 	Unit* unit = new Unit();
 	unit->Initialize(mCreatedUnitType);
 
-	IntVector2 position = mBuildingPreview->GetPosition();
+	Int32Vector2 position = mBuildingPreview->GetPosition();
 	unit->SetPosition({ (float)position.X, (float)position.Y });
 
 	order = new Order();
@@ -976,8 +894,6 @@ void Game::onGameFrame(ULONGLONG currentTick)
 					}
 				}
 
-				//sUnits.erase(std::remove(sUnits.begin(), sUnits.end(), thingy), sUnits.end());
-				//sSelectedUnits.erase(std::remove(sSelectedUnits.begin(), sSelectedUnits.end(), thingy), sSelectedUnits.end());
 				Bullets.erase(std::remove(Bullets.begin(), Bullets.end(), thingy), Bullets.end());
 				iter = Thingies.erase(iter);
 				delete thingy;
@@ -1019,7 +935,9 @@ void Game::onGameFrame(ULONGLONG currentTick)
 	}
 
 	mCursorFrame++;
-	if (mCursorFrame >= mCursorGRPs[mCursorIndex]->FrameCount * 3)
+
+	const GRPHeader* cursorGRP = mResourceManager->GetCursorGRP(mCursorIndex);
+	if (mCursorFrame >= cursorGRP->FrameCount * 3)
 	{
 		mCursorFrame = 0;
 	}
@@ -1028,13 +946,13 @@ void Game::onGameFrame(ULONGLONG currentTick)
 
 	for (Unit* unit : Units)
 	{
-		IntRect unitBound;
+		Int32Rect unitBound;
 		unitBound.Left = (int32)unit->GetPosition().X - unit->GetContourBounds().Left;
 		unitBound.Top = (int32)unit->GetPosition().Y - unit->GetContourBounds().Top;
 		unitBound.Right = (int32)unit->GetPosition().X + unit->GetContourBounds().Right;
 		unitBound.Bottom = (int32)unit->GetPosition().Y + unit->GetContourBounds().Bottom;
 
-		IntVector2 cursorMapPosition = { mCursorScreenPos.X, mCursorScreenPos.Y };
+		Int32Vector2 cursorMapPosition = { mCursorScreenPos.X, mCursorScreenPos.Y };
 		cursorMapPosition.X += mCamera->GetPosition().X;
 		cursorMapPosition.Y += mCamera->GetPosition().Y;
 
@@ -1047,7 +965,7 @@ void Game::onGameFrame(ULONGLONG currentTick)
 	}
 
 	// Cursor Marker
-	IntVector2 cameraPosition = mCamera->GetPosition();
+	Int32Vector2 cameraPosition = mCamera->GetPosition();
 	mCursorMarkerSprite->SetPosition({ cameraPosition.X + mCursorScreenPos.X, cameraPosition.Y + mCursorScreenPos.Y });
 	Image* cursorMarkerImage = mCursorMarkerSprite->GetPrimaryImage();
 	mAnimationController->UpdateImageFrame(nullptr, cursorMarkerImage);
@@ -1066,7 +984,9 @@ void Game::drawScene()
 		mDDrawDevice->Clear();
 
 #if 1
-		mDDrawDevice->DrawMap(CELL_SIZE, MAP_WIDTH, MAP_HEIGHT, (const uint8*)gMiniTiles, mMapImage, mMapImageWidth);
+		const uint32* mapImage = mResourceManager->GetMapImage();
+		uint32 mapImageWidth = mResourceManager->GetMapImageWidth();
+		mDDrawDevice->DrawMap(CELL_SIZE, MAP_WIDTH, MAP_HEIGHT, (const uint8*)gMiniTiles, mapImage, mapImageWidth);
 
 #ifdef _DEBUG
 		if (mDDrawDevice->IsGridOn)
@@ -1079,7 +999,7 @@ void Game::drawScene()
 			for (uint32 i = 0; i < SelectedUnits.size(); i++)
 			{
 				Unit* unit = SelectedUnits[i];
-				IntRect countourBounds = unit->GetContourBounds();
+				Int32Rect countourBounds = unit->GetContourBounds();
 				mDDrawDevice->DrawPath(CellPath, CELL_SIZE, countourBounds, 0xff00ff00);
 			}
 		}
@@ -1099,12 +1019,12 @@ void Game::drawScene()
 				int32 index = 0; // 0: green, 8: yellow, 16: red
 				constexpr int32 PALETTE_ENTRY_COUNT = 7;
 				PALETTEENTRY paletteEntries[PALETTE_ENTRY_COUNT] = { 0, };
-				Palette::SetEntries(Palette::sData, 1, PALETTE_ENTRY_COUNT, Palette::sTSelectPaletteEntries + index);
+				mPaletteManager->SetEntries(mPaletteManager->Data, 1, PALETTE_ENTRY_COUNT, mPaletteManager->TSelectPaletteEntries + index);
 			}
 			{
 				int32 index = 16;
 				constexpr int32 PALETTE_ENTRY_COUNT = 8;
-				Palette::SetEntries(Palette::sData, 8, PALETTE_ENTRY_COUNT, Palette::sTUnitPaletteEntries + index);
+				mPaletteManager->SetEntries(mPaletteManager->Data, 8, PALETTE_ENTRY_COUNT, mPaletteManager->TUnitPaletteEntries + index);
 			}
 
 			sprite->Draw(mDDrawDevice);
@@ -1112,12 +1032,12 @@ void Game::drawScene()
 			if (sprite->IsSelected())
 			{
 				Image* selectionCircleImage = sprite->GetSelectionCircleImage();
-				IntVector2 position = selectionCircleImage->GetScreenPosition();
-				IntRect grpBound = selectionCircleImage->GetGRPBounds();
+				Int32Vector2 position = selectionCircleImage->GetScreenPosition();
+				Int32Rect grpBound = selectionCircleImage->GetGRPBounds();
 				int32 width = grpBound.Right;
 				int32 height = grpBound.Bottom;
 
-				const SpriteData* spriteData = mArrangement->GetSpriteData();
+				const SpriteData* spriteData = mResourceManager->GetSpriteData();
 				int32 healthBarIndex = (int32)spriteID - (SpriteData::SPRITE_COUNT - SpriteData::HEALTH_BAR_COUNT);
 				int32 healthBar = spriteData->HealthBars[healthBarIndex];
 				{
@@ -1147,37 +1067,45 @@ void Game::drawScene()
 			const GRPFrame* frame = mBuildingPreview->GetCurrentFrame();
 			const uint8* compressedImage = mBuildingPreview->GetCompressedImage();
 			//const Palette* palette = mBuildingPreview->GetPalette();
-			PALETTEENTRY* palette = Palette::sData;
-			IntVector2 screenPosition = mBuildingPreview->GetScreenPosition();
-			mDDrawDevice->DrawGRPWithBlending(screenPosition.X, screenPosition.Y, frame, compressedImage, palette);
+			Int32Vector2 screenPosition = mBuildingPreview->GetScreenPosition();
+			mDDrawDevice->DrawGRPWithBlending(screenPosition.X, screenPosition.Y, frame, compressedImage, mPaletteManager->Data);
 		}
 
-		if (mTConsolePCX != nullptr)
+		const PCXImage* tconsolePCX = mResourceManager->GetTConsolePCX();
+		if (tconsolePCX != nullptr)
 		{
-			IntVector2 size = mCamera->GetSize();
-			mConsoleX = (size.X - mTConsolePCX->Width) / 2;
-			mConsoleY = size.Y - mTConsolePCX->Height;
-			mDDrawDevice->DrawPCX(mConsoleX, mConsoleY, mTConsolePCX->Data, mTConsolePCX->Width, mTConsolePCX->Height, mTConsolePCX->PaletteData);
+			Int32Vector2 size = mCamera->GetSize();
+			mConsolePos.X = (size.X - tconsolePCX->Width) / 2;
+			mConsolePos.Y = size.Y - tconsolePCX->Height;
+			mDDrawDevice->DrawPCX(mConsolePos.X, mConsolePos.Y, tconsolePCX->Data, tconsolePCX->Width, tconsolePCX->Height, tconsolePCX->PaletteData);
 		}
 
-		if (mButtonsGRP != nullptr)
+		const GRPHeader* buttonsGRP = mResourceManager->GetButtonsGRP();
+		if (buttonsGRP != nullptr)
 		{
-			int32 x = mConsoleX + 508;
-			int32 y = mConsoleY + 358;
+			int32 x = mConsolePos.X + 508;
+			int32 y = mConsolePos.Y + 358;
 
-			auto buttonList = mButtonset->Buttonsets[(uint32)mCurrentButtonset];
+			const Buttonset* buttonset = mButtonset->Buttonsets[(uint32)mCurrentButtonset];
 
-			for (uint32 i = 0; i < buttonList->ButtonCount; i++)
+			for (uint32 i = 0; i < buttonset->ButtonCount; i++)
 			{
-				ButtonsetData::Buttonset::ButtonInfo buttonInfo = buttonList->ButtonInfos[i];
-				int location = buttonInfo.Location;
-				int32 frameIndex = (int32)buttonList->ButtonInfos[i].Icon;
-				GRPFrame* frame = mButtonsGRP->Frames + frameIndex;
-				uint8* compressedImage = (uint8*)mButtonsGRP + frame->DataOffset;
+				const ButtonInfo* buttonInfo = buttonset->ButtonInfos + i;
+				uint32 condition = buttonInfo->Condition;
 
-				Palette::SetEntries(Palette::sData, 1, 16, Palette::sIconData);
+				if (condition != 0x4282d0)
+				{
+					continue;
+				}
 
-				mDDrawDevice->DrawGRP(x + (location - 1) % 3 * 47, y + (location - 1) / 3 * 41, frame, compressedImage, Palette::sData);
+				uint16 location = buttonInfo->Location;
+				int32 frameIndex = (int32)buttonset->ButtonInfos[i].Icon;
+				const GRPFrame* frame = buttonsGRP->Frames + frameIndex;
+				const uint8* compressedImage = (uint8*)buttonsGRP + frame->DataOffset;
+
+				mPaletteManager->SetEntries(mPaletteManager->Data, 1, 16, mPaletteManager->IconData);
+
+				mDDrawDevice->DrawGRP(x + (location - 1) % 3 * 47, y + (location - 1) / 3 * 41, frame, compressedImage, mPaletteManager->Data);
 			}
 		}
 
@@ -1192,27 +1120,27 @@ void Game::drawScene()
 			int32 index = (uint32)unitType;
 
 			{
-				GRPHeader* wireframeGRP = mWireframeGRPs[2];
-				GRPFrame* frame = wireframeGRP->Frames + index;
+				const GRPHeader* wireframeGRP = mResourceManager->GetWireframeGRP(2);
+				const GRPFrame* frame = wireframeGRP->Frames + index;
 				uint8* compressedImage = (uint8*)wireframeGRP + frame->DataOffset;
 
-				int32 x = mConsoleX + 177;
-				int32 y = mConsoleY + 389;
+				int32 x = mConsolePos.X + 177;
+				int32 y = mConsolePos.Y + 389;
 
 				updateWireframePalette(unit);
-				mDDrawDevice->DrawGRP(x, y, frame, compressedImage, Palette::sData);
+				mDDrawDevice->DrawGRP(x, y, frame, compressedImage, mPaletteManager->Data);
 			}
 
 			{
 				int32 icons[4] = { 0, };
 				int32 upgradeCount = 0;
 
-				int32 x = mConsoleX + 240;
-				int32 y = mConsoleY + 440;
+				int32 x = mConsolePos.X + 240;
+				int32 y = mConsolePos.Y + 440;
 
-				const UnitData* unitData = mArrangement->GetUnitData();
-				const UpgradeData* upgardeData = mArrangement->GetUpgradeData();
-				const WeaponData* weaponData = mArrangement->GetWeaponData();
+				const UnitData* unitData = mResourceManager->GetUnitData();
+				const UpgradeData* upgardeData = mResourceManager->GetUpgradeData();
+				const WeaponData* weaponData = mResourceManager->GetWeaponData();
 				int32 armorUpgradeIndex = unitData->ArmorUpgrades[index];
 				int32 armorIconIndex = upgardeData->Icons[armorUpgradeIndex];
 				if (armorIconIndex != 0)
@@ -1243,19 +1171,20 @@ void Game::drawScene()
 				{
 					if (icons[i] != 0)
 					{
-						if (mButtonsGRP != nullptr)
+						if (buttonsGRP != nullptr)
 						{
-							GRPFrame* frame = mButtonsGRP->Frames + icons[i];
-							uint8* compressedImage = (uint8*)mButtonsGRP + frame->DataOffset;
-							Palette::SetEntries(Palette::sData, 1, 16, Palette::sIconWireData);
-							mDDrawDevice->DrawGRP(x + 2, y + 2, frame, compressedImage, Palette::sData);
+							const GRPFrame* frame = buttonsGRP->Frames + icons[i];
+							uint8* compressedImage = (uint8*)buttonsGRP + frame->DataOffset;
+							mPaletteManager->SetEntries(mPaletteManager->Data, 1, 16, mPaletteManager->IconWireData);
+							mDDrawDevice->DrawGRP(x + 2, y + 2, frame, compressedImage, mPaletteManager->Data);
 						}
 					}
 
 					{
-						GRPFrame* frame = mTCmdBtnsGRP->Frames + 12;
-						uint8* compressedImage = (uint8*)mTCmdBtnsGRP + frame->DataOffset;
-						mDDrawDevice->DrawGRP(x, y, frame, compressedImage, Palette::sData);
+						const GRPHeader* tcmdBtnsGRP = mResourceManager->GetTCmdBtnsGRP();
+						const GRPFrame* frame = tcmdBtnsGRP->Frames + 12;
+						uint8* compressedImage = (uint8*)tcmdBtnsGRP + frame->DataOffset;
+						mDDrawDevice->DrawGRP(x, y, frame, compressedImage, mPaletteManager->Data);
 					}
 
 					x += 40;
@@ -1274,24 +1203,25 @@ void Game::drawScene()
 					int32 col = i / 2;
 					int32 row = i % 2;
 
-					int32 x = mConsoleX + 167 + 37 * col;
-					int32 y = mConsoleY + 396 + 37 * row;
+					int32 x = mConsolePos.X + 167 + 37 * col;
+					int32 y = mConsolePos.Y + 396 + 37 * row;
 
-					GRPFrame* frame = mTCmdBtnsGRP->Frames + 2;
-					uint8* compressedImage = (uint8*)mTCmdBtnsGRP + frame->DataOffset;
-					mDDrawDevice->DrawGRP(x, y, frame, compressedImage, Palette::sData);
+					const GRPHeader* tcmdBtnsGRP = mResourceManager->GetTCmdBtnsGRP();
+					const GRPFrame* frame = tcmdBtnsGRP->Frames + 2;
+					uint8* compressedImage = (uint8*)tcmdBtnsGRP + frame->DataOffset;
+					mDDrawDevice->DrawGRP(x, y, frame, compressedImage, mPaletteManager->Data);
 
 					x += frame->Width / 2;
 					y += frame->Height / 2;
 
 					updateWireframePalette(unit);
 
-					GRPHeader* wireframeGRP = mWireframeGRPs[0];
-					GRPFrame* wireframe = wireframeGRP->Frames + index;
+					const GRPHeader* wireframeGRP = mResourceManager->GetWireframeGRP(0);
+					const GRPFrame* wireframe = wireframeGRP->Frames + index;
 					uint8* wireCompressedImage = (uint8*)wireframeGRP + wireframe->DataOffset;
 					int32 wireFrameX = x - wireframeGRP->Width / 2 + wireframe->X;
 					int32 wireFrameY = y - wireframeGRP->Height / 2 + wireframe->Y;
-					mDDrawDevice->DrawGRP(wireFrameX, wireFrameY, wireframe, wireCompressedImage, Palette::sData);
+					mDDrawDevice->DrawGRP(wireFrameX, wireFrameY, wireframe, wireCompressedImage, mPaletteManager->Data);
 				}
 			}
 		}
@@ -1303,23 +1233,23 @@ void Game::drawScene()
 			{
 				const GRPFrame* frame = primaryImage->GetCurrentFrame();
 				const uint8* compressedImage = primaryImage->GetCompressedImage();
-				IntVector2 screenPosition = primaryImage->GetScreenPosition();
-				IntRect grpBound = primaryImage->GetGRPBounds();
-				mDDrawDevice->DrawGRP2(screenPosition.X, screenPosition.Y, frame, grpBound, compressedImage, Palette::sData);
+				Int32Vector2 screenPosition = primaryImage->GetScreenPosition();
+				Int32Rect grpBound = primaryImage->GetGRPBounds();
+				mDDrawDevice->DrawGRP2(screenPosition.X, screenPosition.Y, frame, grpBound, compressedImage, mPaletteManager->Data);
 			}
 		}
 
 		// Cursor
-		if (mCursorGRPs[mCursorIndex] != nullptr)
+		const GRPHeader* cursorGRP = mResourceManager->GetCursorGRP(mCursorIndex);
+		if (cursorGRP != nullptr)
 		{
-			GRPHeader* cursorGRP = mCursorGRPs[mCursorIndex];
-			GRPFrame* frame = cursorGRP->Frames + mCursorFrame / 3;
+			const GRPFrame* frame = cursorGRP->Frames + mCursorFrame / 3;
 			uint8* compressedImage = (uint8*)cursorGRP + frame->DataOffset;
 
 			int32 x = mCursorScreenPos.X - cursorGRP->Width / 2 + frame->X;
 			int32 y = mCursorScreenPos.Y - cursorGRP->Height / 2 + frame->Y;
 
-			mDDrawDevice->DrawGRP(x, y, frame, compressedImage, Palette::sData);
+			mDDrawDevice->DrawGRP(x, y, frame, compressedImage, mPaletteManager->Data);
 		}
 #pragma endregion
 
@@ -1337,290 +1267,4 @@ void Game::drawScene()
 
 	mDDrawDevice->OnDraw();
 	mDDrawDevice->CheckFPS();
-}
-
-void Game::loadMap()
-{
-#pragma region Read Files
-	FILE* fp = nullptr;
-
-	fopen_s(&fp, "../data/STARDAT/tileset/jungle.CV5", "rb");
-	if (fp == nullptr)
-	{
-		return;
-	}
-	CV5* cv5 = new CV5;
-	memset(cv5, 0, sizeof(CV5));
-	fread(cv5, sizeof(CV5), 1, fp);
-	fclose(fp);
-
-	fopen_s(&fp, "../data/STARDAT/tileset/jungle.VF4", "rb");
-	if (fp == nullptr)
-	{
-		return;
-	}
-	VF4* vf4 = new VF4;
-	memset(vf4, 0, sizeof(VF4));
-	fread(vf4, sizeof(VF4), 1, fp);
-	fclose(fp);
-
-	fopen_s(&fp, "../data/STARDAT/tileset/jungle.VX4", "rb");
-	if (fp == nullptr)
-	{
-		return;
-	}
-	VX4* vx4 = new VX4;
-	memset(vx4, 0, sizeof(VX4));
-	fread(vx4, sizeof(VX4), 1, fp);
-	fclose(fp);
-
-	fopen_s(&fp, "../data/STARDAT/tileset/jungle.VR4", "rb");
-	if (fp == nullptr)
-	{
-		return;
-	}
-	VR4* vr4 = new VR4;
-	memset(vr4, 0, sizeof(VR4));
-	fread(vr4, sizeof(VR4), 1, fp);
-	fclose(fp);
-
-	fopen_s(&fp, "../data/STARDAT/tileset/jungle.WPE", "rb");
-	if (fp == nullptr)
-	{
-		return;
-	}
-	WPE* wpe = new WPE;
-	memset(wpe, 0, sizeof(WPE));
-	fread(wpe, sizeof(WPE), 1, fp);
-	fclose(fp);
-
-	const int32 width = 128;
-	const int32 height = 128;
-	uint16* mtmxData = new uint16[width * height];
-	memset(mtmxData, 0, sizeof(uint16) * width * height);
-	fopen_s(&fp, "../data/MTXM", "rb");
-
-	if (fp == nullptr)
-	{
-		return;
-	}
-
-	fread(mtmxData, sizeof(uint16), (size_t)(width * height), fp);
-
-	fclose(fp);
-#pragma endregion
-
-	mMapImageWidth = width * 32;
-	mMapImageHeight = height * 32;
-	mMapImage = new uint32[mMapImageWidth * mMapImageHeight];
-
-	for (int32 y = 0; y < height; y++)
-	{
-		for (int32 x = 0; x < width; x++)
-		{
-			int32 group = mtmxData[y * width + x] >> 4;
-			int32 index = mtmxData[y * width + x] & 0x0f;
-			int32 megatile = cv5->Group[group].MegatileIndex[index];
-
-			for (int32 subY = 0; subY < 4; subY++)
-			{
-				for (int32 subX = 0; subX < 4; subX++)
-				{
-					int minitileIndex = vx4->Data[megatile].VR4Index[subY * 4 + subX] >> 1; // 상위 15비트는 이미지
-					bool flipped = vx4->Data[megatile].VR4Index[subY * 4 + subX] & 0x01; // 하위 1비트는 좌우 반전 여부
-
-					gMiniTiles[y * 4 + subY][x * 4 + subX] = (uint8)vf4->Data[megatile].Flags[subY * 4 + subX];
-
-					const VR4Data* vr4Data = vr4->Image + minitileIndex;
-
-					const int32 offsetX = x * 32 + subX * 8;
-					const int32 offsetY = y * 32 + subY * 8;
-
-					for (int32 j = 0; j < 8; j++)
-					{
-						for (int32 i = 0; i < 8; i++)
-						{
-							int32 drawX = offsetX + (flipped ? 7 - i : i);
-							int32 drawY = offsetY + j;
-							const WPEData* wpeData = wpe->Data + vr4Data->Color[j * 8 + i];
-							uint32 color = 0xff000000 | wpeData->R << 16 | wpeData->G << 8 | wpeData->B;
-							mMapImage[drawY * mMapImageWidth + drawX] = color;
-						}
-					}
-
-				}
-			}
-		}
-	}
-
-	delete[] mtmxData;
-	delete wpe;
-	delete vr4;
-	delete vx4;
-	delete vf4;
-	delete cv5;
-}
-
-void Game::destroyMap()
-{
-	delete[] mMapImage;
-	mMapImage = nullptr;
-
-	mMapImageWidth = 0;
-	mMapImageHeight = 0;
-}
-
-bool Game::loadPCX(PCXImage** outPCXImage, const char* filepath)
-{
-	bool bResult = false;
-
-#pragma region Read File
-	FILE* fp = nullptr;
-	fopen_s(&fp, filepath, "rb");
-	if (fp == nullptr)
-	{
-		return false;
-	}
-
-	fseek(fp, 0, SEEK_END);
-	int32 fileSize = ftell(fp);
-	rewind(fp);
-
-	Chunk* chunk = (Chunk*)malloc(fileSize + sizeof(Chunk) - 1);
-	memset(chunk, 0, fileSize + sizeof(Chunk) - 1);
-
-	chunk->Length = fileSize;
-	fread(chunk->Data, 1, fileSize, fp);
-
-	fclose(fp);
-#pragma endregion
-
-	PCXHeader header = { 0, };
-	int32 width = 0;
-	int32 height = 0;
-
-	if (chunk->Length <= sizeof(PCXHeader) + 0x300)
-	{
-		goto LB_RETURN;
-	}
-
-	memcpy(&header, chunk->Data, sizeof(PCXHeader));
-	width = header.XMax - header.XMin + 1;
-	height = header.YMax - header.YMin + 1;
-
-	if (header.Manufacturer != 0x0a ||
-		header.Version != 5 ||
-		header.Encoding != 1 ||
-		header.BitsPerPixel != 8 ||
-		header.PlaneCount != 1 ||
-		width < 0 ||
-		height < 0 ||
-		header.BytesPerLine & 0x01 ||
-		header.BytesPerLine < width)
-	{
-		goto LB_RETURN;
-	}
-
-	size_t pcxSize = sizeof(PCXImage) + chunk->Length - sizeof(PCXHeader) - 0x300 - 1;
-	*outPCXImage = (PCXImage*)malloc(pcxSize);
-	memset(*outPCXImage, 0, pcxSize);
-
-	(*outPCXImage)->Width = (int32)header.BytesPerLine;
-	(*outPCXImage)->Height = (int32)height;
-
-	size_t dataSize = chunk->Length - sizeof(PCXHeader) - 0x300;
-	memcpy((*outPCXImage)->Data, chunk->Data + sizeof(PCXHeader), dataSize);
-
-	const uint8* paletteCurrent = chunk->Data + chunk->Length - 0x300;
-
-	if (*(paletteCurrent - 1) != 0x0c)
-	{
-		goto LB_RETURN;
-	}
-
-	for (int32 i = 0; i < 256; i++)
-	{
-		(*outPCXImage)->PaletteData[i].peRed = paletteCurrent[3 * i];
-		(*outPCXImage)->PaletteData[i].peGreen = paletteCurrent[3 * i + 1];
-		(*outPCXImage)->PaletteData[i].peBlue = paletteCurrent[3 * i + 2];
-		(*outPCXImage)->PaletteData[i].peFlags = 0;
-	}
-
-	free(chunk);
-	chunk = nullptr;
-
-	bResult = true;
-
-LB_RETURN:
-	return bResult;
-}
-
-void Game::destroyPCX(PCXImage** pcxImage)
-{
-	free(*pcxImage);
-	*pcxImage = nullptr;
-}
-
-bool Game::loadGRP(GRPHeader** outGRPHeader, const char* filepath)
-{
-	bool bResult = false;
-
-	FILE* fp = nullptr;
-	fopen_s(&fp, filepath, "rb");
-
-	if (fp == nullptr)
-	{
-		goto LB_RETURN;
-	}
-
-	fseek(fp, 0, SEEK_END);
-	int32 fileSize = ftell(fp);
-
-	rewind(fp);
-
-	*outGRPHeader = (GRPHeader*)malloc(fileSize);
-	fread(*outGRPHeader, fileSize, 1, fp);
-
-	fclose(fp);
-
-	bResult = true;
-
-LB_RETURN:
-	return false;
-}
-
-void Game::destroyGRP(GRPHeader** grpHeader)
-{
-	free(*grpHeader);
-	*grpHeader = nullptr;
-}
-
-bool Game::loadImages()
-{
-	bool bResult = false;
-
-#pragma region Load GRP
-	{
-		constexpr size_t BUFFER_SIZE = 1024;
-		char buffer[BUFFER_SIZE] = { 0, };
-		int index = 0;
-
-		mImageCount = (uint32)mArrangement->GetImageCount();
-
-		for (uint32 i = 0; i < mImageCount; i++)
-		{
-			const ImageData* imageData = mArrangement->GetImageData();
-			const char* grpFilename = mArrangement->GetImageName(i);
-			char grpListFilename[MAX_PATH] = { 0, };
-			sprintf(grpListFilename, "%s/%s", "../data/STARDAT/unit/", grpFilename);
-
-			// Load GRP files
-			loadGRP(GRPFiles + i, grpListFilename);
-		}
-	}
-#pragma endregion
-
-	bResult = true;
-
-	return bResult;
 }

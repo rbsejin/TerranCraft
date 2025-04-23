@@ -18,8 +18,8 @@ public:
 
 	Target GetMoveTarget() const { return mMoveTarget; }
 	void SetMoveTarget(Target moveTarget) { mMoveTarget = moveTarget; }
-	IntVector2 GetNextMovementWaypoint() const { return mNextMovementWaypoint; }
-	void SetNextMovementWaypoint(IntVector2 nextMovementWaypoint) { mNextMovementWaypoint = nextMovementWaypoint; }
+	Int32Vector2 GetNextMovementWaypoint() const { return mNextMovementWaypoint; }
+	void SetNextMovementWaypoint(Int32Vector2 nextMovementWaypoint) { mNextMovementWaypoint = nextMovementWaypoint; }
 	int32 GetFlingyTopSpeed() const { return mFlingyTopSpeed; }
 	float GetCurrentSpeed() const { return mCurrentSpeed; }
 	uint8 GetFacingDirection() const { return mFacingDirection; }
@@ -38,7 +38,7 @@ public:
 protected:
 	eFlingyType mFlingyType = eFlingyType::None;
 	Target mMoveTarget = { 0, };
-	IntVector2 mNextMovementWaypoint = { 0, };
+	Int32Vector2 mNextMovementWaypoint = { 0, };
 	uint8 mMovementFlags = 0;
 	int32 mFlingyTopSpeed = 0;
 	float mCurrentSpeed = 0.f;

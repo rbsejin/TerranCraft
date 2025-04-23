@@ -188,13 +188,8 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			GetData(&gameTicks, iscriptOffset, sizeof(gameTicks));
 			iscriptOffset += sizeof(gameTicks);
 			sleep = gameTicks;
-			//image->SetSleep(sleep);
 
 			printOpcode(imageNumber, "WAIT");
-
-			char buffer[256];
-			sprintf_s(buffer, "\tGameTicks: %d\n", gameTicks);
-			//OutputDebugStringA(buffer);
 		}
 		break;
 		case eScriptCode::WaitRand:
@@ -207,7 +202,6 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			iscriptOffset += sizeof(gameTicks2);
 
 			sleep = (rand() % 2 == 0) ? gameTicks1 : gameTicks2;
-			//image->SetSleep(sleep);
 
 			printOpcode(imageNumber, "WAITRAND");
 		}
@@ -343,7 +337,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			newThingy->Initialize(0, (eSprite)spriteID);
 			Sprite* sprite = newThingy->GetSprite();
 			Sprite* parent = image->GetParent();
-			IntVector2 position = parent->GetPosition();
+			Int32Vector2 position = parent->GetPosition();
 			position.X += x;
 			position.Y += y;
 			sprite->SetPosition(position);
@@ -383,7 +377,7 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			newThingy->Initialize(0, (eSprite)spriteID);
 			Sprite* sprite = newThingy->GetSprite();
 			Sprite* parent = image->GetParent();
-			IntVector2 position = parent->GetPosition();
+			Int32Vector2 position = parent->GetPosition();
 			position.X += x;
 			position.Y += y;
 			sprite->SetPosition(position);
