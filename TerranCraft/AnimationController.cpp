@@ -126,16 +126,15 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			GetData(&frame, iscriptOffset, sizeof(frame));
 			iscriptOffset += sizeof(frame);
 
-			uint16 frameSet = frame / 0x11;
-			image->SetFrameSet(frameSet);
-
 			uint8 direction = image->GetDirection();
-			uint8 d = frame % 0x11;
-			if (frame == 0 || d != 0)
+			int32 d = direction;
+			if (d > 0x10)
 			{
-				direction = d;
+				d = 0x20 - d;
 			}
-			image->SetDirection(direction);
+			frame += d;
+			image->UpdateFrameIndex(frame);
+
 
 			printOpcode(imageNumber, "PLAYFRAM");
 		}
@@ -230,17 +229,11 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			iscriptOffset += sizeof(y);
 
 			// TODO: glow effect 렌더링 구현되면 추가
-#if 1
 			Sprite* parent = image->GetParent();
 			Image* child = new Image();
 			child->Initialize((eImage)imageID, parent);
 			child->SetOffsets({ x, y });
-			eAnim anim = image->GetAnim();
-			//IScriptAnimation anim = IScriptAnimation::Init;
-			child->SetAnim(anim);
-			//parent->AddBefore(child);
 			parent->AddAffter(child);
-#endif
 
 			printOpcode(imageNumber, "IMGOL");
 		}
@@ -257,16 +250,13 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			GetData(&y, iscriptOffset, sizeof(y));
 			iscriptOffset += sizeof(y);
 
-			// TODO: shadow 렌더링 구현되면 추가
-#if 0
+			//// TODO: shadow 렌더링 구현되면 추가
 			Sprite* parent = image->GetParent();
 			Image* child = new Image();
-			child->Initialize((ImageNumber)imageID, parent);
+			child->Initialize((eImage)imageID, parent);
 			child->SetOffsets({ x, y });
-			IScriptAnimation anim = image->GetAnim();
-			child->SetAnim(anim);
-			parent->AddAffter(child);
-#endif
+			parent->AddBefore(child);
+
 			printOpcode(imageNumber, "IMGUL");
 		}
 		break;
@@ -531,13 +521,14 @@ void AnimationController::UpdateImageFrame(Thingy* thingy, Image* image) const
 			}
 #endif // _DEBUG
 
-			int8 direction = primaryImage->GetDirection();
-			image->SetDirection(direction);
-
 			int16 frameSet = primaryImage->GetFrameSet();
 			image->SetFrameSet(frameSet);
 
-			image->UpdateFrameIndex();
+			int8 direction = primaryImage->GetDirection();
+			image->SetDirection(direction);
+
+			//uint32 frameIndex = primaryImage->GetFrameIndex();
+			//image->UpdateFrameIndex(frameIndex);
 
 			printOpcode(imageNumber, "FOLLOWMAINGRAPHIC");
 		}

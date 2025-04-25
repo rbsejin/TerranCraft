@@ -60,3 +60,21 @@ void Flingy::Update()
 		selectionCircleImage->UpdateGraphicData();
 	}
 }
+
+void Flingy::UpdateNextMovementWaypoint(Int32Vector2 nextMovementWaypoint)
+{
+	mNextMovementWaypoint = nextMovementWaypoint;
+
+	float distanceX = mNextMovementWaypoint.X - mPosition.X;
+	float distanceY = mNextMovementWaypoint.Y - mPosition.Y;
+	float distanceSquare = distanceX * distanceX + distanceY * distanceY;
+	float distance = sqrtf(distanceSquare);
+
+	mCurrentOrientation.X = distanceX / distance;
+	mCurrentOrientation.Y = distanceY / distance;
+
+	float angle = atan2f(mCurrentOrientation.Y, mCurrentOrientation.X);
+	angle += (float)M_PI;
+	uint8 direction = (uint8)(angle * 128.0f / M_PI - 64);
+	mFacingDirection = direction / 8;
+}

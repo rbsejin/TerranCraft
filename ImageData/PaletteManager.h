@@ -8,8 +8,11 @@ public:
 	uint32 GetColor(const PALETTEENTRY* palette, uint8 index);
 	void SetEntries(PALETTEENTRY* palette, int32 startIndex, int32 count, const PALETTEENTRY* colors);
 
-	void LoadPal(PALETTEENTRY* data, const char* filename);
+	void LoadPals();
 	void pcxToPaletteEntries(const PCXImage* pcx, PALETTEENTRY* pDest);
+
+private:
+	void loadPal(PALETTEENTRY* data, const char* filename);
 
 public:
 #define RGBRESERVE {0x23, 0x23, 0xff}

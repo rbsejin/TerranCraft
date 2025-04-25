@@ -2,11 +2,10 @@
 
 #include <queue>
 #include <unordered_map>
+
 #include "PathFinder.h"
 
-uint8 gMiniTiles[MAP_HEIGHT][MAP_WIDTH] = { 0, };
-
-int32 FindPath(std::list<Int32Vector2>* outPath, const uint8* map, Int32Vector2 start, Int32Vector2 end)
+int32 PathFinder::FindPath(std::list<Int32Vector2>* outPath, Int32Vector2 start, Int32Vector2 end) const
 {
 #ifdef _DEBUG
 	if (outPath == nullptr)
@@ -19,7 +18,7 @@ int32 FindPath(std::list<Int32Vector2>* outPath, const uint8* map, Int32Vector2 
 		__debugbreak();
 	}
 
-	if (map == nullptr)
+	if (mMiniTiles == nullptr)
 	{
 		__debugbreak();
 	}
@@ -87,7 +86,7 @@ int32 FindPath(std::list<Int32Vector2>* outPath, const uint8* map, Int32Vector2 
 				continue;
 			}
 
-			if (map[neighbor.Y * MAP_WIDTH + neighbor.X] == 1)
+			if (mMiniTiles[neighbor.Y][neighbor.X] == 1)
 			{
 				continue;
 			}
@@ -105,7 +104,7 @@ int32 FindPath(std::list<Int32Vector2>* outPath, const uint8* map, Int32Vector2 
 	return -1;
 }
 
-int32 FindPathWithUnitSize(std::list<Int32Vector2>* outPath, const uint8* map, Int32Vector2 start, Int32Vector2 end, Int32Rect countourBounds)
+int32 PathFinder::FindPathWithUnitSize(std::list<Int32Vector2>* outPath, Int32Vector2 start, Int32Vector2 end, Int32Rect countourBounds) const
 {
 #ifdef _DEBUG
 	if (outPath == nullptr)
@@ -118,7 +117,7 @@ int32 FindPathWithUnitSize(std::list<Int32Vector2>* outPath, const uint8* map, I
 		__debugbreak();
 	}
 
-	if (map == nullptr)
+	if (mMiniTiles == nullptr)
 	{
 		__debugbreak();
 	}
@@ -186,7 +185,7 @@ int32 FindPathWithUnitSize(std::list<Int32Vector2>* outPath, const uint8* map, I
 				continue;
 			}
 
-			if ((map[neighbor.Y * MAP_WIDTH + neighbor.X] & 0x01) == 0)
+			if ((mMiniTiles[neighbor.Y][neighbor.X] & 0x01) == 0)
 			{
 				continue;
 			}
@@ -196,7 +195,7 @@ int32 FindPathWithUnitSize(std::list<Int32Vector2>* outPath, const uint8* map, I
 				continue;
 			}
 
-			if (CanMoveTo(map, neighbor, countourBounds))
+			if (canMoveTo(neighbor, countourBounds))
 			{
 				queue.push(neighbor);
 				prevs[neighbor.Y * MAP_WIDTH + neighbor.X] = next.Y * MAP_WIDTH + next.X;
@@ -207,7 +206,7 @@ int32 FindPathWithUnitSize(std::list<Int32Vector2>* outPath, const uint8* map, I
 	return -1;
 }
 
-bool CanMoveTo(const uint8* map, Int32Vector2 pos, Int32Rect unitSize)
+bool PathFinder::canMoveTo(Int32Vector2 pos, Int32Rect unitSize) const
 {
 	Int32Vector2 unitPos = { pos.X * CELL_SIZE + CELL_SIZE / 2, pos.Y * CELL_SIZE + CELL_SIZE / 2 };
 	Int32Rect unitBound = { unitPos.X - unitSize.Left, unitPos.Y - unitSize.Top, unitPos.X + unitSize.Right, unitPos.Y + unitSize.Bottom };
@@ -217,7 +216,7 @@ bool CanMoveTo(const uint8* map, Int32Vector2 pos, Int32Rect unitSize)
 	{
 		for (int x = unitCellBound.Left; x <= unitCellBound.Right; x++)
 		{
-			if (map[y * MAP_WIDTH + x] == 0)
+			if (mMiniTiles[y * MAP_WIDTH + x] == 0)
 			{
 				return false;
 			}

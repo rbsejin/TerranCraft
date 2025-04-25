@@ -78,6 +78,11 @@ void Sprite::Draw(DDrawDevice* ddrawDevice) const
 	}
 }
 
+void Sprite::UpdatePrimaryAnim(eAnim anim)
+{
+	mImagePrimary->UpdateAnim(anim);
+}
+
 void Sprite::OnSelected(int32 selectedIndex)
 {
 #ifdef _DEBUG

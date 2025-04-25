@@ -4,6 +4,7 @@
 #include "../ImageData/Graphic.h"
 #include "Map.h"
 #include "PathFinder.h"
+#include "Game.h"
 
 ResourceManager::~ResourceManager()
 {
@@ -619,7 +620,9 @@ void ResourceManager::loadMap()
 					int minitileIndex = vx4->Data[megatile].VR4Index[subY * 4 + subX] >> 1; // 상위 15비트는 이미지
 					bool flipped = vx4->Data[megatile].VR4Index[subY * 4 + subX] & 0x01; // 하위 1비트는 좌우 반전 여부
 
-					gMiniTiles[y * 4 + subY][x * 4 + subX] = (uint8)vf4->Data[megatile].Flags[subY * 4 + subX];
+					uint8 value = (uint8)vf4->Data[megatile].Flags[subY * 4 + subX];
+					PathFinder* pathFinder = gGame->GetPathFinder();
+					pathFinder->SetMiniTile(x * 4 + subX, y * 4 + subY, value);
 
 					const VR4Data* vr4Data = vr4->Image + minitileIndex;
 

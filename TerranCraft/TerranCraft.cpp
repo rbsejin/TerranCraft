@@ -201,7 +201,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				_wfopen_s(&fp, ofn.lpstrFile, L"rb");
 				if (fp != nullptr)
 				{
-					fread(gMiniTiles, sizeof(gMiniTiles), 1, fp);
+					//fread(gMiniTiles, sizeof(gMiniTiles), 1, fp);
 					fclose(fp);
 				}
 			}
@@ -230,7 +230,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				_wfopen_s(&fp, ofn.lpstrFile, L"wb");
 				if (fp != nullptr)
 				{
-					fwrite(gMiniTiles, sizeof(gMiniTiles), 1, fp);
+					//fwrite(gMiniTiles, sizeof(gMiniTiles), 1, fp);
 					fclose(fp);
 				}
 			}

@@ -138,6 +138,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\BWLib\ButtonsetType.h" />
+    <ClInclude Include="..\BWLib\SpecialAbilityFlags.h" />
     <ClInclude Include="..\BWLib\FlingyType.h" />
     <ClInclude Include="..\BWLib\ImageType.h" />
     <ClInclude Include="..\BWLib\AnimType.h" />

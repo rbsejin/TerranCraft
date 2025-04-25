@@ -19,13 +19,11 @@ public:
 	Target GetMoveTarget() const { return mMoveTarget; }
 	void SetMoveTarget(Target moveTarget) { mMoveTarget = moveTarget; }
 	Int32Vector2 GetNextMovementWaypoint() const { return mNextMovementWaypoint; }
-	void SetNextMovementWaypoint(Int32Vector2 nextMovementWaypoint) { mNextMovementWaypoint = nextMovementWaypoint; }
+	void UpdateNextMovementWaypoint(Int32Vector2 nextMovementWaypoint);
 	int32 GetFlingyTopSpeed() const { return mFlingyTopSpeed; }
 	float GetCurrentSpeed() const { return mCurrentSpeed; }
 	uint8 GetFacingDirection() const { return mFacingDirection; }
 	void SetFacingDirection(uint8 facingDirection) { mFacingDirection = facingDirection; }
-	FloatVector2 GetCurrentVelocity() const { return mCurrentVelocity; }
-	void SetCurrentVelocity(FloatVector2 currentVelocity) { mCurrentVelocity = currentVelocity; }
 	FloatVector2 GetPosition() const { return mPosition; }
 	void SetPosition(FloatVector2 position) { mPosition = position; }
 
@@ -43,7 +41,7 @@ protected:
 	int32 mFlingyTopSpeed = 0;
 	float mCurrentSpeed = 0.f;
 	uint8 mFacingDirection = 0;
-	FloatVector2 mCurrentVelocity = { 0, };
+	FloatVector2 mCurrentOrientation = { 0, };
 	FloatVector2 mPosition = { 0, };
 
 	bool mbNobrkcode = false;

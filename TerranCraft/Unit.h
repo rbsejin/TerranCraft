@@ -35,7 +35,6 @@ public:
 
 	std::list<Int32Vector2>* GetPath() { return &mPath; }
 
-	eAnim GetAnimation() const;
 	bool IsMoving() const;
 	bool IsAttacking() const;
 
@@ -45,21 +44,23 @@ public:
 	void ClearOrders();
 	bool IsOrderQueueEmpty() const { return mOrderQueue.empty(); }
 	void SetStandby() { mOrderType = eOrder::None; }
+	Target GetOrderTarget() const { return mOrderTarget; }
 
 	int32 GetMaxHP() const;
 	uint8 GetFlingyID() const;
-	Target GetOrderTarget() const { return mOrderTarget; }
-
-	bool IsBuilding() const { return mSpecialAbilityFlags & 0x0001; }
+	uint32 GetSpecialAbilityFlags() const { return mSpecialAbilityFlags; }
 
 private:
 	void startMove();
 	void move();
+	void startMoveToAttack();
+	void moveToAttack();
 	void startAttackUnit();
 	void attackUnit();
 	void startBuilding();
 	void build();
 	void lookAt(FloatVector2 targetPosition);
+	bool canAttackTarget() const;
 
 private:
 	uint8 mGroundWeaponCooldown = 0;
@@ -72,7 +73,7 @@ private:
 	uint16 mHPGain = 0;
 	uint16 mBuildTime = 0;
 	uint16 mRemainingBuildTime = 0;
-	Image* mConstructionImage = nullptr;
+	std::list<Image*> mTempImages;
 
 	std::list<Int32Vector2> mPath;
 	std::list<Order*> mOrderQueue;
@@ -81,4 +82,6 @@ private:
 
 	uint32 mSpecialAbilityFlags = 0;
 	uint8 mMovementFlags = 0;
+	uint32 mTargetAcquisitionRange = 0;
+	uint32 mSightRange = 0;
 };

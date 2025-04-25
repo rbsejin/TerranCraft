@@ -6,7 +6,7 @@
 
 #include "../Common/typedef.h"
 
-enum class eScriptCode : uint8
+enum class eScriptCode
 {
 	PlayFram = 0x00,
 	PlayFramTile = 0x01,

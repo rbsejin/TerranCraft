@@ -3,6 +3,8 @@
 #include <list>
 #include "../BWLib/SpriteType.h"
 #include "../BWLib/UnitType.h"
+#include "../BWLib/AnimType.h"
+#include "Image.h"
 
 class Image;
 class DDrawDevice;
@@ -17,14 +19,19 @@ public:
 	void Cleanup();
 
 	void Draw(DDrawDevice* ddrawDevice) const;
+	void UpdatePrimaryAnim(eAnim anim);
+	eAnim GetPrimaryImageAnim() const { return mImagePrimary->GetAnim(); }
 
 	Int32Vector2 GetPosition() const { return mPosition; }
 	void SetPosition(Int32Vector2 position) { mPosition = position; }
 
 	eSprite GetSpriteID() const { return mSpriteID; }
 	int32 GetSelectionIndex() const { return mSelectionIndex; }
+	uint8 GetElevationLevel() const { return mElevationLevel; }
+	void SetElevationLevel(uint8 elevationLevel) { mElevationLevel = elevationLevel; }
 	const Image* GetPrimaryImage() const { return mImagePrimary; }
 	Image* GetPrimaryImage() { return mImagePrimary; }
+	void SetPrimaryImage(Image* image) { mImagePrimary = image; }
 	const std::list<Image*>* GetImages() const { return &mImages; }
 	std::list<Image*>* GetImages() { return &mImages; }
 	void AddBefore(Image* image) { mImages.push_front(image); }
@@ -49,7 +56,7 @@ private:
 	//uint8 mPlayerID = 0;
 	int32 mSelectionIndex = -1;
 	//uint8 mVisibilityFlags = 0;
-	//uint8 mElevationLevel = 0;
+	uint8 mElevationLevel = 0;
 	uint8 mFlags = 0;
 	/*	0x01  Draw selection circle.
 		0x02

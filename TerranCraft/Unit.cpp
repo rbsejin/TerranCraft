@@ -2,7 +2,6 @@
 #include "Unit.h"
 #include "Sprite.h"
 #include "Image.h"
-#include "../BWLib/ButtonsetType.h"
 #include "ResourceManager.h"
 #include "BWFile.h"
 #include "AnimationController.h"
@@ -10,6 +9,9 @@
 #include "Bullet.h"
 #include "Game.h"
 #include "PathFinder.h"
+#include "../BWLib/ButtonsetType.h"
+#include "../BWLib/SpecialAbilityFlags.h"
+#include "../Util/Util.h"
 
 Unit::~Unit()
 {
@@ -22,10 +24,18 @@ bool Unit::Initialize(eUnit unitType)
 
 	mUnitType = unitType;
 
-	mCurrentButtonset = (eButtonset)unitType;
-
 	ResourceManager* resourceManager = gGame->GetResourceManager();
 	const UnitData* unitData = resourceManager->GetUnitData();
+
+	int32 hp = unitData->HitPoints[(uint32)mUnitType] >> 8;
+	uint8 flingyID = unitData->Graphics[(uint32)mUnitType];
+	Flingy::Initialize(hp, (eFlingy)flingyID);
+
+	Sprite* sprite = GetSprite();
+	sprite->SetElevationLevel(unitData->ElevationLevels[(uint32)unitType]);
+
+	mCurrentButtonset = (eButtonset)unitType;
+
 	Int16Rect contourBounds = unitData->UnitDimensions[(uint32)unitType];
 	mContourBounds.Left = (int32)contourBounds.Left;
 	mContourBounds.Top = (int32)contourBounds.Top;
@@ -39,13 +49,11 @@ bool Unit::Initialize(eUnit unitType)
 	const WeaponData* weaponData = resourceManager->GetWeaponData();
 	mGroundWeaponCooldown = weaponData->WeaponCooldowns[(uint32)unitType];
 
-	int32 hp = GetMaxHP();
-	uint8 flingyID = GetFlingyID();
-
-	Flingy::Initialize(hp, (eFlingy)flingyID);
-
 	mBuildTime = unitData->BuildTimes[(uint32)unitType];
 	mRemainingBuildTime = mBuildTime;
+
+	mTargetAcquisitionRange = unitData->TargetAcquisitionRanges[(uint32)unitType];
+	mSightRange = unitData->SightRanges[(uint32)unitType];
 
 	bResult = true;
 
@@ -54,6 +62,12 @@ bool Unit::Initialize(eUnit unitType)
 
 void Unit::Cleanup()
 {
+	for (Image* tempImage : mTempImages)
+	{
+		delete tempImage;
+	}
+	mTempImages.clear();
+
 	for (Order* order : mOrderQueue)
 	{
 		delete order;
@@ -65,34 +79,58 @@ void Unit::Cleanup()
 
 void Unit::Update()
 {
-	switch (mOrderType)
+	if (!mbNobrkcode)
 	{
-	case eOrder::None:
-	{
-		PerformOrder();
-		break;
-	}
-	case eOrder::Move:
-	{
-		move();
-		break;
-	}
-	case eOrder::AttackUnit:
-	{
-		attackUnit();
-		break;
-	}
-	case eOrder::AttackMove:
-	{
-		// TODO: 추후 attackMove() 함수 구현해서 대체할 것...
-		move();
-		break;
-	}
-	case eOrder::ConstructingBuilding:
-		build();
-		break;
-	default:
-		break;
+		switch (mOrderType)
+		{
+		case eOrder::None:
+		{
+			PerformOrder();
+			break;
+		}
+		case eOrder::Move:
+		{
+			move();
+			break;
+		}
+		case eOrder::AttackUnit:
+		{
+			if (mMoveTarget.Unit != nullptr)
+			{
+				const FloatVector2 targetUnitPosition = mMoveTarget.Unit->GetPosition();
+				mMoveTarget.Position.X = (int32)targetUnitPosition.X;
+				mMoveTarget.Position.Y = (int32)targetUnitPosition.Y;
+			}
+
+			if (canAttackTarget() || mCoolTime > 0)
+			{
+				if (!IsAttacking())
+				{
+					startAttackUnit();
+				}
+
+				attackUnit();
+			}
+			else
+			{
+				moveToAttack();
+			}
+			break;
+		}
+		case eOrder::AttackMove:
+		{
+			// TODO: 추후 attackMove() 함수 구현해서 대체할 것...
+			move();
+			break;
+		}
+		case eOrder::ConstructingBuilding:
+		{
+			build();
+			break;
+		}
+		default:
+			break;
+		}
 	}
 
 	Sprite* sprite = GetSprite();
@@ -107,23 +145,11 @@ void Unit::Update()
 		{
 			image->SetDirection(mFacingDirection);
 		}
-		image->UpdateGraphicData();
-	}
-
-	Image* selectionCircleImage = sprite->GetSelectionCircleImage();
-	if (selectionCircleImage != nullptr)
-	{
-		selectionCircleImage->UpdateGraphicData();
 	}
 }
 
 void Unit::PerformOrder()
 {
-	if (mbNobrkcode)
-	{
-		return;
-	}
-
 	if (mOrderQueue.empty())
 	{
 		return;
@@ -161,13 +187,7 @@ void Unit::PerformOrder()
 		std::list<Image*>* images = sprite->GetImages();
 		for (Image* image : *images)
 		{
-			eAnim anim = eAnim::Death;
-			image->SetAnim(anim);
-			uint16 iscriptHeader = image->GetIScriptHeader();
-			AnimationController* animationController = gGame->GetAnimationController();
-			uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
-			image->SetIScriptOffset(iscriptOffset);
-			image->SetSleep(0);
+			image->UpdateAnim(eAnim::Death);
 		}
 
 		gGame->Units.erase(std::remove(gGame->Units.begin(), gGame->Units.end(), this));
@@ -177,85 +197,92 @@ void Unit::PerformOrder()
 	case eOrder::Stop:
 	{
 		Sprite* sprite = GetSprite();
+		Image* primaryImage = sprite->GetPrimaryImage();
+		eAnim anim = primaryImage->GetAnim();
 
-		const std::list<Image*>* images = sprite->GetImages();
-		for (Image* image : *images)
+		switch (anim)
 		{
-			eAnim anim = image->GetAnim();
+		case eAnim::Init:
+			break;
+		case eAnim::Death:
+			break;
+		case eAnim::GndAttkInit:
+			anim = eAnim::GndAttkToIdle;
+			break;
+		case eAnim::AirAttkInit:
+			anim = eAnim::AirAttkToIdle;
+			break;
+		case eAnim::Unused1:
+			break;
+		case eAnim::GndAttkRpt:
+			anim = eAnim::GndAttkToIdle;
+			break;
+		case eAnim::AirAttkRpt:
+			anim = eAnim::AirAttkToIdle;
+			break;
+		case eAnim::CastSpell:
+			break;
+		case eAnim::GndAttkToIdle:
+			break;
+		case eAnim::AirAttkToIdle:
+			break;
+		case eAnim::Unused2:
+			break;
+		case eAnim::Walking:
+			anim = eAnim::WalkingToIdle;
+			break;
+		case eAnim::WalkingToIdle:
+			break;
+		case eAnim::SpecialState1:
+			break;
+		case eAnim::SpecialState2:
+			break;
+		case eAnim::AlmostBuilt:
+			break;
+		case eAnim::Built:
+			break;
+		case eAnim::Landing:
+			break;
+		case eAnim::LiftOff:
+			break;
+		case eAnim::IsWorking:
+			break;
+		case eAnim::WorkingToIdle:
+			break;
+		case eAnim::WarpIn:
+			break;
+		case eAnim::Unused3:
+			break;
+		case eAnim::StarEditInit:
+			break;
+		case eAnim::Disable:
+			break;
+		case eAnim::Burrow:
+			break;
+		case eAnim::UnBurrow:
+			break;
+		case eAnim::Enable:
+			break;
+		default:
+			break;
+		}
 
-			switch (anim)
+		if (anim != eAnim::WalkingToIdle)
+		{
+			primaryImage->UpdateAnim(anim);
+		}
+		else
+		{
+			std::list<Image*>* images = sprite->GetImages();
+
+			for (Image* image : *images)
 			{
-			case eAnim::Init:
-				break;
-			case eAnim::Death:
-				break;
-			case eAnim::GndAttkInit:
-				anim = eAnim::GndAttkToIdle;
-				break;
-			case eAnim::AirAttkInit:
-				anim = eAnim::AirAttkToIdle;
-				break;
-			case eAnim::Unused1:
-				break;
-			case eAnim::GndAttkRpt:
-				anim = eAnim::GndAttkToIdle;
-				break;
-			case eAnim::AirAttkRpt:
-				anim = eAnim::AirAttkToIdle;
-				break;
-			case eAnim::CastSpell:
-				break;
-			case eAnim::GndAttkToIdle:
-				break;
-			case eAnim::AirAttkToIdle:
-				break;
-			case eAnim::Unused2:
-				break;
-			case eAnim::Walking:
-				anim = eAnim::WalkingToIdle;
-				break;
-			case eAnim::WalkingToIdle:
-				break;
-			case eAnim::SpecialState1:
-				break;
-			case eAnim::SpecialState2:
-				break;
-			case eAnim::AlmostBuilt:
-				break;
-			case eAnim::Built:
-				break;
-			case eAnim::Landing:
-				break;
-			case eAnim::LiftOff:
-				break;
-			case eAnim::IsWorking:
-				break;
-			case eAnim::WorkingToIdle:
-				break;
-			case eAnim::WarpIn:
-				break;
-			case eAnim::Unused3:
-				break;
-			case eAnim::StarEditInit:
-				break;
-			case eAnim::Disable:
-				break;
-			case eAnim::Burrow:
-				break;
-			case eAnim::UnBurrow:
-				break;
-			case eAnim::Enable:
-				break;
-			default:
-				break;
+				uint16 offsetCount = image->GetIScriptOffsetCount();
+				if (offsetCount >= 12)
+				{
+					image->UpdateAnim(eAnim::WalkingToIdle);
+				}
 			}
-
-			image->SetAnim(anim);
-			uint16 iscriptHeader = image->GetIScriptHeader();
-			AnimationController* animationController = gGame->GetAnimationController();
-			uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
-			image->SetIScriptOffset(iscriptOffset);
-			image->SetSleep(0);
 		}
 
 		mCoolTime = 0;
@@ -265,6 +292,7 @@ void Unit::PerformOrder()
 	}
 	case eOrder::Move:
 	{
+		mMoveTarget = mOrderTarget;
 		startMove();
 		break;
 	}
@@ -272,11 +300,21 @@ void Unit::PerformOrder()
 		break;
 	case eOrder::AttackUnit:
 	{
-		startAttackUnit();
+		mMoveTarget = mOrderTarget;
+
+		if (canAttackTarget() || mCoolTime > 0)
+		{
+			startAttackUnit();
+		}
+		else
+		{
+			startMoveToAttack();
+		}
 		break;
 	}
 	case eOrder::AttackMove:
 		// TODO: 추후 startAttackMove() 함수 구현해서 대체할 것...
+		mMoveTarget = mOrderTarget;
 		startMove();
 		break;
 	case eOrder::ConstructingBuilding:
@@ -294,23 +332,17 @@ void Unit::PerformOrder()
 	delete order;
 }
 
-eAnim Unit::GetAnimation() const
-{
-	Sprite* sprite = GetSprite();
-	Image* primaryImage = sprite->GetPrimaryImage();
-	eAnim anim = primaryImage->GetAnim();
-	return anim;
-}
-
 bool Unit::IsMoving() const
 {
-	eAnim anim = GetAnimation();
+	Sprite* sprite = GetSprite();
+	eAnim anim = sprite->GetPrimaryImageAnim();
 	return anim == eAnim::Walking || anim == eAnim::WalkingToIdle;
 }
 
 bool Unit::IsAttacking() const
 {
-	eAnim anim = GetAnimation();
+	Sprite* sprite = GetSprite();
+	eAnim anim = sprite->GetPrimaryImageAnim();
 	return anim == eAnim::GndAttkInit || anim == eAnim::GndAttkRpt
 		|| anim == eAnim::AirAttkInit || anim == eAnim::AirAttkRpt;
 }
@@ -340,237 +372,304 @@ uint8 Unit::GetFlingyID() const
 
 void Unit::startMove()
 {
-	mMoveTarget = mOrderTarget;
 	int32 x = mMoveTarget.Position.X;
 	int32 y = mMoveTarget.Position.Y;
 
-	FloatVector2 position = GetPosition();
+	Int32Vector2 nextMovementWaypoint = { x, y };
 
-	// find path
-	Int32Vector2 currentCell = { (int32)(position.X / CELL_SIZE), (int32)(position.Y / CELL_SIZE) };
-	Int32Vector2 targetCell = { x / CELL_SIZE, y / CELL_SIZE };
-
-	gGame->CellPath.clear();
-	Int32Rect countourBounds = GetContourBounds();
-	int32 length = FindPathWithUnitSize(&gGame->CellPath, (const uint8*)gMiniTiles, currentCell, targetCell, countourBounds);
-
-	if (length <= 0)
+	if ((mSpecialAbilityFlags & ((uint32)eSpecialAbilityFlags::FlyingUnit | (uint32)eSpecialAbilityFlags::FlyingBuilding)) == 0)
 	{
-		return;
+		FloatVector2 position = GetPosition();
+
+		// find path
+		Int32Vector2 currentCell = { (int32)(position.X / PathFinder::CELL_SIZE), (int32)(position.Y / PathFinder::CELL_SIZE) };
+		Int32Vector2 targetCell = { x / PathFinder::CELL_SIZE, y / PathFinder::CELL_SIZE };
+
+		gGame->CellPath.clear();
+		Int32Rect countourBounds = GetContourBounds();
+		PathFinder* pathFinder = gGame->GetPathFinder();
+		int32 length = pathFinder->FindPathWithUnitSize(&gGame->CellPath, currentCell, targetCell, countourBounds);
+
+		if (length <= 0)
+		{
+			return;
+		}
+
+		mPath.clear();
+
+		for (Int32Vector2& cell : gGame->CellPath)
+		{
+			Int32Vector2 pos = { cell.X * PathFinder::CELL_SIZE + PathFinder::CELL_SIZE / 2, cell.Y * PathFinder::CELL_SIZE + PathFinder::CELL_SIZE / 2 };
+			mPath.push_back(pos);
+		}
+
+		nextMovementWaypoint = mPath.front();
+		mPath.pop_front();
 	}
 
-	std::list<Int32Vector2>* path = GetPath();
-	path->clear();
-
-	for (Int32Vector2& cell : gGame->CellPath)
-	{
-		Int32Vector2 pos = { cell.X * CELL_SIZE + CELL_SIZE / 2, cell.Y * CELL_SIZE + CELL_SIZE / 2 };
-		path->push_back(pos);
-	}
-
-	Int32Vector2 nextMovementWaypoint = path->front();
-	path->pop_front();
-	SetNextMovementWaypoint(nextMovementWaypoint);
-
-	float distanceX = nextMovementWaypoint.X - position.X;
-	float distanceY = nextMovementWaypoint.Y - position.Y;
-
-	float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
-	FloatVector2 currentVelocity = { distanceX / distance, distanceY / distance };
-	SetCurrentVelocity(currentVelocity);
+	UpdateNextMovementWaypoint(nextMovementWaypoint);
 
 	// Walk Animation
 	Sprite* sprite = GetSprite();
-	std::list<Image*>* images = sprite->GetImages();
-
-	for (Image* image : *images)
+	eAnim currentAnim = sprite->GetPrimaryImageAnim();
+	if (currentAnim != eAnim::Walking)
 	{
-		eAnim anim = eAnim::Walking;
-		image->SetAnim(anim);
-		uint16 iscriptHeader = image->GetIScriptHeader();
-		AnimationController* animationController = gGame->GetAnimationController();
-		uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
-		image->SetIScriptOffset(iscriptOffset);
-		image->SetSleep(0);
+		sprite->UpdatePrimaryAnim(eAnim::Walking);
 	}
 }
 
 void Unit::move()
 {
-	float distanceX = mNextMovementWaypoint.X - mPosition.X;
-	float distanceY = mNextMovementWaypoint.Y - mPosition.Y;
-	float distanceSquare = distanceX * distanceX + distanceY * distanceY;
+	float range = mTargetAcquisitionRange * PathFinder::GRID_SIZE;
 
-	float speed = mCurrentSpeed;
-
-	if (distanceSquare > speed * speed)
+	if (mMoveTarget.Unit != nullptr)
 	{
-		FloatVector2 currentVelocity = mCurrentVelocity;
-		mPosition.X += currentVelocity.X * speed;
-		mPosition.Y += currentVelocity.Y * speed;
+		FloatVector2 moveTargetUnitPos = mMoveTarget.Unit->mPosition;
+		float distanceSquare = ::GetDistanceSquare(mMoveTarget.Position, moveTargetUnitPos);
+		if (distanceSquare > range * range)
+		{
+			mMoveTarget.Position.X = (int32)moveTargetUnitPos.X;
+			mMoveTarget.Position.Y = (int32)moveTargetUnitPos.Y;
+
+			startMove();
+		}
 	}
-	else
-	{
-		mPosition.X = (float)mNextMovementWaypoint.X;
-		mPosition.Y = (float)mNextMovementWaypoint.Y;
 
+	float nextMovementWaypointDistanceSquare = ::GetDistanceSquare(mNextMovementWaypoint, mPosition);
+
+	if (nextMovementWaypointDistanceSquare < mCurrentSpeed * mCurrentSpeed)
+	{
 		if (!mPath.empty())
 		{
-			mNextMovementWaypoint = mPath.front();
+			Int32Vector2 nextMovementWaypoint = mPath.front();
 			mPath.pop_front();
 
-			distanceX = mNextMovementWaypoint.X - mPosition.X;
-			distanceY = mNextMovementWaypoint.Y - mPosition.Y;
-
-			float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
-			FloatVector2 currentVelocity = { distanceX / distance, distanceY / distance };
-			mCurrentVelocity = currentVelocity;
-
-			float angle = atan2f(distanceY, distanceX);
-			angle += (float)M_PI;
-			uint8 direction = (uint8)(angle * 128.0f / M_PI - 64);
-			direction /= 8;
-
-			mFacingDirection = direction;
+			UpdateNextMovementWaypoint(nextMovementWaypoint);
 		}
 		else
 		{
-			// WalkingToIdle Animation
-			eAnim anim = eAnim::WalkingToIdle;
 			Sprite* sprite = GetSprite();
+			std::list<Image*>* images = sprite->GetImages();
 
-			const std::list<Image*>* images = sprite->GetImages();
 			for (Image* image : *images)
 			{
-				image->SetAnim(anim);
-				uint16 iscriptHeader = image->GetIScriptHeader();
-				AnimationController* animationController = gGame->GetAnimationController();
-				uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
-				image->SetIScriptOffset(iscriptOffset);
-				image->SetSleep(0);
+				uint16 offsetCount = image->GetIScriptOffsetCount();
+				if (offsetCount >= 12)
+				{
+					image->UpdateAnim(eAnim::WalkingToIdle);
+				}
 			}
 
-			mOrderType = eOrder::None;
+			if (mOrderTarget.Unit == nullptr)
+			{
+				mOrderType = eOrder::None;
+			}
 		}
 	}
+
+	if (mMoveTarget.Unit == nullptr)
+	{
+		mPosition.X += mCurrentOrientation.X * mCurrentSpeed;
+		mPosition.Y += mCurrentOrientation.Y * mCurrentSpeed;
+	}
+	else
+	{
+		float moveTargetDistanceSquare = ::GetDistanceSquare(mMoveTarget.Position, mPosition);
+
+		if (moveTargetDistanceSquare >= range * range)
+		{
+			mPosition.X += mCurrentOrientation.X * mCurrentSpeed;
+			mPosition.Y += mCurrentOrientation.Y * mCurrentSpeed;
+		}
+		else
+		{
+			Sprite* sprite = GetSprite();
+			std::list<Image*>* images = sprite->GetImages();
+
+			for (Image* image : *images)
+			{
+				uint16 offsetCount = image->GetIScriptOffsetCount();
+				if (offsetCount >= 12)
+				{
+					image->UpdateAnim(eAnim::WalkingToIdle);
+				}
+			}
+		}
+	}
+
+	mCoolTime = 0;
+}
+
+void Unit::startMoveToAttack()
+{
+	int32 x = mMoveTarget.Position.X;
+	int32 y = mMoveTarget.Position.Y;
+
+	Int32Vector2 nextMovementWaypoint = { x, y };
+
+	if ((mSpecialAbilityFlags & ((uint32)eSpecialAbilityFlags::FlyingUnit | (uint32)eSpecialAbilityFlags::FlyingBuilding)) == 0)
+	{
+		FloatVector2 position = GetPosition();
+
+		// find path
+		Int32Vector2 currentCell = { (int32)(position.X / PathFinder::CELL_SIZE), (int32)(position.Y / PathFinder::CELL_SIZE) };
+		Int32Vector2 targetCell = { x / PathFinder::CELL_SIZE, y / PathFinder::CELL_SIZE };
+
+		gGame->CellPath.clear();
+		Int32Rect countourBounds = GetContourBounds();
+		PathFinder* pathFinder = gGame->GetPathFinder();
+		int32 length = pathFinder->FindPathWithUnitSize(&gGame->CellPath, currentCell, targetCell, countourBounds);
+
+		if (length <= 0)
+		{
+			return;
+		}
+
+		mPath.clear();
+
+		for (Int32Vector2& cell : gGame->CellPath)
+		{
+			Int32Vector2 pos = { cell.X * PathFinder::CELL_SIZE + PathFinder::CELL_SIZE / 2, cell.Y * PathFinder::CELL_SIZE + PathFinder::CELL_SIZE / 2 };
+			mPath.push_back(pos);
+		}
+
+		nextMovementWaypoint = mPath.front();
+		mPath.pop_front();
+	}
+
+	UpdateNextMovementWaypoint(nextMovementWaypoint);
+
+	// Walk Animation
+	Sprite* sprite = GetSprite();
+	eAnim currentAnim = sprite->GetPrimaryImageAnim();
+	if (currentAnim != eAnim::Walking)
+	{
+		sprite->UpdatePrimaryAnim(eAnim::Walking);
+	}
+}
+
+void Unit::moveToAttack()
+{
+	float range = 2 * PathFinder::GRID_SIZE;
+
+	if (mMoveTarget.Unit != nullptr)
+	{
+		FloatVector2 moveTargetUnitPos = mMoveTarget.Unit->mPosition;
+		float distanceSquare = ::GetDistanceSquare(mMoveTarget.Position, moveTargetUnitPos);
+		if (distanceSquare > range * range)
+		{
+			mMoveTarget.Position.X = (int32)moveTargetUnitPos.X;
+			mMoveTarget.Position.Y = (int32)moveTargetUnitPos.Y;
+		}
+	}
+
+	startMoveToAttack();
+
+	float nextMovementWaypointDistanceSquare = ::GetDistanceSquare(mNextMovementWaypoint, mPosition);
+
+	if (nextMovementWaypointDistanceSquare < mCurrentSpeed * mCurrentSpeed)
+	{
+		if (!mPath.empty())
+		{
+			Int32Vector2 nextMovementWaypoint = mPath.front();
+			mPath.pop_front();
+
+			UpdateNextMovementWaypoint(nextMovementWaypoint);
+		}
+	}
+
+	mPosition.X += mCurrentOrientation.X * mCurrentSpeed;
+	mPosition.Y += mCurrentOrientation.Y * mCurrentSpeed;
+
+	mCoolTime = 0;
 }
 
 void Unit::startAttackUnit()
 {
-	Unit* targetUnit = mOrderTarget.Unit;
-	FloatVector2 targetPosition = targetUnit->GetPosition();
-	lookAt(targetPosition);
-
 	Sprite* sprite = GetSprite();
-	std::list<Image*>* images = sprite->GetImages();
-	for (Image* image : *images)
-	{
-		eAnim anim = eAnim::GndAttkInit;
-		image->SetAnim(anim);
-		uint16 iscriptHeader = image->GetIScriptHeader();
-		AnimationController* animationController = gGame->GetAnimationController();
-		uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
-		image->SetIScriptOffset(iscriptOffset);
-		image->SetSleep(0);
-		mbRepeatAttackable = true;
-	}
+	sprite->UpdatePrimaryAnim(eAnim::GndAttkInit);
+
+	mbRepeatAttackable = true;
 }
 
 void Unit::attackUnit()
 {
-	if ((mCoolTime <= 0) && mbRepeatAttackable)
+	if (mbRepeatAttackable)
 	{
-		mbRepeatAttackable = false;
-
 		Unit* targetUnit = mOrderTarget.Unit;
 		FloatVector2 targetPosition = targetUnit->GetPosition();
 		lookAt(targetPosition);
 
-		Unit* dealer = this;
-		ResourceManager* resourceManager = gGame->GetResourceManager();
-		const UnitData* dealerUnitData = resourceManager->GetUnitData();
-		eUnit dealerUnitType = dealer->GetUnitType();
-		uint8 weaponID = dealerUnitData->GroundWeapons[(uint32)dealerUnitType];
-		const WeaponData* weaponData = resourceManager->GetWeaponData();
-		uint16 amount = weaponData->DamageAmounts[weaponID];
+		if (mCoolTime <= 0)
+		{
+			mbRepeatAttackable = false;
 
-		const UnitData* targetUnitData = resourceManager->GetUnitData();
+			Unit* dealer = this;
+			ResourceManager* resourceManager = gGame->GetResourceManager();
+			const UnitData* dealerUnitData = resourceManager->GetUnitData();
+			eUnit dealerUnitType = dealer->GetUnitType();
+			uint8 weaponID = dealerUnitData->GroundWeapons[(uint32)dealerUnitType];
+			const WeaponData* weaponData = resourceManager->GetWeaponData();
+			uint16 amount = weaponData->DamageAmounts[weaponID];
+
+			const UnitData* targetUnitData = resourceManager->GetUnitData();
 
 #ifdef _DEBUG
-		if (targetUnit == nullptr)
-		{
-			__debugbreak();
-		}
+			if (targetUnit == nullptr)
+			{
+				__debugbreak();
+			}
 #endif
-		eUnit targetUnitType = targetUnit->GetUnitType();
-		uint8 armor = targetUnitData->Armors[(uint32)targetUnitType];
-		int32 damage = amount - armor;
+			eUnit targetUnitType = targetUnit->GetUnitType();
+			uint8 armor = targetUnitData->Armors[(uint32)targetUnitType];
+			int32 damage = amount - armor;
 
-		int32 hp = targetUnit->GetHP();
-		hp -= damage;
+			int32 hp = targetUnit->GetHP();
+			hp -= damage;
 
-		char buf[256];
-		sprintf_s(buf, "Dealer: %d, Target: %d, Damage: %d, HP: %d\n", (int)dealerUnitType, (int)targetUnitType, damage, hp);
-		OutputDebugStringA(buf);
+			char buf[256];
+			sprintf_s(buf, "Dealer: %d, Target: %d, Damage: %d, HP: %d\n", (int)dealerUnitType, (int)targetUnitType, damage, hp);
+			OutputDebugStringA(buf);
 
-		if (hp <= 0)
-		{
-			hp = 0;
-
-			Sprite* sprite = GetSprite();
-			std::list<Image*>* images = sprite->GetImages();
-			for (Image* image : *images)
+			if (hp <= 0)
 			{
-				eAnim anim = eAnim::GndAttkToIdle;
-				image->SetAnim(anim);
-				uint16 iscriptHeader = image->GetIScriptHeader();
-				AnimationController* animationController = gGame->GetAnimationController();
-				uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
-				image->SetIScriptOffset(iscriptOffset);
-				image->SetSleep(0);
+				hp = 0;
+
+				Sprite* sprite = GetSprite();
+				sprite->UpdatePrimaryAnim(eAnim::GndAttkToIdle);
+
+				ClearOrders();
+
+				mCoolTime = 0;
+
+				mOrderType = eOrder::None;
+			}
+			else
+			{
+				Sprite* sprite = GetSprite();
+				sprite->UpdatePrimaryAnim(eAnim::GndAttkRpt);
+
+				mCoolTime = mGroundWeaponCooldown;
+				mbRepeatAttackable = false;
 			}
 
-			ClearOrders();
+			targetUnit->SetHP(hp);
 
-			mCoolTime = 0;
-
-			mOrderType = eOrder::None;
-		}
-		else
-		{
-			Sprite* sprite = GetSprite();
-			std::list<Image*>* images = sprite->GetImages();
-			for (Image* image : *images)
+			// Bullet
+			Bullet* bullet = new Bullet();
+			const UnitData* unitData = resourceManager->GetUnitData();
+			eWeapon weaponType = (eWeapon)unitData->GroundWeapons[(uint32)mUnitType];
+			bullet->Initialize(weaponType, this);
+			FloatVector2 position = targetPosition;
+			if (mUnitType == eUnit::TerranVulture)
 			{
-
-				uint16 iscriptHeader = image->GetIScriptHeader();
-				AnimationController* animationController = gGame->GetAnimationController();
-				uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, eAnim::GndAttkRpt);
-				image->SetIScriptOffset(iscriptOffset);
-				image->SetSleep(0);
+				position = mPosition;
 			}
 
-			mCoolTime = mGroundWeaponCooldown;
-			mbRepeatAttackable = false;
+			bullet->SetPosition(position);
+			gGame->Bullets.push_back(bullet);
+			gGame->Thingies.push_back(bullet);
 		}
-
-		targetUnit->SetHP(hp);
-
-		// Bullet
-		Bullet* bullet = new Bullet();
-		const UnitData* unitData = resourceManager->GetUnitData();
-		eWeapon weaponType = (eWeapon)unitData->GroundWeapons[(uint32)mUnitType];
-		bullet->Initialize(weaponType, this);
-		//FloatVector2 position = targetUnit->GetPosition();
-		FloatVector2 position = targetPosition;
-		if (mUnitType == eUnit::TerranVulture)
-		{
-			position = mPosition;
-		}
-
-		bullet->SetPosition(position);
-		gGame->Bullets.push_back(bullet);
-		gGame->Thingies.push_back(bullet);
 	}
 
 	mCoolTime--;
@@ -591,13 +690,14 @@ void Unit::startBuilding()
 		std::list<Image*>* images = sprite->GetImages();
 		for (Image* image : *images)
 		{
-			image->SetHidden(true);
+			mTempImages.push_back(image);
 		}
+		images->clear();
 
-		mConstructionImage = new Image();
-		mConstructionImage->Initialize((eImage)constructionAnimation, sprite);
-		mConstructionImage->SetAnim(eAnim::Init);
-		sprite->AddAffter(mConstructionImage);
+		Image* constructionImage = new Image();
+		constructionImage->Initialize((eImage)constructionAnimation, sprite);
+		images->push_back(constructionImage);
+		sprite->SetPrimaryImage(constructionImage);
 	}
 }
 
@@ -606,76 +706,41 @@ void Unit::build()
 	// 걸린 시간
 	float elapsedTime = (float)(mBuildTime - mRemainingBuildTime);
 	float percent = elapsedTime / mBuildTime;
+	Sprite* sprite = GetSprite();
 
 	if (percent >= 1.f)
 	{
-		Sprite* sprite = GetSprite();
-		std::list<Image*>* images = sprite->GetImages();
-		for (Image* image : *images)
-		{
-			eAnim anim = eAnim::Built;
-			image->SetAnim(anim);
-			uint16 iscriptHeader = image->GetIScriptHeader();
-			AnimationController* animationController = gGame->GetAnimationController();
-			uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
-			image->SetIScriptOffset(iscriptOffset);
-			image->SetSleep(0);
-		}
+		sprite->UpdatePrimaryAnim(eAnim::Init);
 
 		mOrderType = eOrder::None;
 	}
 	else if (percent >= 0.57f)
 	{
-		Sprite* sprite = GetSprite();
-		std::list<Image*>* images = sprite->GetImages();
-		auto iter = images->begin();
-		while (iter != images->end())
+		if (!mTempImages.empty())
 		{
-			Image* image = *iter;
-			if (image == mConstructionImage)
+			std::list<Image*>* images = sprite->GetImages();
+			for (Image* image : *images)
 			{
-				iter = images->erase(iter);
-				delete mConstructionImage;
-				mConstructionImage = nullptr;
+				delete image;
 			}
-			else
-			{
-				eAnim anim = eAnim::AlmostBuilt;
-				image->SetAnim(anim);
-				image->SetHidden(false);
-				uint16 iscriptHeader = image->GetIScriptHeader();
-				AnimationController* animationController = gGame->GetAnimationController();
-				uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
-				image->SetIScriptOffset(iscriptOffset);
-				image->SetSleep(0);
+			images->clear();
 
-				iter++;
+			for (Image* tempImage : mTempImages)
+			{
+				images->push_back(tempImage);
 			}
+			mTempImages.clear();
+			sprite->SetPrimaryImage(images->front());
+			sprite->UpdatePrimaryAnim(eAnim::AlmostBuilt);
 		}
 	}
 	else if (percent >= 0.34f)
 	{
-		Sprite* sprite = GetSprite();
-		Image* image = mConstructionImage;
-		eAnim anim = eAnim::SpecialState2;
-		image->SetAnim(anim);
-		uint16 iscriptHeader = image->GetIScriptHeader();
-		AnimationController* animationController = gGame->GetAnimationController();
-		uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
-		image->SetIScriptOffset(iscriptOffset);
-		image->SetSleep(0);
+		sprite->UpdatePrimaryAnim(eAnim::SpecialState2);
 	}
 	else if (percent >= 0.13f)
 	{
-		Sprite* sprite = GetSprite();
-		Image* image = mConstructionImage;
-		eAnim anim = eAnim::SpecialState1;
-		image->SetAnim(anim);
-		uint16 iscriptHeader = image->GetIScriptHeader();
-		AnimationController* animationController = gGame->GetAnimationController();
-		uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
-		image->SetIScriptOffset(iscriptOffset);
-		image->SetSleep(0);
+		sprite->UpdatePrimaryAnim(eAnim::SpecialState1);
 	}
 
 	mRemainingBuildTime -= 10;
@@ -702,4 +767,11 @@ void Unit::lookAt(FloatVector2 targetPosition)
 	direction /= 8;
 
 	SetFacingDirection(direction);
+}
+
+bool Unit::canAttackTarget() const
+{
+	float range = mTargetAcquisitionRange * PathFinder::GRID_SIZE;
+	float distanceSquare = ::GetDistanceSquare(mMoveTarget.Position, mPosition);
+	return distanceSquare <= range * range;
 }

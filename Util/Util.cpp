@@ -36,3 +36,39 @@ bool IsCollisonRectVsPoint(const Int32Rect& rect, const Int32Vector2& point)
 
 	return point.X >= tempRect.Left && point.X <= tempRect.Right && point.Y >= tempRect.Top && point.Y <= tempRect.Bottom;
 }
+
+int32 GetDistanceSquare(const Int32Vector2& point1, const Int32Vector2& point2)
+{
+	int32 distanceX = point1.X - point2.X;
+	int32 distanceY = point1.Y - point2.Y;
+	return distanceX * distanceX + distanceY * distanceY;
+}
+
+float GetDistanceSquare(const FloatVector2& point1, const FloatVector2& point2)
+{
+	float distanceX = point1.X - point2.X;
+	float distanceY = point1.Y - point2.Y;
+	return distanceX * distanceX + distanceY * distanceY;
+}
+
+float GetDistanceSquare(const Int32Vector2& point1, const FloatVector2& point2)
+{
+	float distanceX = (float)point1.X - point2.X;
+	float distanceY = (float)point1.Y - point2.Y;
+	return distanceX * distanceX + distanceY * distanceY;
+}
+
+float GetDistance(const Int32Vector2& point1, const Int32Vector2& point2)
+{
+	return sqrtf(GetDistanceSquare(point1, point2));
+}
+
+float GetDistance(const FloatVector2& point1, const FloatVector2& point2)
+{
+	return sqrtf(GetDistanceSquare(point1, point2));
+}
+
+float GetDistance(const Int32Vector2& point1, const FloatVector2& point2)
+{
+	return sqrtf(GetDistanceSquare(point1, point2));
+}

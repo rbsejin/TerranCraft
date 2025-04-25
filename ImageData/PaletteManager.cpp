@@ -17,7 +17,7 @@ void PaletteManager::SetEntries(PALETTEENTRY * palette, int32 startIndex, int32 
 	memcpy(palette + startIndex, colors, count * sizeof(PALETTEENTRY));
 }
 
-void PaletteManager::LoadPal(PALETTEENTRY* data, const char* filename)
+void PaletteManager::loadPal(PALETTEENTRY* data, const char* filename)
 {
 	FILE* fp = nullptr;
 	uint8* buffer = (uint8*)malloc(sizeof(PALETTEENTRY) * 256);
@@ -37,6 +37,13 @@ void PaletteManager::LoadPal(PALETTEENTRY* data, const char* filename)
 	}
 
 	free(buffer);
+}
+
+void PaletteManager::LoadPals()
+{
+	loadPal(OfireData, "../data/Palettes/ofire.pal");
+	loadPal(GfireData, "../data/Palettes/gfire.pal");
+	loadPal(BfireData, "../data/Palettes/bfire.pal");
 }
 
 void PaletteManager::pcxToPaletteEntries(const PCXImage* pcx, PALETTEENTRY* pDest)

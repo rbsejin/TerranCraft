@@ -4,6 +4,7 @@
 #include "../DDrawLib/DDrawDevice.h"
 #include "../ImageData/Graphic.h"
 #include "../ImageData/PaletteManager.h"
+#include "../BWLib/SpecialAbilityFlags.h"
 #include "Game.h"
 #include "Unit.h"
 #include "Bullet.h"
@@ -44,6 +45,8 @@ bool Game::Initalize(HWND hWnd)
 		goto LB_RETURN;
 	}
 
+	mPathFinder = new PathFinder();
+
 #pragma region Load Resources
 	mResourceManager = new ResourceManager();
 	mResourceManager->Load();
@@ -51,6 +54,17 @@ bool Game::Initalize(HWND hWnd)
 	mAnimationController->Load("../data/STARDAT/scripts/iscript.bin");
 
 	mPaletteManager = new PaletteManager();
+	const PCXImage* tunitPCX = mResourceManager->GetTUnitPCX();
+	mPaletteManager->pcxToPaletteEntries(tunitPCX, mPaletteManager->TUnitPaletteEntries);
+
+	const PCXImage* tselectPCX = mResourceManager->GetTSelectPCX();
+	mPaletteManager->pcxToPaletteEntries(tselectPCX, mPaletteManager->TSelectPaletteEntries);
+
+	const PCXImage* twirePCX = mResourceManager->GetTWirePCX();
+	mPaletteManager->pcxToPaletteEntries(twirePCX, mPaletteManager->TWirePaletteEntries);
+
+	mPaletteManager->LoadPals();
+	//mPaletteManager->LoadPal(mPaletteManager->sBexplData, "../data/Palettes/bexpl.pal");
 
 #pragma endregion
 
@@ -63,28 +77,14 @@ bool Game::Initalize(HWND hWnd)
 	}
 #pragma endregion
 
-	const PCXImage* tunitPCX = mResourceManager->GetTUnitPCX();
-	mPaletteManager->pcxToPaletteEntries(tunitPCX, mPaletteManager->TUnitPaletteEntries);
-
-	const PCXImage* tselectPCX = mResourceManager->GetTSelectPCX();
-	mPaletteManager->pcxToPaletteEntries(tselectPCX, mPaletteManager->TSelectPaletteEntries);
-
-	const PCXImage* twirePCX = mResourceManager->GetTWirePCX();
-	mPaletteManager->pcxToPaletteEntries(twirePCX, mPaletteManager->TWirePaletteEntries);
-
-	mPaletteManager->LoadPal(mPaletteManager->OfireData, "../data/Palettes/ofire.pal");
-	mPaletteManager->LoadPal(mPaletteManager->GfireData, "../data/Palettes/gfire.pal");
-	mPaletteManager->LoadPal(mPaletteManager->BfireData, "../data/Palettes/bfire.pal");
-	//mPaletteManager->LoadPal(mPaletteManager->sBexplData, "../data/Palettes/bexpl.pal");
-
 	eUnit unitTypes[4] = {
-		eUnit::TerranSCV,
 		eUnit::TerranMarine,
+		eUnit::TerranBattlecruiser,
+		eUnit::TerranSCV,
 		eUnit::TerranVulture,
-		eUnit::TerranCommandCenter
 	};
 
-	for (int32 j = 0; j < 1; j++)
+	for (int32 j = 0; j < 3; j++)
 	{
 		for (int32 i = 0; i < 1; i++)
 		{
@@ -95,13 +95,15 @@ bool Game::Initalize(HWND hWnd)
 				goto LB_RETURN;
 			}
 
+			//unit->SetPosition({ 128 + i * 128.f, (j * 3 + 1) * 64.f });
+			unit->SetHP(1000);
 			unit->SetPosition({ 128 + i * 128.f, (j + 1) * 64.f });
 			Units.push_back(unit);
 			Thingies.push_back(unit);
 		}
 	}
 
-	mButtonset = mResourceManager->GetButtonSet();
+	mButtonsetData = mResourceManager->GetButtonSet();
 
 	for (int32 i = 0; i < SELECTION_CIRCLE_IMAGE_COUNT; i++)
 	{
@@ -159,6 +161,9 @@ void Game::Cleanup()
 
 	delete mAnimationController;
 	mAnimationController = nullptr;
+
+	delete mPathFinder;
+	mPathFinder = nullptr;
 
 	delete mDDrawDevice;
 	mDDrawDevice = nullptr;
@@ -296,20 +301,20 @@ void Game::OnKeyDown(unsigned int vkCode, unsigned int scanCode)
 				unit->AddOrder(order);
 			}
 		}
+		break;
 	}
-	break;
 	case 'V':
 		break;
 	case 'A':
 	{
 		mPlayerOrder = ePlayerOrder::Attack;
+		break;
 	}
-	break;
 	case 'M':
 	{
 		mPlayerOrder = ePlayerOrder::Move;
+		break;
 	}
-	break;
 	case 'T':
 	{
 		for (int32 i = 0; i < SelectedUnits.size(); i++)
@@ -318,8 +323,31 @@ void Game::OnKeyDown(unsigned int vkCode, unsigned int scanCode)
 			cooldown /= 2;
 			SelectedUnits[i]->SetGroundWeaponCooldown(cooldown);
 		}
+		break;
 	}
-	break;
+	// minus key
+	case VK_OEM_MINUS:
+	{
+		int32 gameSpeed = (int32)mGameSpeed - 3;
+		if (gameSpeed < (int32)eGameSpeed::Slowest)
+		{
+			gameSpeed = (int32)eGameSpeed::Slowest;
+		}
+		mGameSpeed = (eGameSpeed)gameSpeed;
+		mTicksPerFrame = 1000.0f / (uint32)mGameSpeed;
+		break;
+	}
+	case VK_OEM_PLUS:
+	{
+		int32 gameSpeedPlus = (int32)mGameSpeed + 3;
+		if (gameSpeedPlus > (int32)eGameSpeed::Fastest)
+		{
+			gameSpeedPlus = (int32)eGameSpeed::Fastest;
+		}
+		mGameSpeed = (eGameSpeed)gameSpeedPlus;
+		mTicksPerFrame = 1000.0f / (uint32)mGameSpeed;
+		break;
+	}
 	// delete key
 	case VK_DELETE:
 	{
@@ -372,8 +400,8 @@ void Game::OnMouseMove(unsigned int nFlags, int x, int y)
 		x += cameraPosition.X;
 		y += cameraPosition.Y;
 
-		Int32Vector2 selectedCell = { (int32)(x / CELL_SIZE), (int32)(y / CELL_SIZE) };
-		gMiniTiles[selectedCell.Y][selectedCell.X] = cell;
+		Int32Vector2 selectedCell = { (int32)(x / PathFinder::CELL_SIZE), (int32)(y / PathFinder::CELL_SIZE) };
+		mPathFinder->SetMiniTile(selectedCell.X, selectedCell.Y, cell);
 	}
 #endif // _DEBUG
 
@@ -445,7 +473,9 @@ void Game::OnLButtonUp(unsigned int nFlags, int x, int y)
 			break;
 		}
 
-		if (unit->IsBuilding())
+		uint32 specialAbilityFlags = unit->GetSpecialAbilityFlags();
+
+		if (specialAbilityFlags & (uint32)eSpecialAbilityFlags::Building)
 		{
 			continue;
 		}
@@ -519,7 +549,7 @@ void Game::OnLButtonDown(unsigned int nFlags, int x, int y)
 			break;
 		case ePlayerOrder::Stop:
 			break;
-		case ePlayerOrder::Harvest:
+		case ePlayerOrder::Gather:
 			break;
 		case ePlayerOrder::ReturnCargo:
 			break;
@@ -596,13 +626,7 @@ void Game::markCursor()
 	Sprite* sprite = mCursorMarkerSprite;
 	Image* primaryImage = sprite->GetPrimaryImage();
 	primaryImage->SetHidden(false);
-
-	eAnim anim = eAnim::GndAttkInit;
-	primaryImage->SetAnim(anim);
-	uint16 iscriptHeader = primaryImage->GetIScriptHeader();
-	uint16 iscriptOffset = mAnimationController->GetIScriptOffset(iscriptHeader, anim);
-	primaryImage->SetIScriptOffset(iscriptOffset);
-	primaryImage->SetSleep(0);
+	primaryImage->UpdateAnim(eAnim::GndAttkInit);
 }
 
 void Game::updateWireframePalette(const Unit* unit)
@@ -645,13 +669,6 @@ void Game::updateWireframePalette(const Unit* unit)
 
 void Game::move(Target target)
 {
-	FloatVector2 targetPosition = { (float)target.Position.X, (float)target.Position.Y };
-	Unit* targetUnit = target.Unit;
-	if (targetUnit != nullptr)
-	{
-		targetPosition = targetUnit->GetPosition();
-	}
-
 	for (uint32 i = 0; i < SelectedUnits.size(); i++)
 	{
 		Unit* unit = SelectedUnits[i];
@@ -659,28 +676,20 @@ void Game::move(Target target)
 		unit->ClearOrders();
 		Order* order = new Order();
 		order->OrderType = eOrder::Move;
-		order->Target.Position.X = (int32)targetPosition.X;
-		order->Target.Position.Y = (int32)targetPosition.Y;
+		order->Target = target;
 		unit->AddOrder(order);
 	}
 }
 
 void Game::attack(Target target)
 {
-	FloatVector2 targetPosition = { (float)target.Position.X, (float)target.Position.Y };
-	Unit* targetUnit = target.Unit;
-	if (targetUnit != nullptr)
+	for (uint32 i = 0; i < SelectedUnits.size(); i++)
 	{
-		targetPosition = targetUnit->GetPosition();
-	}
-
-	for (int32 i = 0; i < SelectedUnits.size(); i++)
-	{
-		// turn to target
 		Unit* unit = SelectedUnits[i];
 		unit->SetStandby();
 		unit->ClearOrders();
 		Order* order = new Order();
+
 		if (target.Unit != nullptr)
 		{
 			order->OrderType = eOrder::AttackUnit;
@@ -689,6 +698,7 @@ void Game::attack(Target target)
 		{
 			order->OrderType = eOrder::AttackMove;
 		}
+
 		order->Target = target;
 		unit->AddOrder(order);
 	}
@@ -750,22 +760,22 @@ void Game::onGameFrame(ULONGLONG currentTick)
 #pragma region Keyboard
 	if (mbPressedLeft)
 	{
-		mCamera->MoveViewPort(-CELL_SIZE, 0);
+		mCamera->MoveViewPort(-PathFinder::CELL_SIZE, 0);
 	}
 
 	if (mbPressedRight)
 	{
-		mCamera->MoveViewPort(CELL_SIZE, 0);
+		mCamera->MoveViewPort(PathFinder::CELL_SIZE, 0);
 	}
 
 	if (mbPressedUp)
 	{
-		mCamera->MoveViewPort(0, -CELL_SIZE / 2);
+		mCamera->MoveViewPort(0, -PathFinder::CELL_SIZE / 2);
 	}
 
 	if (mbPressedDown)
 	{
-		mCamera->MoveViewPort(0, CELL_SIZE / 2);
+		mCamera->MoveViewPort(0, PathFinder::CELL_SIZE / 2);
 	}
 #pragma endregion
 
@@ -802,7 +812,7 @@ void Game::onGameFrame(ULONGLONG currentTick)
 	for (auto iter = Thingies.begin(); iter != Thingies.end(); ++iter)
 	{
 		Thingy* thingy = *iter;
-		const Sprite* sprite = thingy->GetSprite();
+		Sprite* sprite = thingy->GetSprite();
 		if (sprite == nullptr)
 		{
 			continue;
@@ -867,9 +877,16 @@ void Game::onGameFrame(ULONGLONG currentTick)
 			}
 
 			const std::list<Image*>* images = sprite->GetImages();
-			for (Image* image : *images)
+			std::list<Image*> tempImages = *images;
+			for (Image* image : tempImages)
 			{
 				image->UpdateGraphicData();
+			}
+
+			Image* selectionCircleImage = sprite->GetSelectionCircleImage();
+			if (selectionCircleImage != nullptr)
+			{
+				selectionCircleImage->UpdateGraphicData();
 			}
 
 			++iter;
@@ -951,12 +968,13 @@ void Game::drawScene()
 #if 1
 		const uint32* mapImage = mResourceManager->GetMapImage();
 		uint32 mapImageWidth = mResourceManager->GetMapImageWidth();
-		mDDrawDevice->DrawMap(CELL_SIZE, MAP_WIDTH, MAP_HEIGHT, (const uint8*)gMiniTiles, mapImage, mapImageWidth);
+		const uint8* gMiniTiles = mPathFinder->GetMiniTiles();
+		mDDrawDevice->DrawMap(PathFinder::CELL_SIZE, PathFinder::MAP_WIDTH, PathFinder::MAP_HEIGHT, (const uint8*)gMiniTiles, mapImage, mapImageWidth);
 
 #ifdef _DEBUG
 		if (mDDrawDevice->IsGridOn)
 		{
-			mDDrawDevice->DrawGrid(CELL_SIZE, MAP_WIDTH, MAP_HEIGHT, 0xff000000);
+			mDDrawDevice->DrawGrid(PathFinder::CELL_SIZE, PathFinder::MAP_WIDTH, PathFinder::MAP_HEIGHT, 0xff000000);
 		}
 
 		if (mDDrawDevice->IsPathOn)
@@ -965,7 +983,7 @@ void Game::drawScene()
 			{
 				Unit* unit = SelectedUnits[i];
 				Int32Rect countourBounds = unit->GetContourBounds();
-				mDDrawDevice->DrawPath(CellPath, CELL_SIZE, countourBounds, 0xff00ff00);
+				mDDrawDevice->DrawPath(CellPath, PathFinder::CELL_SIZE, countourBounds, 0xff00ff00);
 			}
 		}
 #endif // _DEBUG
@@ -1051,17 +1069,17 @@ void Game::drawScene()
 			int32 x = mConsolePos.X + 508;
 			int32 y = mConsolePos.Y + 358;
 
-			const Buttonset* buttonset = mButtonset->Buttonsets[(uint32)mCurrentButtonset];
+			const Buttonset* buttonset = mButtonsetData->Buttonsets[(uint32)mCurrentButtonset];
 
 			for (uint32 i = 0; i < buttonset->ButtonCount; i++)
 			{
 				const ButtonInfo* buttonInfo = buttonset->ButtonInfos + i;
 				uint32 condition = buttonInfo->Condition;
 
-				if (condition != 0x4282d0)
-				{
-					continue;
-				}
+				//if (condition != 0x4282d0)
+				//{
+				//	continue;
+				//}
 
 				uint16 location = buttonInfo->Location;
 				int32 frameIndex = (int32)buttonset->ButtonInfos[i].Icon;

@@ -42,24 +42,15 @@ bool Bullet::Initialize(eWeapon weaponType, Unit* sourceUnit)
 	float distanceY = targetPosition.Y - position.Y;
 	float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
 
-	mCurrentVelocity.X = distanceX / distance * mCurrentSpeed;
-	mCurrentVelocity.Y = distanceY / distance * mCurrentSpeed;
-
-
-
+	mCurrentOrientation.X = distanceX / distance;
+	mCurrentOrientation.Y = distanceY / distance;
 
 	{
 		Sprite* sprite = GetSprite();
 		std::list<Image*>* images = sprite->GetImages();
 		for (Image* image : *images)
 		{
-			eAnim anim = eAnim::Init;
-			image->SetAnim(anim);
-			uint16 iscriptHeader = image->GetIScriptHeader();
-			AnimationController* animationController = gGame->GetAnimationController();
-			uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
-			image->SetIScriptOffset(iscriptOffset);
-			image->SetSleep(0);
+			image->UpdateAnim(eAnim::Init);
 		}
 	}
 
@@ -86,12 +77,12 @@ void Bullet::Update()
 		(targetPosition.X - mPosition.X) * (targetPosition.X - mPosition.X) +
 		(targetPosition.Y - mPosition.Y) * (targetPosition.Y - mPosition.Y);
 
-	if (mTimeRemaining > 0 && distanceSquare >= mCurrentVelocity.X * mCurrentVelocity.X + mCurrentVelocity.Y * mCurrentVelocity.Y)
+	if (mTimeRemaining > 0 && distanceSquare >= mCurrentOrientation.X * mCurrentOrientation.X + mCurrentOrientation.Y * mCurrentOrientation.Y)
 	{
 		uint8 direction = mSourceUnit->GetFacingDirection();
 		float radian = (float)(direction - 8) * (float)M_PI / 16.0f;
-		mPosition.X += mCurrentVelocity.X;
-		mPosition.Y += mCurrentVelocity.Y;
+		mPosition.X += mCurrentOrientation.X * mCurrentSpeed;
+		mPosition.Y += mCurrentOrientation.Y * mCurrentSpeed;
 
 		mTimeRemaining--;
 	}
@@ -105,13 +96,7 @@ void Bullet::Update()
 		std::list<Image*>* images = sprite->GetImages();
 		for (Image* image : *images)
 		{
-			eAnim anim = eAnim::Death;
-			image->SetAnim(anim);
-			uint16 iscriptHeader = image->GetIScriptHeader();
-			AnimationController* animationController = gGame->GetAnimationController();
-			uint16 iscriptOffset = animationController->GetIScriptOffset(iscriptHeader, anim);
-			image->SetIScriptOffset(iscriptOffset);
-			image->SetSleep(0);
+			image->UpdateAnim(eAnim::Death);
 		}
 
 		gGame->Bullets.erase(std::remove(gGame->Bullets.begin(), gGame->Bullets.end(), this), gGame->Bullets.end());

@@ -41,7 +41,7 @@ public:
 	uint16 GetIScriptHeader() const { return mIScriptHeader; }
 	uint16 GetIScriptOffset() const { return mIScriptOffset; }
 	void SetIScriptOffset(uint16 offset) { mIScriptOffset = offset; }
-	void SetAnim(eAnim anim) { mAnim = anim; }
+	uint16 GetIScriptOffsetCount() const { return mIScriptOffsetCount; }
 	eAnim GetAnim() const { return mAnim; }
 	uint8 GetSleep() const { return mSleep; }
 	void SetSleep(uint32 sleep) { mSleep = sleep; }
@@ -49,10 +49,13 @@ public:
 	void SetFrameSet(uint16 frameSet) { mFrameSet = frameSet; }
 	uint32 GetFrameIndex() const { return mFrameIndex; }
 	void UpdateFrameIndex();
+	void UpdateFrameIndex(uint16 frameIndex);
 	Int32Rect GetGRPBounds() const { return mGRPBounds; }
 	const GRPHeader* GetGRPFile() const { return mGRPFile; }
 	const Sprite* GetParent() const { return mParent; }
 	Sprite* GetParent() { return mParent; }
+
+	void UpdateAnim(eAnim anim);
 
 	bool HasRotationFrames() const { return mFlags & 0x0008; }
 	bool IsFullIScript() const { return mFlags & 0x0010; }
@@ -63,6 +66,7 @@ private:
 	eRLET mRLE = eRLET::Normal;
 	uint8 mRemapping = 0;
 	uint8 mDirection = 0; // 0 ~ 31
+	uint8 mFlags = 0;
 	/* flags
 	 0x0001  - Redraw
 	 0x0002  - Flipped/Mirrored
@@ -73,10 +77,10 @@ private:
 	 0x0040  - Hidden/Invisible (don't draw)
 	 0x0080  - UseParentLO
 	*/
-	uint8 mFlags = 0;
 	Int32Vector2 mOffset = { 0, };
 	uint16 mIScriptHeader = 0;
 	uint16 mIScriptOffset = 0;
+	uint16 mIScriptOffsetCount = 0;
 	eAnim mAnim = eAnim::Init;
 	uint8 mSleep = 0;
 	uint16 mFrameSet = 0;

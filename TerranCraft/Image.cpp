@@ -32,6 +32,7 @@ bool Image::Initialize(eImage imageID, Sprite* parent)
 	AnimationController* animationController = gGame->GetAnimationController();
 	mIScriptHeader = animationController->GetIScriptHeader(IscriptID);
 	mIScriptOffset = animationController->GetIScriptOffset(mIScriptHeader, mAnim);
+	mIScriptOffsetCount = animationController->GetIScriptOffsetCount(IscriptID);
 
 	if (imageData->GfxTurns[(int32)imageID] != 0)
 	{
@@ -204,4 +205,18 @@ void Image::UpdateFrameIndex()
 	}
 
 	mFrameIndex = mFrameSet * 0x11 + d;
+}
+
+void Image::UpdateFrameIndex(uint16 frameIndex)
+{
+	mFrameIndex = frameIndex;
+	mFrameSet = frameIndex / 0x11;
+}
+
+void Image::UpdateAnim(eAnim anim)
+{
+	mAnim = anim;
+	AnimationController* animationController = gGame->GetAnimationController();
+	mIScriptOffset = animationController->GetIScriptOffset(mIScriptHeader, mAnim);
+	mSleep = 0;
 }

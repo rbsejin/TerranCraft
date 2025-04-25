@@ -19,6 +19,7 @@ class Image;
 class AnimationController;
 class ResourceManager;
 class PaletteManager;
+class PathFinder;
 
 struct ImageData;
 struct SpriteData;
@@ -27,14 +28,14 @@ struct ButtonsetData;
 
 enum class ePlayerOrder
 {
-	Attack,
 	Move,
-	HoldPosition,
-	Patrol,
 	Stop,
-	Harvest,
-	ReturnCargo,
+	Attack,
+	Patrol,
+	HoldPosition,
 	Repair,
+	Gather,
+	ReturnCargo,
 	None
 };
 
@@ -90,6 +91,7 @@ public:
 	AnimationController* GetAnimationController() { return mAnimationController; }
 	ResourceManager* GetResourceManager() { return mResourceManager; }
 	PaletteManager* GetPaletteManager() { return mPaletteManager; }
+	PathFinder* GetPathFinder() { return mPathFinder; }
 
 private:
 	void onGameFrame(ULONGLONG currentTick);
@@ -117,6 +119,7 @@ private:
 	AnimationController* mAnimationController = nullptr;
 	ResourceManager* mResourceManager = nullptr;
 	PaletteManager* mPaletteManager = nullptr;
+	PathFinder* mPathFinder = nullptr;
 
 	eGameSpeed mGameSpeed = eGameSpeed::Fastest;
 	float mTicksPerFrame = 1000.0f / (uint32)mGameSpeed;
@@ -136,7 +139,7 @@ private:
 
 	// UI
 	Int32Vector2 mConsolePos = { 0, };
-	const ButtonsetData* mButtonset = nullptr;
+	const ButtonsetData* mButtonsetData = nullptr;
 	eButtonset mCurrentButtonset = eButtonset::None;
 
 	// Cursor

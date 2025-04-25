@@ -33,6 +33,7 @@ public:
 	uint16 GetIScriptHeader(uint32 entryNumber) const;
 	uint16 GetIScriptOffset(uint16 headerOffset, eAnim animation) const;
 	void GetData(void* dest, uint16 offset, uint32 size) const;
+	uint32 GetIScriptOffsetCount(uint32 entryNumber) const { return sHeaderOffsetCounts[mIScriptEntries[entryNumber].Type]; }
 
 private:
 	constexpr static uint32 sHeaderOffsetCounts[] =
